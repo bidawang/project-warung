@@ -1,0 +1,25 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Barang extends Model
+{
+    use HasFactory;
+
+    protected $table = 'barang';
+
+    protected $fillable = [
+        'id_sub_kategori',
+        'kode_barang',
+        'nama_barang',
+        'keterangan'
+    ];
+
+    public function subKategori()
+    {
+        return $this->belongsTo(SubKategori::class, 'id_sub_kategori');
+    }
+}
