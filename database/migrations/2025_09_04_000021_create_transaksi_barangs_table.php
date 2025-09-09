@@ -13,7 +13,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('id_transaksi_kas')->constrained('transaksi_kas');
             $table->foreignId('id_barang')->constrained('barang');
-            $table->integer('qty');
+            $table->integer('jumlah');
             $table->string('status', 50);
             $table->enum('jenis', ['keluar', 'masuk']);
             $table->text('keterangan')->nullable();

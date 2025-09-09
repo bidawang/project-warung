@@ -13,7 +13,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('id_warung')->constrained('warung');
             $table->foreignId('id_barang')->constrained('barang');
-            $table->integer('stok');
             $table->text('keterangan')->nullable();
             $table->timestamps();
         });

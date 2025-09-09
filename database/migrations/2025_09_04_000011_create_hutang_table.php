@@ -13,7 +13,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('id_warung')->constrained('warung');
             $table->foreignId('id_user')->constrained('users');
-            $table->decimal('jumlah', 15, 2);
+            $table->decimal('jumlah_pokok', 15, 2);
             $table->date('tenggat');
             $table->enum('status', ['lunas', 'belum lunas']);
             $table->text('keterangan')->nullable();

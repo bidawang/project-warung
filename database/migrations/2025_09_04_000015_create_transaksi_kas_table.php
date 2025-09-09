@@ -15,7 +15,6 @@ return new class extends Migration
             $table->decimal('total', 15, 2);
             $table->string('metode_pembayaran', 50);
             $table->text('keterangan')->nullable();
-            $table->enum('jenis', ['keluar', 'masuk']);
             $table->timestamps();
         });
     }

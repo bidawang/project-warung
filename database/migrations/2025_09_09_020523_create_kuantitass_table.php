@@ -1,5 +1,4 @@
 <?php
-// database/migrations/xxxx_xx_xx_xxxxxx_create_bunga_table.php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -9,16 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('bunga', function (Blueprint $table) {
+        Schema::create('kuantitas', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('id_hutang')->constrained('hutang');
-            $table->decimal('jumlah_bunga', 8, 2);
+            $table->unsignedBigInteger('id_laba');
+            $table->integer('jumlah');
+            $table->bigInteger('harga_jual')();
             $table->timestamps();
+
+            $table->foreign('id_laba')->references('id')->on('labas');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('bunga');
+        Schema::dropIfExists('kuantitas');
     }
 };

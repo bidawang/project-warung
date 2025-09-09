@@ -12,7 +12,7 @@ return new class extends Migration
         Schema::create('kas_warung', function (Blueprint $table) {
             $table->id();
             $table->foreignId('id_warung')->constrained('warung');
-            $table->decimal('saldo', 15, 2)->default(0);
+            $table->text('jenis_kas');
             $table->text('keterangan')->nullable();
             $table->timestamps();
         });

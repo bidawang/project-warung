@@ -17,6 +17,7 @@ return new class extends Migration
             $table->integer('jatuh_tempo_hari');
             $table->integer('jatuh_tempo_bulan');
             $table->text('keterangan')->nullable();
+            $table->string('bunga', 50);
             $table->timestamps();
         });
     }
