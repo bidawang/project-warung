@@ -17,6 +17,7 @@ class AturanTenggat extends Model
         'tanggal_akhir',
         'jatuh_tempo_hari',
         'jatuh_tempo_bulan',
+        'bunga',
         'keterangan'
     ];
 

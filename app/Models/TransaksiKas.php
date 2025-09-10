@@ -16,7 +16,6 @@ class TransaksiKas extends Model
         'total',
         'metode_pembayaran',
         'keterangan',
-        'jenis'
     ];
 
     protected $casts = [
@@ -33,4 +32,6 @@ enum JenisTransaksiEnum: string
 {
     case KELUAR = 'keluar';
     case MASUK = 'masuk';
+    case PENDING = 'pending';
+    case HUTANG = 'hutang';
 }

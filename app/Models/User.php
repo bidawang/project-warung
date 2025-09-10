@@ -14,9 +14,17 @@ class User extends Authenticatable
 
     protected $fillable = [
         'role',
-        'nama',
+        'name',
         'nomor_hp',
         'email',
         'keterangan'
     ];
+    public function kasir()
+    {
+        return $this->hasOne(Kasir::class, 'id_user');
+    }
+    public function member()
+    {
+        return $this->hasOne(Member::class, 'id_user');
+    }
 }

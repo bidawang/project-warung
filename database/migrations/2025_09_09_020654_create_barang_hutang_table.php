@@ -18,8 +18,8 @@ return new class extends Migration
             $table->timestamps();
 
             // Menambahkan kunci asing
-            $table->foreign('id_hutang')->references('id')->on('hutangs')->onDelete('cascade');
-            $table->foreign('id_transaksi_barang')->references('id')->on('transaksi_barangs')->onDelete('cascade');
+            $table->foreign('id_hutang')->references('id')->on('hutang')->onDelete('cascade');
+            $table->foreign('id_transaksi_barang')->references('id')->on('transaksi_barang')->onDelete('cascade');
         });
     }
 

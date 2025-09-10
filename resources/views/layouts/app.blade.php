@@ -14,9 +14,7 @@
             background-color: #f0f2f5;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             padding-top: 56px;
-            /* Space for fixed headbar */
             padding-bottom: 72px;
-            /* Space for fixed bottombar */
         }
 
         .headbar {
@@ -69,24 +67,71 @@
 
 <body>
 
-    <!-- Headbar (Top Navbar) -->
+    <!-- Headbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top headbar">
         <div class="container-fluid">
             <a class="navbar-brand d-flex align-items-center" href="{{ url('/dashboard') }}">
                 <i class="fas fa-chart-bar me-2 text-primary"></i>
                 <span class="fw-bold">Dashboard App</span>
             </a>
-            <div class="ms-auto">
-                <div class="dropdown">
-                    <a href="#" class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle" id="dropdownUser" data-bs-toggle="dropdown" aria-expanded="false">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNavbar" aria-controls="topNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="topNavbar">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+
+                    <!-- Master Data -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-database"></i> Master Data
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ route('kategori.index') }}">Kategori</a></li>
+                            <li><a class="dropdown-item" href="{{ route('subkategori.index') }}">Sub Kategori</a></li>
+                            <li><a class="dropdown-item" href="{{ route('barang.index') }}">Barang</a></li>
+                            <li><a class="dropdown-item" href="{{ route('warung.index') }}">Warung</a></li>
+                            <li><a class="dropdown-item" href="{{ route('area.index') }}">Area</a></li>
+                            <li><a class="dropdown-item" href="{{ route('user.index') }}">Pengguna</a></li>
+                            <li><a class="dropdown-item" href="{{ route('kasir.index') }}">Kasir</a></li>
+                            <li><a class="dropdown-item" href="{{ route('member.index') }}">Member</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Transaksi -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-exchange-alt"></i> Transaksi
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ route('kaswarung.index') }}">Kas Warung</a></li>
+                            <li><a class="dropdown-item" href="{{ route('detailkaswarung.index') }}">Detail Kas Warung</a></li>
+                            <li><a class="dropdown-item" href="{{ route('transaksikas.index') }}">Transaksi Kas</a></li>
+                            <li><a class="dropdown-item" href="{{ route('detailtransaksi.index') }}">Detail Transaksi</a></li>
+                            <li><a class="dropdown-item" href="{{ route('transaksibarang.index') }}">Transaksi Barang</a></li>
+                            <li><a class="dropdown-item" href="{{ route('stokwarung.index') }}">Stok Warung</a></li>
+                            <li><a class="dropdown-item" href="{{ route('barangmasuk.index') }}">Barang Masuk</a></li>
+                            <li><a class="dropdown-item" href="{{ route('mutasibarang.index') }}">Mutasi Barang</a></li>
+                            <li><a class="dropdown-item" href="{{ route('hutang.index') }}">Hutang</a></li>
+                            <li><a class="dropdown-item" href="{{ route('bunga.index') }}">Bunga</a></li>
+                            <li><a class="dropdown-item" href="{{ route('pembayaranhutang.index') }}">Pembayaran Hutang</a></li>
+                            <li><a class="dropdown-item" href="{{ route('baranghutang.index') }}">Barang Hutang</a></li>
+                            <li><a class="dropdown-item" href="{{ route('kuantitas.index') }}">Kuantitas</a></li>
+                            <li><a class="dropdown-item" href="{{ route('targetpencapaian.index') }}">Target Pencapaian</a></li>
+                            <li><a class="dropdown-item" href="{{ route('aturantenggat.index') }}">Aturan Tenggat</a></li>
+                        </ul>
+                    </li>
+
+                </ul>
+
+                <!-- User -->
+                <div class="dropdown ms-3">
+                    <a href="#" class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle" id="dropdownUser" data-bs-toggle="dropdown">
                         <img src="https://via.placeholder.com/32/cccccc/333333?text=JD" alt="User Avatar" width="32" height="32" class="rounded-circle me-2">
                         <span class="d-none d-md-inline">John Doe</span>
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0" aria-labelledby="dropdownUser">
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0">
                         <li><a class="dropdown-item" href="{{ url('/profile') }}">Profil</a></li>
-                        <li>
-                            <hr class="dropdown-divider">
-                        </li>
+                        <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="#">Keluar</a></li>
                     </ul>
                 </div>
@@ -99,7 +144,7 @@
         @yield('content')
     </div>
 
-    <!-- Bottom Sidebar (Fixed Navbar), now visible on all screen sizes -->
+    <!-- Bottom Sidebar -->
     <nav class="navbar navbar-expand navbar-light bg-light fixed-bottom bottom-sidebar">
         <div class="container-fluid">
             <ul class="navbar-nav w-100 d-flex flex-row justify-content-around">
@@ -110,15 +155,15 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ url('/users') }}" class="nav-link @if(Request::is('users')) active @endif">
-                        <i class="fas fa-users"></i>
-                        <span>Pengguna</span>
+                    <a href="{{ route('barang.index') }}" class="nav-link @if(Request::is('barang*')) active @endif">
+                        <i class="fas fa-box"></i>
+                        <span>Barang</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ url('/products') }}" class="nav-link @if(Request::is('products')) active @endif">
-                        <i class="fas fa-box"></i>
-                        <span>Produk</span>
+                    <a href="{{ route('transaksikas.index') }}" class="nav-link @if(Request::is('transaksikas*')) active @endif">
+                        <i class="fas fa-exchange-alt"></i>
+                        <span>Kas</span>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -131,8 +176,7 @@
         </div>
     </nav>
 
-    <!-- Bootstrap JS CDN -->
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>

@@ -12,9 +12,7 @@ class Bunga extends Model
 
     protected $fillable = [
         'id_hutang',
-        'bunga',
-        'jumlah',
-        'keterangan',
+        'jumlah_bunga',
     ];
 
     public function hutang()

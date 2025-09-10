@@ -11,17 +11,16 @@ class MutasiBarang extends Model
     protected $table = 'mutasi_barang';
 
     protected $fillable = [
-        'id_barang',
+        'id_stok_warung',
         'warung_asal',
         'warung_tujuan',
         'jumlah',
         'status',
         'keterangan'
     ];
-
-    public function barang()
+    public function stokWarung()
     {
-        return $this->belongsTo(Barang::class, 'id_barang');
+        return $this->belongsTo(StokWarung::class, 'id_stok_warung');
     }
 
     public function warungAsal()

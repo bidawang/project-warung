@@ -13,7 +13,7 @@ class KasWarung extends Model
 
     protected $fillable = [
         'id_warung',
-        'saldo',
+        'jenis_kas',
         'keterangan'
     ];
 

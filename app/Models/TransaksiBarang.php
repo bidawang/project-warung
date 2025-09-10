@@ -14,14 +14,10 @@ class TransaksiBarang extends Model
     protected $fillable = [
         'id_transaksi_kas',
         'id_barang',
-        'qty',
+        'jumlah',
         'status',
         'jenis',
         'keterangan'
-    ];
-
-    protected $casts = [
-        'jenis' => JenisTransaksiEnum::class,
     ];
 
     public function transaksiKas()

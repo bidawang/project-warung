@@ -21,8 +21,8 @@ return new class extends Migration
             $table->enum('status', ['pending', 'diterima', 'ditolak'])->default('pending');
             $table->timestamps();
 
-            $table->foreign('id_warung')->references('id')->on('warungs')->onDelete('cascade');
-            $table->foreign('id_barang')->references('id')->on('barangs')->onDelete('cascade');
+            $table->foreign('id_warung')->references('id')->on('warung')->onDelete('cascade');
+            $table->foreign('id_barang')->references('id')->on('barang')->onDelete('cascade');
         });
     }
 

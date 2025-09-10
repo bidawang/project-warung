@@ -10,12 +10,10 @@ return new class extends Migration
     {
         Schema::create('kuantitas', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('id_laba');
+            $table->foreignId('id_stok_warung')->constrained('stok_warung');
             $table->integer('jumlah');
-            $table->bigInteger('harga_jual')();
+            $table->decimal('harga_jual', 15, 2);
             $table->timestamps();
-
-            $table->foreign('id_laba')->references('id')->on('labas');
         });
     }
 
