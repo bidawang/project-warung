@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('nomor_hp', 20)->unique()->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->enum('status', ['aktif', 'nonaktif'])->default('aktif');
             $table->text('keterangan')->nullable();
             $table->rememberToken();
             $table->timestamps();

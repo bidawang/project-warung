@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Kasir;
 use App\Models\Member;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash; // Tambahkan ini
 
 class UserController extends Controller
 {
@@ -27,11 +28,19 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'nomor_hp' => 'required|string|max:20',
             'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8|confirmed', // Validasi password baru
             'keterangan' => 'nullable|string',
         ]);
 
         // buat user
-        $user = User::create($request->only(['role','name','nomor_hp','email','keterangan']));
+        $user = User::create([
+            'role' => $request->role,
+            'name' => $request->name,
+            'nomor_hp' => $request->nomor_hp,
+            'email' => $request->email,
+            'password' => Hash::make($request->password), // Hash password sebelum disimpan
+            'keterangan' => $request->keterangan,
+        ]);
 
         // buat kasir atau member
         if ($request->role === 'kasir') {
@@ -63,10 +72,18 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'nomor_hp' => 'required|string|max:20',
             'email' => 'required|email|unique:users,email,' . $user->id,
+            'password' => 'nullable|string|min:8|confirmed', // password tidak wajib, tapi harus valid jika diisi
             'keterangan' => 'nullable|string',
         ]);
+        
+        $userData = $request->only(['role','name','nomor_hp','email','keterangan']);
 
-        $user->update($request->only(['role','name','nomor_hp','email','keterangan']));
+        // Jika password diisi, hash password baru
+        if ($request->filled('password')) {
+            $userData['password'] = Hash::make($request->password);
+        }
+
+        $user->update($userData);
 
         // update relasi
         if ($user->role === 'kasir') {

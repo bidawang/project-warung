@@ -20,7 +20,7 @@
                 @endforeach
             </select>
         </div>
-
+{{-- 
         <div class="mb-3">
             <label>Warung Asal</label>
             <select name="warung_asal" class="form-select" required>
@@ -29,7 +29,7 @@
                 <option value="{{ $w->id }}">{{ $w->nama_warung }}</option>
                 @endforeach
             </select>
-        </div>
+        </div> --}}
 
         <div class="mb-3">
             <label>Warung Tujuan</label>
@@ -46,14 +46,14 @@
             <input type="number" name="jumlah" class="form-control" min="1" required>
         </div>
 
-        <div class="mb-3">
+        {{--<div class="mb-3">
             <label>Status</label>
             <select name="status" class="form-select" required>
                 <option value="pending">Pending</option>
                 <option value="disetujui">Disetujui</option>
                 <option value="ditolak">Ditolak</option>
             </select>
-        </div>
+        </div>--}}
 
         <div class="mb-3">
             <label>Keterangan</label>

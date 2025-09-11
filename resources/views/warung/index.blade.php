@@ -7,7 +7,7 @@
     <h2 class="text-center mb-4">Manajemen Warung</h2>
 
     @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
+    <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
     <div class="card shadow p-4">
@@ -40,6 +40,7 @@
                     <td>Rp {{ number_format($warung->modal, 0, ',', '.') }}</td>
                     <td>{{ $warung->keterangan ?? '-' }}</td>
                     <td>
+                        <a href="{{ route('warung.show', $warung->id) }}" class="btn btn-info btn-sm">Lihat Detail</a>
                         <a href="{{ route('warung.edit', $warung->id) }}" class="btn btn-warning btn-sm">Edit</a>
                         <form action="{{ route('warung.destroy', $warung->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Yakin hapus warung ini?')">
                             @csrf

@@ -61,4 +61,9 @@ class KasWarungController extends Controller
 
         return redirect()->route('kaswarung.index')->with('success', 'Kas Warung berhasil dihapus.');
     }
+    public function show($id)
+    {
+        $kasWarung = KasWarung::with(['warung', 'detailKasWarung'])->findOrFail($id);
+        return view('kaswarung.show', compact('kasWarung'));
+    }
 }

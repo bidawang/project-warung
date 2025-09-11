@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Warung;
 use App\Models\User;
 use App\Models\Area;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 
 class WarungController extends Controller
@@ -67,5 +68,18 @@ class WarungController extends Controller
         $warung->delete();
 
         return redirect()->route('warung.index')->with('success', 'Warung berhasil dihapus.');
+    }
+
+    public function show($id)
+    {
+        // Menambahkan where clause untuk memastikan warung hanya bisa dilihat oleh user yang memiliki ID_USER yang sama
+        $warung = Warung::with(['user', 'area', 'stokWarung.barang'])
+            ->where('id_user', 1)
+            ->findOrFail($id);
+        // $warung = Warung::with(['user', 'area'])
+        //     ->where('id_user', Auth::id())
+        //     ->findOrFail($id);
+
+        return view('warung.show', compact('warung'));
     }
 }

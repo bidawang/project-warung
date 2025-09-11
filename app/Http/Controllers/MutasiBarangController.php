@@ -14,40 +14,63 @@ class MutasiBarangController extends Controller
      */
     public function index()
     {
-        $mutasi = MutasiBarang::with(['stokWarung.barang', 'warungAsal', 'warungTujuan'])
-            ->latest()
-            ->get();
+        $query = MutasiBarang::with(['stokWarung.barang', 'warungAsal', 'warungTujuan'])->latest();
+
+            $idStokWarung = 1;
+            $query->where('id_stok_warung', $idStokWarung);
+        
+        // if (Auth::check() && Auth::user()->role === 'kasir') {
+        //     $idStokWarung = session('id_stok_warung');
+        //     $query->where('id_stok_warung', $idStokWarung);
+        // }
+
+        $mutasi = $query->get();
 
         return view('mutasibarang.index', compact('mutasi'));
     }
+
 
     /**
      * Form tambah mutasi
      */
     public function create()
-    {
-        $stokWarung = StokWarung::with('barang', 'warung')->get();
-        $warung = Warung::all();
+{
+    // if (Auth::check() && Auth::user()->role === 'kasir') {
+    //     $idStokWarung = session('id_stok_warung');
+    //     $stokWarung = StokWarung::with(['barang', 'warung'])
+    //         ->where('id', $idStokWarung)
+    //         ->get();
+    // } else {
+    //     $stokWarung = StokWarung::with(['barang', 'warung'])->get();
+    // }
 
-        return view('mutasibarang.create', compact('stokWarung', 'warung'));
-    }
+        $idStokWarung = 1;
+        $stokWarung = StokWarung::with(['barang', 'warung'])
+            ->where('id', $idStokWarung)
+            ->get();
+
+    $warung = Warung::all();
+
+    return view('mutasibarang.create', compact('stokWarung', 'warung'));
+}
+
 
     /**
      * Simpan mutasi baru
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'id_stok_warung' => 'required|exists:stok_warung,id',
-            'warung_asal'    => 'required|exists:warung,id',
-            // 'warung_tujuan'  => 'required|exists:warung,id|different:warung_asal',
+            // 'warung_asal'    => 'required|exists:warung,id',
+            'warung_tujuan'  => 'required|exists:warung,id|different:warung_asal',
             'warung_tujuan'  => 'required|exists:warung,id',
             'jumlah'         => 'required|integer|min:1',
-            'status'         => 'required|in:pending,disetujui,ditolak',
+            // 'status'         => 'required|in:pending,disetujui,ditolak',
             'keterangan'     => 'nullable|string'
         ]);
-
-        MutasiBarang::create($request->all());
+$validated['warung_asal'] = 1; // Ganti dengan ID warung asal yang sesuai, misalnya dari session atau Auth
+        MutasiBarang::create($validated);
 
         return redirect()->route('mutasibarang.index')->with('success', 'Mutasi berhasil ditambahkan.');
     }

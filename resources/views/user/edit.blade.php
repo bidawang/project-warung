@@ -41,6 +41,16 @@
                 <label class="form-label">Email</label>
                 <input type="email" class="form-control" name="email" required value="{{ old('email', $user->email) }}">
             </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Password (kosongkan jika tidak ingin diubah)</label>
+                <input type="password" class="form-control" name="password">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Konfirmasi Password</label>
+                <input type="password" class="form-control" name="password_confirmation">
+            </div>
 
             <div class="mb-3">
                 <label class="form-label">Keterangan</label>

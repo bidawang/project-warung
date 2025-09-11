@@ -26,4 +26,32 @@ class StokWarung extends Model
     {
         return $this->belongsTo(Barang::class, 'id_barang');
     }
+
+    public function barangMasuk()
+    {
+        return $this->hasMany(BarangMasuk::class, 'id_stok_warung');
+    }
+
+    // Add a hasMany relationship to the MutasiBarang model
+    public function mutasiBarang()
+    {
+        return $this->hasMany(MutasiBarang::class, 'id_stok_warung');
+    }
+
+    public function getStokAttribute()
+    {
+        $stokMasuk = $this->barangMasuk()
+            ->where('status', 'terima')
+            ->sum('jumlah');
+
+        $mutasiMasuk = $this->mutasiBarang()
+            ->where('status', 'masuk')
+            ->sum('jumlah');
+
+        $mutasiKeluar = $this->mutasiBarang()
+            ->where('status', 'keluar')
+            ->sum('jumlah');
+
+        return $stokMasuk + $mutasiMasuk - $mutasiKeluar;
+    }
 }

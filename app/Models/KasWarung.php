@@ -21,4 +21,9 @@ class KasWarung extends Model
     {
         return $this->belongsTo(Warung::class, 'id_warung');
     }
+
+    public function detailKasWarung()
+    {
+        return $this->hasMany(DetailKasWarung::class, 'id_kas_warung');
+    }
 }

@@ -28,4 +28,9 @@ class Warung extends Model
     {
         return $this->belongsTo(Area::class, 'id_area');
     }
+
+    public function stokWarung()
+    {
+        return $this->hasMany(StokWarung::class, 'id_warung');
+    }
 }

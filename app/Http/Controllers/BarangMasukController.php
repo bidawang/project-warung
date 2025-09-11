@@ -12,9 +12,25 @@ class BarangMasukController extends Controller
     /**
      * Menampilkan semua barang masuk
      */
+    // public function index()
+    // {
+    //     // $barangMasuk = BarangMasuk::with(['transaksiBarang', 'stokWarung.barang'])->latest()->paginate(10);
+    //     $barangMasuk = BarangMasuk::with(['transaksiBarang', 'stokWarung.barang', 'stokWarung.warung.user'])->latest()->paginate(10);
+
+    //     return view('barangmasuk.index', compact('barangMasuk'));
+    // }
+
     public function index()
     {
-        $barangMasuk = BarangMasuk::with(['transaksiBarang', 'stokWarung.barang'])->latest()->paginate(10);
+        // Menyesuaikan eager loading untuk memuat data warung dan user
+        // Menambahkan filter berdasarkan id_user dari user yang sedang login
+        $barangMasuk = BarangMasuk::with(['transaksiBarang', 'stokWarung.barang', 'stokWarung.warung.user'])
+            ->whereHas('stokWarung.warung', function ($query) {
+                $query->where('id_user', 1);
+                // $query->where('id_user', Auth::id());
+            })
+            ->latest()
+            ->paginate(10);
         return view('barangmasuk.index', compact('barangMasuk'));
     }
 
@@ -84,6 +100,23 @@ class BarangMasukController extends Controller
         $barangMasuk->update($validated);
 
         return redirect()->route('barangmasuk.index')->with('success', 'Barang masuk berhasil diperbarui');
+    }
+
+    public function updateStatus(Request $request)
+    {
+        // dd($request->all());
+        $request->validate([
+            'barangMasuk' => 'required|array',
+            'barangMasuk.*' => 'exists:barang_masuk,id',
+            'status_baru' => 'required|in:terima,tolak',
+        ]);
+        try {
+            BarangMasuk::whereIn('id', $request->barangMasuk)->update(['status' => $request->status_baru]);
+            $message = 'Status barang masuk berhasil diperbarui menjadi ' . $request->status_baru;
+            return redirect()->route('barangmasuk.index')->with('success', $message);
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat memperbarui status.');
+        }
     }
 
     /**

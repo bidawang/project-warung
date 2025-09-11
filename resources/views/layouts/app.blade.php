@@ -131,7 +131,9 @@
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0">
                         <li><a class="dropdown-item" href="{{ url('/profile') }}">Profil</a></li>
-                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
                         <li><a class="dropdown-item" href="#">Keluar</a></li>
                     </ul>
                 </div>
@@ -155,16 +157,31 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('barang.index') }}" class="nav-link @if(Request::is('barang*')) active @endif">
+                    <a href="{{ route('barangmasuk.index') }}" class="nav-link @if(Request::is('barang*')) active @endif">
                         <i class="fas fa-box"></i>
-                        <span>Barang</span>
+                        <span>Barang Masuk</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('transaksikas.index') }}" class="nav-link @if(Request::is('transaksikas*')) active @endif">
-                        <i class="fas fa-exchange-alt"></i>
-                        <span>Kas</span>
-                    </a>
+                    <a href="{{ route('kaswarung.show', 1) }}" class="nav-link @if(Request::is('transaksikas*')) active @endif">
+                    {{--<a href="{{ route('warung.show', Auth::user()->warung->id) }}" class="nav-link @if(Request::is('warung*')) active @endif">--}}
+                            <i class="fas fa-exchange-alt"></i>
+                            <span>Kas</span>
+                        </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('transaksikas.index', 1) }}" class="nav-link @if(Request::is('transaksikas*')) active @endif">
+                    {{--<a href="{{ route('warung.show', Auth::user()->warung->id) }}" class="nav-link @if(Request::is('warung*')) active @endif">--}}
+                            <i class="fas fa-exchange-alt"></i>
+                            <span>Transaksi</span>
+                        </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('mutasibarang.index', 1) }}" class="nav-link @if(Request::is('transaksikas*')) active @endif">
+                    {{--<a href="{{ route('warung.show', Auth::user()->warung->id) }}" class="nav-link @if(Request::is('warung*')) active @endif">--}}
+                            <i class="fas fa-exchange-alt"></i>
+                            <span>Mutasi</span>
+                        </a>
                 </li>
                 <li class="nav-item">
                     <a href="{{ url('/profile') }}" class="nav-link @if(Request::is('profile')) active @endif">
@@ -179,4 +196,5 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

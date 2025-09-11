@@ -53,3 +53,4 @@ Route::resource('pembayaranhutang', PembayaranHutangController::class);
 Route::resource('baranghutang', BarangHutangController::class);
 Route::resource('kuantitas', KuantitasController::class);
 Route::resource('targetpencapaian', TargetPencapaianController::class);
+
