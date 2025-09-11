@@ -40,7 +40,7 @@ class SubkategoriControllerAdmin extends Controller
                 'keterangan' => 'nullable|string',
             ]);
             Subkategori::create($validatedData);
-            return redirect()->route('subkategori.index')->with('success', 'Subkategori berhasil ditambahkan!');
+            return redirect()->route('admin.subkategori.index')->with('success', 'Subkategori berhasil ditambahkan!');
         } catch (ValidationException $e) {
             return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
@@ -71,7 +71,7 @@ class SubkategoriControllerAdmin extends Controller
 
             $subkategori->update($validatedData);
 
-            return redirect()->route('subkategori.index')->with('success', 'Subkategori berhasil diperbarui!');
+            return redirect()->route('admin.subkategori.index')->with('success', 'Subkategori berhasil diperbarui!');
         } catch (ValidationException $e) {
             return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
@@ -86,7 +86,7 @@ class SubkategoriControllerAdmin extends Controller
     {
         try {
             $subkategori->delete();
-            return redirect()->route('subkategori.index')->with('success', 'Subkategori berhasil dihapus!');
+            return redirect()->route('admin.subkategori.index')->with('success', 'Subkategori berhasil dihapus!');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal menghapus subkategori. Silakan coba lagi.');
         }

@@ -82,10 +82,10 @@
                             @forelse ($subkategoris as $subkategori)
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-5 py-5 border-b border-gray-200 text-sm">
-                                        <p class="text-gray-900 whitespace-no-wrap">{{ $subkategori->kategori->nama_kategori }}</p>
+                                        <p class="text-gray-900 whitespace-no-wrap">{{ $subkategori->kategori->kategori }}</p>
                                     </td>
                                     <td class="px-5 py-5 border-b border-gray-200 text-sm">
-                                        <p class="text-gray-900 whitespace-no-wrap">{{ $subkategori->nama_sub_kategori }}</p>
+                                        <p class="text-gray-900 whitespace-no-wrap">{{ $subkategori->sub_kategori }}</p>
                                     </td>
                                     <td class="px-5 py-5 border-b border-gray-200 text-sm">
                                         <p class="text-gray-900 whitespace-no-wrap">{{ $subkategori->keterangan ?? '-' }}</p>
