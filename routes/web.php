@@ -25,10 +25,26 @@ use App\Http\Controllers\BarangHutangController;
 use App\Http\Controllers\KuantitasController;
 use App\Http\Controllers\TargetPencapaianController;
 
+use App\Http\Controllers\Admin\DashboardControllerAdmin;
+use App\Http\Controllers\Admin\UserControllerAdmin;
+use App\Http\Controllers\Admin\AreaControllerAdmin;
+
 
 Route::get('/', function () {
     return view('welcome');
 });
+
+// GUNAKAN ROUTE GROUP BARU DI BAWAH INI:
+Route::prefix('admin')->name('admin.')->group(function () {
+
+    Route::get('/dashboard', [DashboardControllerAdmin::class, 'index'])->name('dashboard');
+
+    Route::get('/user', [UserControllerAdmin::class, 'index'])->name('user.index');
+
+    Route::get('/area', [AreaControllerAdmin::class, 'index'])->name('area.index');
+
+});
+
 
 Route::resource('kategori', KategoriController::class);
 Route::resource('subkategori', SubKategoriController::class);
