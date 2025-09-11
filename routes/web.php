@@ -28,6 +28,8 @@ use App\Http\Controllers\TargetPencapaianController;
 use App\Http\Controllers\Admin\DashboardControllerAdmin;
 use App\Http\Controllers\Admin\UserControllerAdmin;
 use App\Http\Controllers\Admin\AreaControllerAdmin;
+use App\Http\Controllers\Admin\BarangControllerAdmin;
+use App\Http\Controllers\Admin\SubKategoriControllerAdmin;
 
 
 Route::get('/', function () {
@@ -42,6 +44,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/user', [UserControllerAdmin::class, 'index'])->name('user.index');
 
     Route::get('/area', [AreaControllerAdmin::class, 'index'])->name('area.index');
+
+    Route::resource('/barang', BarangControllerAdmin::class);
+
+    Route::resource('subkategori', SubKategoriControllerAdmin::class);
 
 });
 
