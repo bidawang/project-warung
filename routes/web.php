@@ -30,6 +30,7 @@ use App\Http\Controllers\Admin\UserControllerAdmin;
 use App\Http\Controllers\Admin\AreaControllerAdmin;
 use App\Http\Controllers\Admin\BarangControllerAdmin;
 use App\Http\Controllers\Admin\SubKategoriControllerAdmin;
+use App\Http\Controllers\Admin\KategoriControllerAdmin;
 
 
 Route::get('/', function () {
@@ -47,6 +48,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::resource('/barang', BarangControllerAdmin::class);
     Route::resource('transaksibarang', TransaksiBarangController::class);
+
+    Route::resource('kategori', KategoriControllerAdmin::class);
 
     Route::resource('subkategori', SubKategoriControllerAdmin::class);
 });

@@ -43,7 +43,7 @@ class BarangControllerAdmin extends Controller
 
             Barang::create($validatedData);
 
-            return redirect()->route('barang.index')->with('success', 'Barang berhasil ditambahkan!');
+            return redirect()->route('admin.barang.index')->with('success', 'Barang berhasil ditambahkan!');
         } catch (ValidationException $e) {
             return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
@@ -75,7 +75,7 @@ class BarangControllerAdmin extends Controller
 
             $barang->update($validatedData);
 
-            return redirect()->route('barang.index')->with('success', 'Barang berhasil diperbarui!');
+            return redirect()->route('admin.barang.index')->with('success', 'Barang berhasil diperbarui!');
         } catch (ValidationException $e) {
             return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
@@ -90,7 +90,7 @@ class BarangControllerAdmin extends Controller
     {
         try {
             $barang->delete();
-            return redirect()->route('barang.index')->with('success', 'Barang berhasil dihapus!');
+            return redirect()->route('admin.barang.index')->with('success', 'Barang berhasil dihapus!');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal menghapus barang. Silakan coba lagi.');
         }

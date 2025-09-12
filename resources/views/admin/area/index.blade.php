@@ -14,7 +14,7 @@
             </svg>
         </button>
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">Data Area</h1>
+            <h1 class="text-2xl font-bold text-gray-800">Manajemen Area</h1>
         </div>
         <div class="flex items-center">
             <span class="mr-4 font-semibold hidden sm:inline">Admin User</span>

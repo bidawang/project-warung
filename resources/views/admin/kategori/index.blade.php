@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Data Barang')
+@section('title', 'Data Kategori')
 
 @section('content')
 
@@ -16,7 +16,7 @@
                 </svg>
             </button>
             <div>
-                <h1 class="text-2xl font-bold text-gray-800">Manajemen Barang</h1>
+                <h1 class="text-2xl font-bold text-gray-800">Manajemen Kategori</h1>
             </div>
             <div class="flex items-center">
                 <span class="mr-4 font-semibold hidden sm:inline">Admin User</span>
@@ -29,21 +29,21 @@
             <div class="container mx-auto">
                 {{-- Tombol Tambah dan Search Bar --}}
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-                    <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">Daftar Barang</h1>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">Daftar Kategori</h1>
                     <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 w-full md:w-auto">
-                        <a href="{{ route('admin.barang.create') }}"
+                        <a href="{{ route('admin.kategori.create') }}"
                             class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition-colors duration-200 flex items-center justify-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                                 xmlns="http://www.w3.org/2000/svg">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6">
                                 </path>
                             </svg>
-                            Tambah Barang
+                            Tambah Kategori
                         </a>
-                        <form action="{{ route('admin.barang.index') }}" method="GET" class="relative w-full sm:w-auto">
+                        <form action="{{ route('admin.kategori.index') }}" method="GET" class="relative w-full sm:w-auto">
                             <input type="text" name="search"
                                 class="w-full bg-white border border-gray-300 rounded-full py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Cari barang...">
+                                placeholder="Cari kategori...">
                             <div class="absolute top-0 left-0 inline-flex items-center p-3">
                                 <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
                                     viewBox="0 0 24 24">
@@ -55,26 +55,14 @@
                     </div>
                 </div>
 
-                {{-- Tabel Daftar Barang (dibuat responsif dengan overflow) --}}
+                {{-- Tabel Daftar Kategori --}}
                 <div class="bg-white shadow-md rounded-lg overflow-hidden overflow-x-auto">
                     <table class="min-w-full leading-normal">
                         <thead>
                             <tr>
                                 <th
                                     class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                    Kategori
-                                </th>
-                                <th
-                                    class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                    Sub Kategori
-                                </th>
-                                <th
-                                    class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                    Kode Barang
-                                </th>
-                                <th
-                                    class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                    Nama Barang
+                                    Nama Kategori
                                 </th>
                                 <th
                                     class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -87,31 +75,22 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse ($barangs as $barang)
+                            @forelse ($kategoris as $kategori)
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-5 py-5 border-b border-gray-200 text-sm">
-                                        <p class="text-gray-900 whitespace-no-wrap">{{ $barang->subKategori->kategori->kategori }}</p>
+                                        <p class="text-gray-900 whitespace-no-wrap">{{ $kategori->kategori }}</p>
                                     </td>
                                     <td class="px-5 py-5 border-b border-gray-200 text-sm">
-                                        <p class="text-gray-900 whitespace-no-wrap">{{ $barang->subKategori->sub_kategori }}</p>
-                                    </td>
-                                    <td class="px-5 py-5 border-b border-gray-200 text-sm">
-                                        <p class="text-gray-900 whitespace-no-wrap">{{ $barang->kode_barang }}</p>
-                                    </td>
-                                    <td class="px-5 py-5 border-b border-gray-200 text-sm">
-                                        <p class="text-gray-900 whitespace-no-wrap">{{ $barang->nama_barang }}</p>
-                                    </td>
-                                    <td class="px-5 py-5 border-b border-gray-200 text-sm">
-                                        <p class="text-gray-900 whitespace-no-wrap">{{ $barang->keterangan ?? '-' }}</p>
+                                        <p class="text-gray-900 whitespace-no-wrap">{{ $kategori->keterangan ?? '-' }}</p>
                                     </td>
                                     <td class="px-5 py-5 border-b border-gray-200 text-sm text-right">
-                                        <a href="{{ route('admin.barang.edit', $barang->id) }}"
+                                        <a href="{{ route('admin.kategori.edit', $kategori->id) }}"
                                             class="inline-block px-2 py-1 text-blue-600 hover:text-blue-900 transition-colors duration-200">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                                 <path d="M13.586 3.586a2 2 0 112.828 2.828l-7.293 7.293a1 1 0 01-.39.293l-2 1a1 1 0 01-1.206-1.206l1-2a1 1 0 01.293-.39l7.293-7.293z" />
                                             </svg>
                                         </a>
-                                        <form action="{{ route('admin.barang.destroy', $barang->id) }}" method="POST" class="inline-block ml-2" onsubmit="return confirm('Apakah Anda yakin ingin menghapus barang ini?');">
+                                        <form action="{{ route('admin.kategori.destroy', $kategori->id) }}" method="POST" class="inline-block ml-2" onsubmit="return confirm('Apakah Anda yakin ingin menghapus kategori ini?');">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit"
@@ -125,20 +104,16 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-5 py-5 border-b border-gray-200 text-center text-sm text-gray-500">
-                                        Tidak ada barang yang ditemukan.
+                                    <td colspan="3" class="px-5 py-5 border-b border-gray-200 text-center text-sm text-gray-500">
+                                        Tidak ada kategori yang ditemukan.
                                     </td>
                                 </tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
-
-                {{-- Pagination --}}
-                <div class="mt-8">
-                    {{-- Ini akan menampilkan link pagination jika menggunakan paginate() di controller --}}
-                </div>
             </div>
         </main>
     </div>
+
 @endsection
