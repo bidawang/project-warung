@@ -25,10 +25,32 @@ use App\Http\Controllers\BarangHutangController;
 use App\Http\Controllers\KuantitasController;
 use App\Http\Controllers\TargetPencapaianController;
 
+use App\Http\Controllers\Admin\DashboardControllerAdmin;
+use App\Http\Controllers\Admin\UserControllerAdmin;
+use App\Http\Controllers\Admin\AreaControllerAdmin;
+use App\Http\Controllers\Admin\BarangControllerAdmin;
+use App\Http\Controllers\Admin\SubKategoriControllerAdmin;
+
 
 Route::get('/', function () {
     return view('welcome');
 });
+
+// GUNAKAN ROUTE GROUP BARU DI BAWAH INI:
+Route::prefix('admin')->name('admin.')->group(function () {
+
+    Route::get('/dashboard', [DashboardControllerAdmin::class, 'index'])->name('dashboard');
+
+    Route::get('/user', [UserControllerAdmin::class, 'index'])->name('user.index');
+
+    Route::get('/area', [AreaControllerAdmin::class, 'index'])->name('area.index');
+
+    Route::resource('/barang', BarangControllerAdmin::class);
+    Route::resource('transaksibarang', TransaksiBarangController::class);
+
+    Route::resource('subkategori', SubKategoriControllerAdmin::class);
+});
+
 
 Route::resource('kategori', KategoriController::class);
 Route::resource('subkategori', SubKategoriController::class);
@@ -54,3 +76,8 @@ Route::resource('baranghutang', BarangHutangController::class);
 Route::resource('kuantitas', KuantitasController::class);
 Route::resource('targetpencapaian', TargetPencapaianController::class);
 
+//Barang Masuk dari kasir
+Route::post('barangmasuk/update-status', [BarangMasukController::class, 'updateStatus'])->name('barangmasuk.update_status');
+
+//Mutasi Barang dari kasir
+Route::post('mutasibarang/update_status', [MutasiBarangController::class, 'updateStatus'])->name('mutasibarang.update_status');

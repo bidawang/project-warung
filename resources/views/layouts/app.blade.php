@@ -177,6 +177,13 @@
                         </a>
                 </li>
                 <li class="nav-item">
+                    <a href="{{ route('transaksibarang.index', 1) }}" class="nav-link @if(Request::is('transaksikas*')) active @endif">
+                    {{--<a href="{{ route('warung.show', Auth::user()->warung->id) }}" class="nav-link @if(Request::is('warung*')) active @endif">--}}
+                            <i class="fas fa-exchange-alt"></i>
+                            <span>Transaksi Barang</span>
+                        </a>
+                </li>
+                <li class="nav-item">
                     <a href="{{ route('mutasibarang.index', 1) }}" class="nav-link @if(Request::is('transaksikas*')) active @endif">
                     {{--<a href="{{ route('warung.show', Auth::user()->warung->id) }}" class="nav-link @if(Request::is('warung*')) active @endif">--}}
                             <i class="fas fa-exchange-alt"></i>

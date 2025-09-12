@@ -18,8 +18,20 @@ class TransaksiBarangController extends Controller
     public function create()
     {
         $transaksis = TransaksiKas::all();
-        $barangs = Barang::all();
-        return view('transaksibarang.create', compact('transaksis', 'barangs'));
+
+        // Ambil stok barang di warung user (misal id_warung = 1)
+        $id_warung = 1;
+        $stokWarung = \App\Models\StokWarung::with('barang')
+            ->where('id_warung', $id_warung)
+            ->get();
+
+        // Buat array stok keyed by id_barang
+        $stokBarang = [];
+        foreach ($stokWarung as $stok) {
+            $stokBarang[$stok->id_barang] = $stok->stok; // stok sudah dihitung di accessor getStokAttribute()
+        }
+
+        return view('transaksibarang.create', compact('transaksis', 'stokWarung', 'stokBarang'));
     }
 
     public function store(Request $request)

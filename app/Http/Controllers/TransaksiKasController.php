@@ -56,8 +56,13 @@ class TransaksiKasController extends Controller
         $id_warung = 1;
         // $id_warung = Auth::user()->warung->id ?? null;
         $kasWarungs = KasWarung::with(['warung', 'detailKasWarung'])->where('id_warung', $id_warung)->get();
-        return view('transaksikas.create', compact('kasWarungs'));
+
+        // Pecahan lengkap untuk transaksi masuk
+        $pecahanMasuk = [100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000];
+
+        return view('transaksikas.create', compact('kasWarungs', 'pecahanMasuk'));
     }
+
 
     public function store(Request $request)
     {

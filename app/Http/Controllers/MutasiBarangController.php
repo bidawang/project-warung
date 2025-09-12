@@ -12,47 +12,62 @@ class MutasiBarangController extends Controller
     /**
      * Tampilkan daftar mutasi
      */
+    // public function index()
+    // {
+    //     $query = MutasiBarang::with(['stokWarung.barang', 'warungAsal', 'warungTujuan'])->latest();
+
+    //     $idStokWarung = 1;
+    //     $query->where('id_stok_warung', $idStokWarung);
+
+    //     // if (Auth::check() && Auth::user()->role === 'kasir') {
+    //     //     $idStokWarung = session('id_stok_warung');
+    //     //     $query->where('id_stok_warung', $idStokWarung);
+    //     // }
+
+    //     $mutasi = $query->get();
+
+    //     return view('mutasibarang.index', compact('mutasi'));
+    // }
+
     public function index()
-    {
-        $query = MutasiBarang::with(['stokWarung.barang', 'warungAsal', 'warungTujuan'])->latest();
+{
+    $query = MutasiBarang::with(['stokWarung.barang', 'warungAsal', 'warungTujuan'])->latest();
 
-            $idStokWarung = 1;
-            $query->where('id_stok_warung', $idStokWarung);
-        
-        // if (Auth::check() && Auth::user()->role === 'kasir') {
-        //     $idStokWarung = session('id_stok_warung');
-        //     $query->where('id_stok_warung', $idStokWarung);
-        // }
+    // if (Auth::check() && Auth::user()->role === 'kasir') {
+        $idWarungTujuan = 1; // Ganti dengan ID warung tujuan yang sesuai, misalnya dari session atau Auth
+        $query->where('warung_tujuan', $idWarungTujuan);
+    // }
 
-        $mutasi = $query->get();
+    $mutasi = $query->get();
 
-        return view('mutasibarang.index', compact('mutasi'));
-    }
+    return view('mutasibarang.index', compact('mutasi'));
+}
+
 
 
     /**
      * Form tambah mutasi
      */
     public function create()
-{
-    // if (Auth::check() && Auth::user()->role === 'kasir') {
-    //     $idStokWarung = session('id_stok_warung');
-    //     $stokWarung = StokWarung::with(['barang', 'warung'])
-    //         ->where('id', $idStokWarung)
-    //         ->get();
-    // } else {
-    //     $stokWarung = StokWarung::with(['barang', 'warung'])->get();
-    // }
+    {
+        // if (Auth::check() && Auth::user()->role === 'kasir') {
+        //     $idStokWarung = session('id_stok_warung');
+        //     $stokWarung = StokWarung::with(['barang', 'warung'])
+        //         ->where('id', $idStokWarung)
+        //         ->get();
+        // } else {
+        //     $stokWarung = StokWarung::with(['barang', 'warung'])->get();
+        // }
 
         $idStokWarung = 1;
         $stokWarung = StokWarung::with(['barang', 'warung'])
             ->where('id', $idStokWarung)
             ->get();
 
-    $warung = Warung::all();
+        $warung = Warung::all();
 
-    return view('mutasibarang.create', compact('stokWarung', 'warung'));
-}
+        return view('mutasibarang.create', compact('stokWarung', 'warung'));
+    }
 
 
     /**
@@ -69,7 +84,7 @@ class MutasiBarangController extends Controller
             // 'status'         => 'required|in:pending,disetujui,ditolak',
             'keterangan'     => 'nullable|string'
         ]);
-$validated['warung_asal'] = 1; // Ganti dengan ID warung asal yang sesuai, misalnya dari session atau Auth
+        $validated['warung_asal'] = 1; // Ganti dengan ID warung asal yang sesuai, misalnya dari session atau Auth
         MutasiBarang::create($validated);
 
         return redirect()->route('mutasibarang.index')->with('success', 'Mutasi berhasil ditambahkan.');
@@ -115,6 +130,21 @@ $validated['warung_asal'] = 1; // Ganti dengan ID warung asal yang sesuai, misal
         $mutasi->update($request->all());
 
         return redirect()->route('mutasibarang.index')->with('success', 'Mutasi berhasil diperbarui.');
+    }
+
+    public function updateStatus(Request $request)
+    {
+        $request->validate([
+            'mutasiBarang' => 'required|array',
+            'mutasiBarang.*' => 'exists:mutasi_barang,id',
+            'status_baru' => 'required|string|in:terima,tolak',
+        ]);
+        $ids = $request->input('mutasiBarang');
+        $statusBaru = $request->input('status_baru');
+        // Update status untuk semua mutasi barang yang dipilih
+        MutasiBarang::whereIn('id', $ids)->update(['status' => $statusBaru]);
+        return redirect()->route('mutasibarang.index')
+            ->with('success', 'Status mutasi barang berhasil diperbarui.');
     }
 
     /**

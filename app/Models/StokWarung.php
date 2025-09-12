@@ -45,7 +45,7 @@ class StokWarung extends Model
             ->sum('jumlah');
 
         $mutasiMasuk = $this->mutasiBarang()
-            ->where('status', 'masuk')
+            ->where('status', 'terima')
             ->sum('jumlah');
 
         $mutasiKeluar = $this->mutasiBarang()
