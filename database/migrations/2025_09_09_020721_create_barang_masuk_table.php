@@ -13,16 +13,17 @@ return new class extends Migration
     {
         Schema::create('barang_masuk', function (Blueprint $table) {
             $table->id();
-            $table->dateTime('tanggal_masuk');
-            $table->unsignedBigInteger('id_warung');
+            $table->unsignedBigInteger('id_transaksi_barang');
             $table->unsignedBigInteger('id_barang');
+            $table->unsignedBigInteger('id_stok_warung');
             $table->integer('jumlah');
             $table->string('keterangan')->nullable();
             $table->enum('status', ['pending', 'diterima', 'ditolak'])->default('pending');
             $table->timestamps();
 
-            $table->foreign('id_warung')->references('id')->on('warung')->onDelete('cascade');
+            $table->foreign('id_transaksi_barang')->references('id')->on('transaksi_barang')->onDelete('cascade');
             $table->foreign('id_barang')->references('id')->on('barang')->onDelete('cascade');
+            $table->foreign('id_stok_warung')->references('id')->on('stok_warung')->onDelete('cascade');
         });
     }
 

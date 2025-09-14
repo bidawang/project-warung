@@ -13,6 +13,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('id_warung')->constrained('warung');
             $table->text('jenis_kas');
+            $table->decimal('saldo', 15, 2);
             $table->text('keterangan')->nullable();
             $table->timestamps();
         });

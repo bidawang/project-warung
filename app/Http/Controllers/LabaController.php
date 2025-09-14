@@ -6,6 +6,7 @@ use App\Models\Laba;
 use App\Models\Area;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Maatwebsite\Excel\Facades\Excel;
 
 class LabaController extends Controller
 {
@@ -97,5 +98,79 @@ class LabaController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal menghapus data laba. Silakan coba lagi.');
         }
+    }
+
+    public function formImport()
+    {
+        return view('laba.import');
+    }
+
+    public function import(Request $request)
+    {
+        $file = $request->file('file');
+
+        // Ambil sheet pertama
+        $rows = Excel::toArray([], $file)[0];
+
+        // Buang header (modal,harga)
+        array_shift($rows);
+
+        // Bikin array data sederhana
+        $data = [];
+        foreach ($rows as $row) {
+            if (count($row) >= 2) {
+                $data[] = [
+                    'modal' => (int) $row[0],
+                    'harga' => (int) $row[1],
+                ];
+            }
+        }
+
+        if (empty($data)) {
+            return back()->with('error', 'File kosong atau format salah.');
+        }
+
+        // Proses jadi range
+        $ranges = [];
+        $start = $data[0]['modal'];
+        $end   = $data[0]['modal'];
+        $harga = $data[0]['harga'];
+
+        for ($i = 1; $i < count($data); $i++) {
+            if ($data[$i]['harga'] === $harga) {
+                // masih harga sama → lanjut extend range
+                $end = $data[$i]['modal'];
+            } else {
+                // harga berubah → simpan range lama
+                $ranges[] = [
+                    'input_minimal' => $start,
+                    'input_maksimal' => $end,
+                    'harga_jual' => $harga,
+                    'jenis' => 'otomatis',
+                    'keterangan' => 'import excel',
+                    'id_area' => 1, // sesuaikan
+                ];
+
+                // mulai range baru
+                $start = $data[$i]['modal'];
+                $end   = $data[$i]['modal'];
+                $harga = $data[$i]['harga'];
+            }
+        }
+
+        // Masukkan range terakhir
+        $ranges[] = [
+            'input_minimal' => $start,
+            'input_maksimal' => $end,
+            'harga_jual' => $harga,
+            'jenis' => 'otomatis',
+            'keterangan' => 'import excel',
+            'id_area' => 1,
+        ];
+
+        // Simpan ke database
+        Laba::insert($ranges);
+
+        return redirect()->route('laba.formImport')->with('success', 'Data berhasil diimport');
     }
 }

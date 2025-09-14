@@ -19,12 +19,4 @@ class User extends Authenticatable
         'email',
         'keterangan'
     ];
-    public function kasir()
-    {
-        return $this->hasOne(Kasir::class, 'id_user');
-    }
-    public function member()
-    {
-        return $this->hasOne(Member::class, 'id_user');
-    }
 }

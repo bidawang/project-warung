@@ -6,6 +6,7 @@ use App\Models\BarangMasuk;
 use App\Models\StokWarung;
 use App\Models\TransaksiBarang;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class BarangMasukController extends Controller
 {
@@ -20,19 +21,59 @@ class BarangMasukController extends Controller
     //     return view('barangmasuk.index', compact('barangMasuk'));
     // }
 
-    public function index()
+    public function index(Request $request)
     {
-        // Menyesuaikan eager loading untuk memuat data warung dan user
-        // Menambahkan filter berdasarkan id_user dari user yang sedang login
-        $barangMasuk = BarangMasuk::with(['transaksiBarang', 'stokWarung.barang', 'stokWarung.warung.user'])
+        $status = $request->get('status', 'pending');
+        $search = $request->get('search');
+
+        $barangMasuk = BarangMasuk::with([
+            'transaksiBarang.areaPembelian',
+            'stokWarung.barang',
+            'stokWarung.warung.user'
+        ])
             ->whereHas('stokWarung.warung', function ($query) {
-                $query->where('id_user', 1);
-                // $query->where('id_user', Auth::id());
+                $query->where('id_user', Auth::id());
+            })
+            ->when($status, function ($query) use ($status) {
+                $query->where('status', $status);
+            })
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('id', 'like', "%$search%")
+                        ->orWhereHas('transaksiBarang', function ($qq) use ($search) {
+                            $qq->where('id', 'like', "%$search%");
+                        })
+                        ->orWhereHas('stokWarung', function ($qq) use ($search) {
+                            $qq->where('id', 'like', "%$search%");
+                        });
+                });
             })
             ->latest()
-            ->paginate(10);
-        return view('barangmasuk.index', compact('barangMasuk'));
+            ->paginate(10)
+            ->withQueryString();
+
+        // Perhitungan: transaksiBarang->harga diasumsikan "harga beli semua" (total)
+        $barangMasuk->getCollection()->transform(function ($bm) {
+            $hargaTotalBeli = $bm->transaksiBarang->harga ?? 0; // total beli semua
+            $markupPercent = optional($bm->transaksiBarang->areaPembelian)->markup ?? 0;
+
+            $bm->markup_percent = $markupPercent; // simpan biar bisa dipakai di view
+
+            $bm->harga_final_total = $hargaTotalBeli + ($hargaTotalBeli * $markupPercent / 100);
+
+            $jumlah = max($bm->jumlah ?? 1, 1);
+            $bm->harga_final_satuan = $bm->harga_final_total > 0 ? ($bm->harga_final_total / $jumlah) : 0;
+
+            return $bm;
+        });
+
+
+        return view('barangmasuk.index', compact('barangMasuk', 'status', 'search'));
     }
+
+
+
+
 
     /**
      * Form tambah barang masuk
@@ -110,6 +151,7 @@ class BarangMasukController extends Controller
             'barangMasuk.*' => 'exists:barang_masuk,id',
             'status_baru' => 'required|in:terima,tolak',
         ]);
+        // dd($request->all());
         try {
             BarangMasuk::whereIn('id', $request->barangMasuk)->update(['status' => $request->status_baru]);
             $message = 'Status barang masuk berhasil diperbarui menjadi ' . $request->status_baru;

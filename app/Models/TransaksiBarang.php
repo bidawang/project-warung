@@ -14,7 +14,9 @@ class TransaksiBarang extends Model
     protected $fillable = [
         'id_transaksi_kas',
         'id_barang',
+        'id_area_pembelian',
         'jumlah',
+        'harga',
         'status',
         'jenis',
         'keterangan'
@@ -25,8 +27,19 @@ class TransaksiBarang extends Model
         return $this->belongsTo(TransaksiKas::class, 'id_transaksi_kas');
     }
 
+
     public function barang()
     {
         return $this->belongsTo(Barang::class, 'id_barang');
+    }
+
+    public function barangMasuk()
+    {
+        return $this->hasOne(BarangMasuk::class, 'id_transaksi_barang');
+    }
+
+    public function areaPembelian()
+    {
+        return $this->belongsTo(AreaPembelian::class, 'id_area_pembelian');
     }
 }

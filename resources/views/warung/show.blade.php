@@ -4,6 +4,8 @@
 
 @section('content')
 <div class="container my-4">
+    @if (Auth::check() && Auth::user()->role === 'admin')
+
     <h2 class="text-center mb-4">Detail Warung</h2>
     <div class="card shadow p-4">
         <div class="row">
@@ -18,32 +20,19 @@
                     <h5 class="me-2">Modal:</h5>
                     <h4 class="text-success">Rp {{ number_format($warung->modal, 0, ',', '.') }}</h4>
                 </div>
-                
+
                 <div class="mb-4">
                     <h5>Keterangan:</h5>
                     <p class="card-text">{{ $warung->keterangan ?? '-' }}</p>
-                </div>
-
-                <div class="d-flex">
-                    <a href="{{ route('warung.edit', $warung->id) }}" class="btn btn-warning me-2">
-                        <i class="fas fa-edit me-1"></i> Edit
-                    </a>
-                    <form action="{{ route('warung.destroy', $warung->id) }}" method="POST" onsubmit="return confirm('Yakin hapus warung ini?')">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-danger">
-                            <i class="fas fa-trash me-1"></i> Hapus
-                        </button>
-                    </form>
                 </div>
             </div>
             <div class="col-md-6 d-flex align-items-center justify-content-center">
                 <i class="fas fa-store fa-9x text-muted"></i>
             </div>
         </div>
-        
+        @endif
         <hr class="my-4">
-        
+
         <div class="row">
             <div class="col-12">
                 <h4 class="mb-3">Daftar Barang</h4>
@@ -54,6 +43,8 @@
                                 <th>#</th>
                                 <th>Nama Barang</th>
                                 <th>Stok Tersedia</th>
+                                <th>Harga Satuan (setelah markup)</th>
+                                <th>Harga Jual (range laba)</th>
                                 <th>Keterangan</th>
                             </tr>
                         </thead>
@@ -62,24 +53,34 @@
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
                                 <td>{{ $stok->barang->nama_barang ?? 'Barang tidak ditemukan' }}</td>
-                                <td>{{ $stok->stok ?? '-' }}</td>
+                                <td>{{ $stok->stok_saat_ini ?? '-' }}</td>
+                                <td>Rp {{ number_format($stok->harga_satuan, 0, ',', '.') }}</td>
+                                <td>Rp {{ number_format($stok->harga_jual, 0, ',', '.') }}</td>
                                 <td>{{ $stok->keterangan ?? '-' }}</td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="4" class="text-center">Belum ada barang di warung ini.</td>
+                                <td colspan="6" class="text-center">Belum ada barang di warung ini.</td>
                             </tr>
                             @endforelse
                         </tbody>
+
+
+
                     </table>
+
                 </div>
             </div>
         </div>
     </div>
+
+    @if (Auth::check() && Auth::user()->role === 'admin')
     <div class="mt-3">
         <a href="{{ route('warung.index') }}" class="btn btn-secondary">
             <i class="fas fa-arrow-left me-1"></i> Kembali ke Daftar Warung
         </a>
     </div>
+    @endif
+
 </div>
 @endsection

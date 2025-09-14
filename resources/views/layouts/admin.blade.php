@@ -66,6 +66,15 @@
                     </svg>
                     <span class="ml-4">Barang</span>
                 </a>
+                <a href="/admin/transaksibarang"
+                    class="flex items-center px-6 py-3 mt-2 {{ request()->is('admin/transaksibarang*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7l8 4"></path>
+                    </svg>
+                    <span class="ml-4">Transaksi Barang</span>
+                </a>
 
                 <a href="/admin/area"
                     class="flex items-center px-6 py-3 mt-2 {{ request()->is('admin/area*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
@@ -77,6 +86,18 @@
                             d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
                     </svg>
                     <span class="ml-4">Area</span>
+                </a>
+
+                <a href="/admin/areapembelian"
+                    class="flex items-center px-6 py-3 mt-2 {{ request()->is('admin/areapembelian*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
+                    </svg>
+                    <span class="ml-4">Area Pembelian</span>
                 </a>
 
                 <a href="#"

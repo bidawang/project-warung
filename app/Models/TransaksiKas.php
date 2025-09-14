@@ -13,9 +13,11 @@ class TransaksiKas extends Model
 
     protected $fillable = [
         'id_kas_warung',
+        'id_hutang',
         'total',
         'metode_pembayaran',
         'keterangan',
+        'jenis',
     ];
 
     protected $casts = [

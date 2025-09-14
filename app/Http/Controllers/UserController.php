@@ -3,16 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Models\Kasir;
-use App\Models\Member;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash; // Tambahkan ini
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
     public function index()
     {
-        $users = User::with(['kasir', 'member'])->latest()->get();
+        $users = User::latest()->get();
         return view('user.index', compact('users'));
     }
 
@@ -24,38 +22,24 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'role' => 'required|in:kasir,member',
+            'role' => 'required|string|max:50',
             'name' => 'required|string|max:255',
-            'nomor_hp' => 'required|string|max:20',
+            'nomor_hp' => 'nullable|string|max:20|unique:users,nomor_hp',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8|confirmed', // Validasi password baru
+            'google_id' => 'required|string|unique:users,google_id',
+            'password' => 'required|string|min:8|confirmed',
             'keterangan' => 'nullable|string',
         ]);
 
-        // buat user
-        $user = User::create([
+        User::create([
             'role' => $request->role,
             'name' => $request->name,
             'nomor_hp' => $request->nomor_hp,
             'email' => $request->email,
-            'password' => Hash::make($request->password), // Hash password sebelum disimpan
+            'google_id' => $request->google_id,
+            'password' => Hash::make($request->password),
             'keterangan' => $request->keterangan,
         ]);
-
-        // buat kasir atau member
-        if ($request->role === 'kasir') {
-            Kasir::create([
-                'id_user' => $user->id,
-                'google_id' => $request->google_id,
-                'keterangan' => $request->keterangan,
-            ]);
-        } elseif ($request->role === 'member') {
-            Member::create([
-                'id_user' => $user->id,
-                'kode_user' => $request->kode_user,
-                'keterangan' => $request->keterangan,
-            ]);
-        }
 
         return redirect()->route('user.index')->with('success', 'User berhasil ditambahkan.');
     }
@@ -68,53 +52,29 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $request->validate([
-            'role' => 'required|in:kasir,member',
+            'role' => 'required|string|max:50',
             'name' => 'required|string|max:255',
-            'nomor_hp' => 'required|string|max:20',
+            'nomor_hp' => 'nullable|string|max:20|unique:users,nomor_hp,' . $user->id,
             'email' => 'required|email|unique:users,email,' . $user->id,
-            'password' => 'nullable|string|min:8|confirmed', // password tidak wajib, tapi harus valid jika diisi
+            'google_id' => 'required|string|unique:users,google_id,' . $user->id,
+            'password' => 'nullable|string|min:8|confirmed',
             'keterangan' => 'nullable|string',
         ]);
-        
-        $userData = $request->only(['role','name','nomor_hp','email','keterangan']);
 
-        // Jika password diisi, hash password baru
+        $userData = $request->only(['role','name','nomor_hp','email','google_id','keterangan']);
+
         if ($request->filled('password')) {
             $userData['password'] = Hash::make($request->password);
         }
 
         $user->update($userData);
 
-        // update relasi
-        if ($user->role === 'kasir') {
-            $user->kasir()->updateOrCreate(
-                ['id_user' => $user->id],
-                [
-                    'google_id' => $request->google_id,
-                    'keterangan' => $request->keterangan,
-                ]
-            );
-            $user->member()->delete();
-        } elseif ($user->role === 'member') {
-            $user->member()->updateOrCreate(
-                ['id_user' => $user->id],
-                [
-                    'kode_user' => $request->kode_user,
-                    'keterangan' => $request->keterangan,
-                ]
-            );
-            $user->kasir()->delete();
-        }
-
         return redirect()->route('user.index')->with('success', 'User berhasil diperbarui.');
     }
 
     public function destroy(User $user)
     {
-        $user->kasir()->delete();
-        $user->member()->delete();
         $user->delete();
-
         return redirect()->route('user.index')->with('success', 'User berhasil dihapus.');
     }
 }
