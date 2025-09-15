@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\KasWarung;
 use App\Models\Warung;
 use Illuminate\Http\Request;
+use App\Models\TransaksiKas;
 
 class KasWarungController extends Controller
 {
@@ -64,6 +65,7 @@ class KasWarungController extends Controller
     public function show($id)
     {
         $kasWarung = KasWarung::with(['warung', 'detailKasWarung'])->findOrFail($id);
+        $totalKasDariTransaksiKas = TransaksiKas::where('id_kas_warung', $id)->where('metode_pembayaran', 'penjualan')->sum('total');
         return view('kaswarung.show', compact('kasWarung'));
     }
 }

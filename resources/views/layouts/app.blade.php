@@ -74,7 +74,8 @@
                 <i class="fas fa-chart-bar me-2 text-primary"></i>
                 <span class="fw-bold">Dashboard App</span>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNavbar" aria-controls="topNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNavbar"
+                aria-controls="topNavbar" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="topNavbar">
@@ -103,20 +104,28 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{{ route('kaswarung.index') }}">Kas Warung</a></li>
-                            <li><a class="dropdown-item" href="{{ route('detailkaswarung.index') }}">Detail Kas Warung</a></li>
+                            <li><a class="dropdown-item" href="{{ route('detailkaswarung.index') }}">Detail Kas
+                                    Warung</a></li>
                             <li><a class="dropdown-item" href="{{ route('transaksikas.index') }}">Transaksi Kas</a></li>
-                            <li><a class="dropdown-item" href="{{ route('detailtransaksi.index') }}">Detail Transaksi</a></li>
-                            <li><a class="dropdown-item" href="{{ route('transaksibarang.index') }}">Transaksi Barang</a></li>
+                            <li><a class="dropdown-item" href="{{ route('detailtransaksi.index') }}">Detail
+                                    Transaksi</a></li>
+                            <li><a class="dropdown-item" href="{{ route('transaksibarang.index') }}">Transaksi
+                                    Barang</a></li>
                             <li><a class="dropdown-item" href="{{ route('stokwarung.index') }}">Stok Warung</a></li>
                             <li><a class="dropdown-item" href="{{ route('barangmasuk.index') }}">Barang Masuk</a></li>
-                            <li><a class="dropdown-item" href="{{ route('mutasibarang.index') }}">Mutasi Barang</a></li>
+                            <li><a class="dropdown-item" href="{{ route('mutasibarang.index') }}">Mutasi Barang</a>
+                            </li>
                             <li><a class="dropdown-item" href="{{ route('hutang.index') }}">Hutang</a></li>
                             <li><a class="dropdown-item" href="{{ route('bunga.index') }}">Bunga</a></li>
-                            <li><a class="dropdown-item" href="{{ route('pembayaranhutang.index') }}">Pembayaran Hutang</a></li>
-                            <li><a class="dropdown-item" href="{{ route('baranghutang.index') }}">Barang Hutang</a></li>
+                            <li><a class="dropdown-item" href="{{ route('pembayaranhutang.index') }}">Pembayaran
+                                    Hutang</a></li>
+                            <li><a class="dropdown-item" href="{{ route('baranghutang.index') }}">Barang Hutang</a>
+                            </li>
                             <li><a class="dropdown-item" href="{{ route('kuantitas.index') }}">Kuantitas</a></li>
-                            <li><a class="dropdown-item" href="{{ route('targetpencapaian.index') }}">Target Pencapaian</a></li>
-                            <li><a class="dropdown-item" href="{{ route('aturantenggat.index') }}">Aturan Tenggat</a></li>
+                            <li><a class="dropdown-item" href="{{ route('targetpencapaian.index') }}">Target
+                                    Pencapaian</a></li>
+                            <li><a class="dropdown-item" href="{{ route('aturantenggat.index') }}">Aturan Tenggat</a>
+                            </li>
                             <li>
                                 <form action="{{ route('logout') }}" method="POST" class="d-inline">
                                     @csrf
@@ -132,8 +141,10 @@
 
                 <!-- User -->
                 <div class="dropdown ms-3">
-                    <a href="#" class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle" id="dropdownUser" data-bs-toggle="dropdown">
-                        <img src="https://via.placeholder.com/32/cccccc/333333?text=JD" alt="User Avatar" width="32" height="32" class="rounded-circle me-2">
+                    <a href="#" class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle"
+                        id="dropdownUser" data-bs-toggle="dropdown">
+                        <img src="https://via.placeholder.com/32/cccccc/333333?text=JD" alt="User Avatar" width="32"
+                            height="32" class="rounded-circle me-2">
                         <span class="d-none d-md-inline">John Doe</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0">
@@ -158,58 +169,62 @@
         <div class="container-fluid">
             <ul class="navbar-nav w-100 d-flex flex-row justify-content-around">
                 <li class="nav-item">
-                    <a href="{{ route('warung.show', session('id_warung')) }}" class="nav-link @if(Request::is('dashboard')) active @endif">
+                    <a href="{{ route('warung.show', session('id_warung')) }}"
+                        class="nav-link @if (Request::is('dashboard')) active @endif">
                         <i class="fas fa-home"></i>
                         <span>Dashboard</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('barangmasuk.index') }}" class="nav-link @if(Request::is('barang*')) active @endif">
-                        <i class="fas fa-box"></i>
+                    <a href="{{ route('barangmasuk.index') }}"
+                        class="nav-link @if (Request::is('barangmasuk*')) active @endif">
+                        <i class="fas fa-cart-plus"></i>
                         <span>Barang Masuk</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('barangkeluar.index') }}" class="nav-link @if(Request::is('barang*')) active @endif">
-                        <i class="fas fa-box"></i>
+                    <a href="{{ route('barangkeluar.index') }}"
+                        class="nav-link @if (Request::is('barangkeluar*')) active @endif">
+                        <i class="fas fa-dolly"></i>
                         <span>Barang Keluar</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('kaswarung.show', 1) }}" class="nav-link @if(Request::is('transaksikas*')) active @endif">
-                        {{--<a href="{{ route('warung.show', Auth::user()->warung->id) }}" class="nav-link @if(Request::is('warung*')) active @endif">--}}
-                        <i class="fas fa-exchange-alt"></i>
+                    <a href="{{ route('kaswarung.show', 1) }}"
+                        class="nav-link @if (Request::is('kaswarung*')) active @endif">
+                        <i class="fas fa-wallet"></i>
                         <span>Kas</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('transaksikas.index', 1) }}" class="nav-link @if(Request::is('transaksikas*')) active @endif">
-                        {{--<a href="{{ route('warung.show', Auth::user()->warung->id) }}" class="nav-link @if(Request::is('warung*')) active @endif">--}}
-                        <i class="fas fa-exchange-alt"></i>
+                    <a href="{{ route('transaksikas.index', 1) }}"
+                        class="nav-link @if (Request::is('transaksikas*')) active @endif">
+                        <i class="fas fa-receipt"></i>
                         <span>Transaksi</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('transaksibarang.index', 1) }}" class="nav-link @if(Request::is('transaksikas*')) active @endif">
-                        {{--<a href="{{ route('warung.show', Auth::user()->warung->id) }}" class="nav-link @if(Request::is('warung*')) active @endif">--}}
+                    <a href="{{ route('transaksibarang.index', 1) }}"
+                        class="nav-link @if (Request::is('transaksibarang*')) active @endif">
                         <i class="fas fa-exchange-alt"></i>
                         <span>Transaksi Barang</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('mutasibarang.index', 1) }}" class="nav-link @if(Request::is('transaksikas*')) active @endif">
-                        {{--<a href="{{ route('warung.show', Auth::user()->warung->id) }}" class="nav-link @if(Request::is('warung*')) active @endif">--}}
-                        <i class="fas fa-exchange-alt"></i>
+                    <a href="{{ route('mutasibarang.index', 1) }}"
+                        class="nav-link @if (Request::is('mutasibarang*')) active @endif">
+                        <i class="fas fa-random"></i>
                         <span>Mutasi</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ url('/profile') }}" class="nav-link @if(Request::is('profile')) active @endif">
+                    <a href="{{ url('/profile') }}" class="nav-link @if (Request::is('profile')) active @endif">
                         <i class="fas fa-user-circle"></i>
                         <span>Profil</span>
                     </a>
                 </li>
             </ul>
+
         </div>
     </nav>
 
