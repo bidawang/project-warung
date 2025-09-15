@@ -61,23 +61,18 @@ Route::post('/forgot-password', function (Request $request) {
         : back()->withErrors(['email' => __($status)]);
 })->name('password.email');
 
-// GUNAKAN ROUTE GROUP BARU DI BAWAH INI:
+
 Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::get('/dashboard', [DashboardControllerAdmin::class, 'index'])->name('dashboard');
-
     Route::get('/user', [UserControllerAdmin::class, 'index'])->name('user.index');
-
     Route::get('/area', [AreaControllerAdmin::class, 'index'])->name('area.index');
     Route::get('/area/create', [AreaControllerAdmin::class, 'create'])->name('area.create');
     Route::post('/area/store', [AreaControllerAdmin::class, 'store'])->name('area.store');
-
     Route::resource('/barang', BarangControllerAdmin::class);
-
     Route::resource('transaksibarang', TransaksiBarangController::class);
     Route::post('transaksibarang/update-status-massal', [TransaksiBarangController::class, 'updateStatusMassal'])->name('transaksibarang.updateStatusMassal');
     Route::post('/kirim-massal-proses', [TransaksiBarangController::class, 'kirimMassalProses'])->name('transaksibarang.kirim.mass.proses');
-
     Route::resource('kategori', KategoriControllerAdmin::class);
     Route::resource('areapembelian', AreaPembelianController::class)->names('areapembelian');
 

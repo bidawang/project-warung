@@ -65,7 +65,7 @@ class KasWarungController extends Controller
     public function show($id)
     {
         $kasWarung = KasWarung::with(['warung', 'detailKasWarung'])->findOrFail($id);
-        $totalKasDariTransaksiKas = TransaksiKas::where('id_kas_warung', $id)->where('metode_pembayaran', 'penjualan')->sum('total');
+        $totalKasDariTransaksiKas = TransaksiKas::where('id_kas_warung', $id)->where('jenis', 'penjualan')->sum('total');
         return view('kaswarung.show', compact('kasWarung'));
     }
 }

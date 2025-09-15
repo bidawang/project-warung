@@ -20,9 +20,9 @@ class TransaksiKas extends Model
         'jenis',
     ];
 
-    protected $casts = [
-        'jenis' => JenisTransaksiEnum::class,
-    ];
+    // protected $casts = [
+    //     'jenis' => JenisTransaksiEnum::class,
+    // ];
 
     public function kasWarung()
     {
@@ -30,10 +30,10 @@ class TransaksiKas extends Model
     }
 }
 
-enum JenisTransaksiEnum: string
-{
-    case KELUAR = 'keluar';
-    case MASUK = 'masuk';
-    case PENDING = 'pending';
-    case HUTANG = 'hutang';
-}
+// enum JenisTransaksiEnum: string
+// {
+//     case KELUAR = 'keluar';
+//     case MASUK = 'masuk';
+//     case PENDING = 'pending';
+//     case HUTANG = 'hutang';
+// }

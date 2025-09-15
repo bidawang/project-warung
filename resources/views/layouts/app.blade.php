@@ -190,7 +190,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('kaswarung.show', 1) }}"
+                    <a href="{{ route('kaswarung.show', session('id_warung')) }}"
                         class="nav-link @if (Request::is('kaswarung*')) active @endif">
                         <i class="fas fa-wallet"></i>
                         <span>Kas</span>

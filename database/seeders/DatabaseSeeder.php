@@ -20,6 +20,8 @@ class DatabaseSeeder extends Seeder
             SubKategoriSeeder::class,
             BarangSeeder::class,
             WarungSeeder::class,
+            LabaSeeder::class,
+            AreaPembelianSeeder::class,
         ]);
     }
 }

@@ -162,11 +162,11 @@ class BarangKeluarController extends Controller
         // Buat 1 transaksi kas
         $transaksiKas = \App\Models\TransaksiKas::create([
             'id_kas_warung'     => $idWarung,
-            'id_hutang'         => null,
+            // 'id_hutang'         => null,
             'total'             => $grandTotal,
-            'metode_pembayaran' => null,
+            'metode_pembayaran' => $request->metode_pembayaran,
             'keterangan'        => $request->keterangan,
-            'jenis'             => \App\Models\JenisTransaksiEnum::KELUAR,
+            'jenis'             => $validatedData['jenis'][$i],
         ]);
 
         // Simpan semua barang keluar + transaksi barang keluar
