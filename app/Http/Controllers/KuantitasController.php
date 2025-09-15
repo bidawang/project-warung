@@ -14,10 +14,27 @@ class KuantitasController extends Controller
         return view('kuantitas.index', compact('kuantitas'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
+        $selectedStokWarung = null;
+        $hargaSatuan = null;
+
+        if ($request->has('id_stok_warung')) {
+            $selectedStokWarung = StokWarung::with('barang', 'warung')->findOrFail($request->id_stok_warung);
+
+            // Ambil harga satuan dari transaksi terakhir barang
+            $transaksi = $selectedStokWarung->barang->transaksiBarang()->latest()->first();
+
+            if ($transaksi) {
+                $hargaDasar = $transaksi->harga / max($transaksi->jumlah, 1);
+                $markupPercent = optional($transaksi->areaPembelian)->markup ?? 0;
+                $hargaSatuan   = $hargaDasar + ($hargaDasar * $markupPercent / 100);
+            }
+        }
+
         $stokWarung = StokWarung::with('barang', 'warung')->get();
-        return view('kuantitas.create', compact('stokWarung'));
+
+        return view('kuantitas.create', compact('stokWarung', 'selectedStokWarung', 'hargaSatuan'));
     }
 
     public function store(Request $request)

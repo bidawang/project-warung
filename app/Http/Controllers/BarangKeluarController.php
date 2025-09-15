@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BarangKeluar;
 use App\Models\StokWarung;
+use App\Models\Laba;
 use Illuminate\Http\Request;
 
 class BarangKeluarController extends Controller
@@ -30,11 +31,68 @@ class BarangKeluarController extends Controller
     public function create()
     {
         $stok_warungs = StokWarung::where('id_warung', session('id_warung'))
-            ->with(['barang'])
+            ->with(['barang.transaksiBarang.areaPembelian', 'kuantitas'])
             ->get();
+
+        $stok_warungs->transform(function ($stok) {
+            // Hitung stok saat ini
+            $stokMasuk = $stok->barangMasuk()
+                ->where('status', 'terima')
+                ->whereHas('stokWarung', fn($q) => $q->where('id_warung', session('id_warung')))
+                ->sum('jumlah');
+
+            $stokKeluar = $stok->barangKeluar()
+                ->whereHas('stokWarung', fn($q) => $q->where('id_warung', session('id_warung')))
+                ->sum('jumlah');
+
+            $mutasiMasuk = $stok->mutasiBarang()
+                ->where('status', 'terima')
+                ->whereHas('stokWarung', fn($q) => $q->where('id_warung', session('id_warung')))
+                ->sum('jumlah');
+
+            $mutasiKeluar = $stok->mutasiBarang()
+                ->where('status', 'keluar')
+                ->whereHas('stokWarung', fn($q) => $q->where('id_warung', session('id_warung')))
+                ->sum('jumlah');
+
+            $stokSaatIni = $stokMasuk + $mutasiMasuk - $mutasiKeluar - $stokKeluar;
+            $stok->stok_saat_ini = $stokSaatIni;
+
+            // Ambil transaksi terbaru
+            $transaksi = $stok->barang->transaksiBarang()->latest()->first();
+
+            if (!$transaksi) {
+                $stok->harga_jual = 0;
+                $stok->kuantitas_list = [];
+                return $stok;
+            }
+
+            // Harga dasar = total beli / jumlah
+            $hargaDasar = $transaksi->harga / max($transaksi->jumlah, 1);
+
+            // Tambahkan markup dari area pembelian
+            $markupPercent = optional($transaksi->areaPembelian)->markup ?? 0;
+            $hargaSatuan = $hargaDasar + ($hargaDasar * $markupPercent / 100);
+
+            // Ambil harga_jual dari tabel Laba
+            $laba = Laba::where('input_minimal', '<=', $hargaSatuan)
+                ->where('input_maksimal', '>=', $hargaSatuan)
+                ->first();
+
+            $stok->harga_jual = $laba ? $laba->harga_jual : 0;
+
+            // Daftar kuantitas (bundle)
+            $stok->kuantitas_list = $stok->kuantitas->map(fn($k) => [
+                'jumlah' => $k->jumlah,
+                'harga_jual' => $k->harga_jual,
+            ]);
+
+            return $stok;
+        });
 
         return view('barangkeluar.create', compact('stok_warungs'));
     }
+
 
     /**
      * Store a newly created resource in storage.
@@ -130,7 +188,7 @@ class BarangKeluarController extends Controller
         return redirect()->route('barangkeluar.index')
             ->with('success', 'Transaksi barang keluar berhasil ditambahkan!');
     }
-    
+
 
 
     public function show(BarangKeluar $barangKeluar)

@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Warung;
 use App\Models\User;
 use App\Models\Laba;
+// use App\Models\Kuantitas;
 use App\Models\Area;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+
 
 class WarungController extends Controller
 {
@@ -77,6 +79,7 @@ class WarungController extends Controller
             'user',
             'area',
             'stokWarung.barang.transaksiBarang.areaPembelian',
+            'stokWarung.kuantitas', // Eager load the kuantitas relationship
         ])
             ->where('id_user', Auth::id())
             ->findOrFail($id);

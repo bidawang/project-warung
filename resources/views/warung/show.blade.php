@@ -35,7 +35,9 @@
 
         <div class="row">
             <div class="col-12">
-                <h4 class="mb-3">Daftar Barang</h4>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="mb-0">Daftar Barang</h4>
+                </div>
                 <div class="table-responsive">
                     <table class="table table-bordered table-hover">
                         <thead class="table-light">
@@ -45,6 +47,7 @@
                                 <th>Stok Tersedia</th>
                                 <th>Harga Satuan (setelah markup)</th>
                                 <th>Harga Jual (range laba)</th>
+                                <th>Kuantitas</th>
                                 <th>Keterangan</th>
                             </tr>
                         </thead>
@@ -56,19 +59,27 @@
                                 <td>{{ $stok->stok_saat_ini ?? '-' }}</td>
                                 <td>Rp {{ number_format($stok->harga_satuan, 0, ',', '.') }}</td>
                                 <td>Rp {{ number_format($stok->harga_jual, 0, ',', '.') }}</td>
+                                <td>
+                                    <ul class="list-unstyled mb-2">
+                                        @forelse($stok->kuantitas as $kuantitas)
+                                        <li>{{ $kuantitas->jumlah }} unit: Rp {{ number_format($kuantitas->harga_jual, 0, ',', '.') }}</li>
+                                        @empty
+                                        <li>-</li>
+                                        @endforelse
+                                    </ul>
+                                    <a href="{{ route('kuantitas.create', ['id_stok_warung' => $stok->id]) }}" class="btn btn-sm btn-outline-primary">
+                                        + Tambah Kuantitas
+                                    </a>
+                                </td>
                                 <td>{{ $stok->keterangan ?? '-' }}</td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="6" class="text-center">Belum ada barang di warung ini.</td>
+                                <td colspan="7" class="text-center">Belum ada barang di warung ini.</td>
                             </tr>
                             @endforelse
                         </tbody>
-
-
-
                     </table>
-
                 </div>
             </div>
         </div>
