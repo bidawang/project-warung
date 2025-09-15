@@ -25,32 +25,37 @@ class WarungSeeder extends Seeder
                 'nama_warung' => 'Warung Sederhana',
                 'modal' => 5000000,
                 'keterangan' => 'Warung kecil pinggir jalan',
+                'id_user' => 1,
             ],
             [
                 'nama_warung' => 'Warung Maju Jaya',
                 'modal' => 7500000,
                 'keterangan' => 'Warung berkembang dengan pelanggan tetap',
+                'id_user' => 2,
             ],
             [
                 'nama_warung' => 'Warung Sejahtera',
                 'modal' => 10000000,
                 'keterangan' => 'Warung besar dengan banyak cabang',
+                'id_user' => 3,
             ],
             [
                 'nama_warung' => 'Warung Makmur',
                 'modal' => 8500000,
                 'keterangan' => 'Warung dengan modal menengah',
+                'id_user' => 4,
             ],
             [
                 'nama_warung' => 'Warung Berkah',
                 'modal' => 6000000,
                 'keterangan' => 'Warung yang selalu ramai setiap hari',
+                'id_user' => 5,
             ],
         ];
 
         foreach ($warungs as $data) {
             $warung = Warung::create([
-                'id_user' => $user->id,
+                'id_user' => $data['id_user'],
                 'id_area' => $area->id,
                 'nama_warung' => $data['nama_warung'],
                 'modal' => $data['modal'],

@@ -69,6 +69,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/user', [UserControllerAdmin::class, 'index'])->name('user.index');
 
     Route::get('/area', [AreaControllerAdmin::class, 'index'])->name('area.index');
+    Route::get('/area/create', [AreaControllerAdmin::class, 'create'])->name('area.create');
+    Route::post('/area/store', [AreaControllerAdmin::class, 'store'])->name('area.store');
 
     Route::resource('/barang', BarangControllerAdmin::class);
 
@@ -80,7 +82,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::resource('areapembelian', AreaPembelianController::class)->names('areapembelian');
 
     Route::resource('subkategori', SubKategoriControllerAdmin::class);
-    
+
 });
 
 

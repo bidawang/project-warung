@@ -54,7 +54,7 @@ class AreaControllerAdmin extends Controller
 
             Area::create($validatedData);
 
-            return redirect()->route('area.index')->with('success', 'Area berhasil ditambahkan!');
+            return redirect()->route('admin/area')->with('success', 'Area berhasil ditambahkan!');
         } catch (ValidationException $e) {
             return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {

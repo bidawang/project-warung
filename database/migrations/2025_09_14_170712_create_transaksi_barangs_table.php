@@ -16,8 +16,6 @@ return new class extends Migration
             $table->foreignId('id_transaksi_awal')->constrained('transaksi_awal');
             $table->integer('jumlah');
             $table->decimal('harga', 15, 2);
-
-            $table->string('status', 50);
             $table->enum('jenis', ['keluar', 'masuk']);
             $table->text('keterangan')->nullable();
             $table->timestamps();
