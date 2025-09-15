@@ -11,7 +11,6 @@ return new class extends Migration
     {
         Schema::create('transaksi_barang', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('id_transaksi_kas')->constrained('transaksi_kas');
             $table->foreignId('id_barang')->constrained('barang');
             $table->foreignId('id_area_pembelian')->constrained('area_pembelian');
             $table->foreignId('id_transaksi_awal')->constrained('transaksi_awal');
