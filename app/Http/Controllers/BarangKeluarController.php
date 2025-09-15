@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BarangKeluar;
 use App\Models\StokWarung;
 use App\Models\Laba;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class BarangKeluarController extends Controller
@@ -30,6 +31,7 @@ class BarangKeluarController extends Controller
      */
     public function create()
     {
+        $users = User::where('role', 'member')->get();
         $stok_warungs = StokWarung::where('id_warung', session('id_warung'))
             ->with(['barang.transaksiBarang.areaPembelian', 'kuantitas'])
             ->get();
@@ -90,7 +92,7 @@ class BarangKeluarController extends Controller
             return $stok;
         });
 
-        return view('barangkeluar.create', compact('stok_warungs'));
+        return view('barangkeluar.create', compact('stok_warungs', 'users'));
     }
 
 
@@ -106,7 +108,11 @@ class BarangKeluarController extends Controller
             'jumlah.*'         => 'required|integer|min:1',
             'jenis'            => 'required|array',
             'jenis.*'          => 'required|in:penjualan,hutang,expayet,hilang',
+            'user_id'          => 'array',
+            'user_id.*'        => 'nullable|exists:users,id',
             'keterangan'       => 'nullable|string',
+            'metode_pembayaran' => 'required|in:cash,transfer',
+            'tenggat'          => 'nullable|date', // kalau tenggat dari form
         ]);
 
         $grandTotal = 0;
@@ -122,7 +128,6 @@ class BarangKeluarController extends Controller
                 'mutasiBarang'
             ])->findOrFail($stokId);
 
-            // Buat closure untuk filter stokWarung by id_warung agar tidak duplikasi
             $filterByWarung = fn($query) => $query->whereHas('stokWarung', fn($q) => $q->where('id_warung', $idWarung));
 
             $stokMasuk = $stok->barangMasuk()->where('status', 'terima')->where($filterByWarung)->sum('jumlah');
@@ -156,21 +161,21 @@ class BarangKeluarController extends Controller
                 'jenis'     => $validatedData['jenis'][$i],
                 'hargaJual' => $hargaJual,
                 'totalItem' => $totalItem,
+                'userId'    => $validatedData['user_id'][$i] ?? null,
             ];
         }
 
         // Buat 1 transaksi kas
         $transaksiKas = \App\Models\TransaksiKas::create([
             'id_kas_warung'     => $idWarung,
-            // 'id_hutang'         => null,
             'total'             => $grandTotal,
             'metode_pembayaran' => $request->metode_pembayaran,
             'keterangan'        => $request->keterangan,
-            'jenis'             => $validatedData['jenis'][$i],
+            'jenis'             => $validatedData['jenis'][0], // ambil jenis pertama
         ]);
 
         // Simpan semua barang keluar + transaksi barang keluar
-        foreach ($barangKeluarList as $item) {
+        foreach ($barangKeluarList as $i => $item) {
             $barangKeluar = \App\Models\BarangKeluar::create([
                 'id_stok_warung' => $item['stokId'],
                 'jumlah'         => $item['jumlah'],
@@ -181,13 +186,26 @@ class BarangKeluarController extends Controller
             \App\Models\TransaksiBarangKeluar::create([
                 'id_transaksi_kas' => $transaksiKas->id,
                 'id_barang_keluar' => $barangKeluar->id,
-                'jumlah'           => $item['totalItem'], // total uang
+                'jumlah'           => $item['totalItem'],
             ]);
+
+            // Kalau jenis hutang → insert ke tabel hutang
+            if ($item['jenis'] === 'hutang' && $item['userId']) {
+                \App\Models\Hutang::create([
+                    'id_warung'    => $idWarung,
+                    'id_user'      => $item['userId'],
+                    'jumlah_pokok' => $item['totalItem'],
+                    'tenggat'      => $request->tenggat ?? now()->addDays(7), // default 7 hari ke depan
+                    'status'       => 'belum lunas',
+                    'keterangan'   => $request->keterangan,
+                ]);
+            }
         }
 
         return redirect()->route('barangkeluar.index')
             ->with('success', 'Transaksi barang keluar berhasil ditambahkan!');
     }
+
 
 
 

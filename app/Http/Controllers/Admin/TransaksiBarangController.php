@@ -23,6 +23,8 @@ class TransaksiBarangController extends Controller
 
         $query = TransaksiBarang::with(['transaksiKas', 'barang', 'barangMasuk']);
 
+        
+
         if (in_array($status, ['pending', 'dikirim', 'terima', 'tolak'])) {
             $query->whereHas('barangMasuk', function ($q) use ($status) {
                 if ($status === 'dikirim') {

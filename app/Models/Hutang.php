@@ -16,7 +16,8 @@ class Hutang extends Model
         'jumlah',
         'tenggat',
         'status',
-        'keterangan'
+        'keterangan',
+        'jumlah_pokok'
     ];
 
     protected $casts = [

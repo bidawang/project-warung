@@ -196,6 +196,15 @@
                         <span>Kas</span>
                     </a>
                 </li>
+                <!-- 🔹 Tambahan Menu Hutang -->
+                <li class="nav-item">
+                    <a href="{{ route('hutang.index') }}"
+                        class="nav-link @if (Request::is('hutang*')) active @endif">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span>Hutang</span>
+                    </a>
+                </li>
+                <!-- 🔹 End Tambahan -->
                 <li class="nav-item">
                     <a href="{{ route('transaksikas.index', 1) }}"
                         class="nav-link @if (Request::is('transaksikas*')) active @endif">

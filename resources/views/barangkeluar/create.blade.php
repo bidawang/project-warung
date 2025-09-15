@@ -46,7 +46,7 @@
 
                                         <div class="col-md-2">
                                             <label class="form-label font-weight-semibold">Jenis</label>
-                                            <select name="jenis[]" class="form-control" required>
+                                            <select name="jenis[]" class="form-control select-jenis" required>
                                                 <option value="penjualan" selected>Penjualan</option>
                                                 <option value="hutang">Hutang</option>
                                                 <option value="expayet">Expayet</option>
@@ -54,16 +54,25 @@
                                             </select>
                                         </div>
 
+                                        <!-- 🔹 Input User Hutang (default hidden) -->
+                                        <div class="col-md-3 d-none user-hutang-block">
+                                            <label class="form-label font-weight-semibold">Pilih User</label>
+                                            <select name="user_id[]" class="form-control select-user">
+                                                <option value="">-- Pilih User --</option>
+                                                @foreach ($users as $user)
+                                                    <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+
                                         <div class="col-md-2">
                                             <label class="form-label font-weight-semibold">Harga Satuan</label>
-                                            <input type="text" class="form-control input-harga" value="0"
-                                                readonly />
+                                            <input type="text" class="form-control input-harga" value="0" readonly />
                                         </div>
 
                                         <div class="col-md-2">
                                             <label class="form-label font-weight-semibold">Total</label>
-                                            <input type="text" class="form-control input-total" value="0"
-                                                readonly />
+                                            <input type="text" class="form-control input-total" value="0" readonly />
                                         </div>
                                     </div>
                                 </div>
@@ -92,9 +101,6 @@
                             <textarea name="keterangan" id="keterangan" rows="3" class="form-control">{{ old('keterangan') }}</textarea>
                         </div>
 
-
-
-
                         <div class="d-flex justify-content-end">
                             <a href="{{ route('barangkeluar.index') }}" class="btn btn-secondary me-2">Batal</a>
                             <button type="submit" class="btn btn-primary">Simpan</button>
@@ -112,16 +118,12 @@
             const grandTotalEl = document.getElementById('grandTotal');
 
             function formatRupiah(angka) {
-                return angka.toLocaleString('id-ID', {
-                    style: 'currency',
-                    currency: 'IDR'
-                });
+                return angka.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' });
             }
 
             function hitungTotal(jumlah, hargaSatuan, kuantitasList) {
                 if (!kuantitasList || kuantitasList.length === 0) return jumlah * hargaSatuan;
-                let total = 0,
-                    sisa = jumlah;
+                let total = 0, sisa = jumlah;
                 kuantitasList.sort((a, b) => b.jumlah - a.jumlah);
                 for (let k of kuantitasList) {
                     if (sisa >= k.jumlah) {
@@ -164,10 +166,25 @@
                 grandTotalEl.textContent = formatRupiah(total);
             }
 
+            // 🔹 Tampilkan User jika jenis = hutang
             barangContainer.addEventListener('change', e => {
-                if (e.target.classList.contains('select-stok') || e.target.classList.contains(
-                        'input-jumlah')) {
+                if (e.target.classList.contains('select-stok') || e.target.classList.contains('input-jumlah')) {
                     updateHarga(e.target.closest('.barang-block'));
+                }
+
+                if (e.target.classList.contains('select-jenis')) {
+                    const block = e.target.closest('.barang-block');
+                    const userBlock = block.querySelector('.user-hutang-block');
+                    const userSelect = userBlock.querySelector('.select-user');
+
+                    if (e.target.value === 'hutang') {
+                        userBlock.classList.remove('d-none');
+                        userSelect.setAttribute('required', 'required');
+                    } else {
+                        userBlock.classList.add('d-none');
+                        userSelect.removeAttribute('required');
+                        userSelect.value = "";
+                    }
                 }
             });
 
@@ -177,6 +194,9 @@
                 newBarang.querySelector('input[name="jumlah[]"]').value = "";
                 newBarang.querySelector('.input-harga').value = "0";
                 newBarang.querySelector('.input-total').value = "0";
+                newBarang.querySelector('.select-jenis').value = "penjualan";
+                newBarang.querySelector('.user-hutang-block').classList.add('d-none');
+                newBarang.querySelector('.select-user').value = "";
                 barangContainer.appendChild(newBarang);
             });
 

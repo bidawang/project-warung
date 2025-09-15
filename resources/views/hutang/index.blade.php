@@ -5,7 +5,7 @@
 @section('content')
 <div class="container">
     <h2 class="mb-4">Data Hutang</h2>
-    <a href="{{ route('hutang.create') }}" class="btn btn-primary mb-3">Tambah Hutang</a>
+    {{-- <a href="{{ route('hutang.create') }}" class="btn btn-primary mb-3">Tambah Hutang</a> --}}
 
     <table class="table table-bordered table-striped">
         <thead>

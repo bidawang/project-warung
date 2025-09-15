@@ -5,7 +5,7 @@
 @section('content')
 
 <div class="container-fluid">
-    
+
 
     {{-- Main Content --}}
     <div class="p-4 bg-light min-vh-100">
