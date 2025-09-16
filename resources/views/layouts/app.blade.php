@@ -187,12 +187,22 @@
                 </li>
 
                 <li class="nav-item">
+                    <a href="{{ route('stokbarang.index') }}"
+                        class="nav-link @if (Request::is('stokbarang*')) active @endif">
+                        <i class="fas fa-boxes"></i>
+                        <span>Stok Barang</span>
+                    </a>
+                </li>
+
+                <li class="nav-item">
                     <a href="{{ route('barangmasuk.index') }}"
                         class="nav-link @if (Request::is('barangmasuk*')) active @endif">
                         <i class="fas fa-cart-plus"></i>
                         <span>Barang Masuk</span>
                     </a>
                 </li>
+
+
                 <li class="nav-item">
                     <a href="{{ route('barangkeluar.index') }}"
                         class="nav-link @if (Request::is('barangkeluar*')) active @endif">

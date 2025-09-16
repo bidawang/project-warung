@@ -34,7 +34,7 @@ use App\Http\Controllers\Admin\TransaksiBarangController;
 use App\Http\Controllers\LabaController;
 
 use App\Http\Controllers\AuthController;
-
+use App\Http\Controllers\StokBarangController;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Http\Request;
 
@@ -95,6 +95,7 @@ Route::resource('transaksikas', TransaksiKasController::class);
 Route::resource('detailtransaksi', DetailTransaksiController::class);
 Route::resource('transaksibarang', TransaksiBarangController::class);
 Route::resource('stokwarung', StokWarungController::class);
+Route::resource('stokbarang', StokBarangController::class);
 Route::resource('barangmasuk', BarangMasukController::class);
 Route::resource('mutasibarang', MutasiBarangController::class); // Tambahkan route untuk MutasiBarang
 Route::resource('hutang', HutangController::class);
