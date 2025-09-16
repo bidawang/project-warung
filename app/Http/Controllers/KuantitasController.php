@@ -16,19 +16,24 @@ class KuantitasController extends Controller
 
     public function create(Request $request)
     {
+        // dd($request->all());
         $selectedStokWarung = null;
         $hargaSatuan = null;
 
-        if ($request->has('id_stok_warung')) {
-            $selectedStokWarung = StokWarung::with('barang', 'warung')->findOrFail($request->id_stok_warung);
+        // Ambil dari POST (bukan query string lagi)
+        $idStokWarung = $request->input('id_stok_warung');
+        if (!empty($idStokWarung)) {
+            $selectedStokWarung = StokWarung::with('barang.transaksiBarang.areaPembelian', 'warung')
+                ->findOrFail($idStokWarung);
 
-            // Ambil harga satuan dari transaksi terakhir barang
-            $transaksi = $selectedStokWarung->barang->transaksiBarang()->latest()->first();
+            if ($selectedStokWarung && $selectedStokWarung->barang) {
+                $transaksi = $selectedStokWarung->barang->transaksiBarang()->latest()->first();
 
-            if ($transaksi) {
-                $hargaDasar = $transaksi->harga / max($transaksi->jumlah, 1);
-                $markupPercent = optional($transaksi->areaPembelian)->markup ?? 0;
-                $hargaSatuan   = $hargaDasar + ($hargaDasar * $markupPercent / 100);
+                if ($transaksi) {
+                    $hargaDasar = $transaksi->harga / max($transaksi->jumlah, 1);
+                    $markupPercent = optional($transaksi->areaPembelian)->markup ?? 0;
+                    $hargaSatuan   = $hargaDasar * (1 + $markupPercent / 100);
+                }
             }
         }
 
@@ -36,6 +41,7 @@ class KuantitasController extends Controller
 
         return view('kuantitas.create', compact('stokWarung', 'selectedStokWarung', 'hargaSatuan'));
     }
+
 
     public function store(Request $request)
     {

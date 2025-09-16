@@ -169,12 +169,23 @@
         <div class="container-fluid">
             <ul class="navbar-nav w-100 d-flex flex-row justify-content-around">
                 <li class="nav-item">
+                    @auth
                     <a href="{{ route('warung.show', session('id_warung')) }}"
                         class="nav-link @if (Request::is('dashboard')) active @endif">
                         <i class="fas fa-home"></i>
                         <span>Dashboard</span>
                     </a>
+                    @endauth
+
+                    @guest
+                    <a href="{{ route('home') }}"
+                        class="nav-link @if (Request::is('/')) active @endif">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    @endguest
                 </li>
+
                 <li class="nav-item">
                     <a href="{{ route('barangmasuk.index') }}"
                         class="nav-link @if (Request::is('barangmasuk*')) active @endif">
@@ -189,6 +200,8 @@
                         <span>Barang Keluar</span>
                     </a>
                 </li>
+                @auth
+
                 <li class="nav-item">
                     <a href="{{ route('kaswarung.show', session('id_warung')) }}"
                         class="nav-link @if (Request::is('kaswarung*')) active @endif">
@@ -196,6 +209,7 @@
                         <span>Kas</span>
                     </a>
                 </li>
+                @endauth
                 <!-- 🔹 Tambahan Menu Hutang -->
                 <li class="nav-item">
                     <a href="{{ route('hutang.index') }}"
@@ -205,7 +219,7 @@
                     </a>
                 </li>
                 <!-- 🔹 End Tambahan -->
-                <li class="nav-item">
+                {{-- <li class="nav-item">
                     <a href="{{ route('transaksikas.index', 1) }}"
                         class="nav-link @if (Request::is('transaksikas*')) active @endif">
                         <i class="fas fa-receipt"></i>
@@ -218,7 +232,7 @@
                         <i class="fas fa-exchange-alt"></i>
                         <span>Transaksi Barang</span>
                     </a>
-                </li>
+                </li> --}}
                 <li class="nav-item">
                     <a href="{{ route('mutasibarang.index', 1) }}"
                         class="nav-link @if (Request::is('mutasibarang*')) active @endif">

@@ -13,8 +13,9 @@ return new class extends Migration
             $table->foreignId('id_stok_warung')->constrained('stok_warung');
             $table->foreignId('warung_asal')->constrained('warung');
             $table->foreignId('warung_tujuan')->constrained('warung');
+            $table->foreignId('id_barang_masuk')->constrained('barang_masuk');
             $table->integer('jumlah');
-            $table->string('status', 50);
+            $table->enum('status', ['pending', 'terima', 'tolak'])->default('pending');
             $table->text('keterangan')->nullable();
             $table->timestamps();
         });

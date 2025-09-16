@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Warung;
 use App\Models\User;
 use App\Models\Laba;
+use App\Models\Barang;
 // use App\Models\Kuantitas;
 use App\Models\Area;
 use Illuminate\Support\Facades\Auth;
@@ -75,74 +76,90 @@ class WarungController extends Controller
 
     public function show($id)
     {
-        $warung = Warung::with([
-            'user',
-            'area',
-            'stokWarung.barang.transaksiBarang.areaPembelian',
-            'stokWarung.kuantitas', // Eager load the kuantitas relationship
-        ])
+        $warung = Warung::with(['user', 'area'])
             ->where('id_user', Auth::id())
             ->findOrFail($id);
 
-        $warung->stokWarung->transform(function ($stok) {
-            // Hitung stok secara manual di controller
-            $stokMasuk = $stok->barangMasuk()
-                ->where('status', 'terima')
-                ->whereHas('stokWarung', function ($q) {
-                    $q->where('id_warung', session('id_warung'));
-                })
-                ->sum('jumlah');
+        // Ambil semua barang
+        $allBarang = Barang::with(['transaksiBarang.areaPembelian'])->get();
 
-            $stokKeluar = $stok->barangKeluar()
-                ->whereHas('stokWarung', function ($q) {
-                    $q->where('id_warung', session('id_warung'));
-                })
-                ->sum('jumlah');
+        // Ambil stok warung untuk warung ini, dengan relasi barang dan kuantitas
+        $stokWarung = $warung->stokWarung()->with(['barang.transaksiBarang.areaPembelian', 'kuantitas'])->get();
+        // Buat koleksi stok indexed by id_barang untuk akses cepat
+        $stokByBarangId = $stokWarung->keyBy('id_barang');
 
-            $mutasiMasuk = $stok->mutasiBarang()
-                ->where('status', 'terima')
-                ->whereHas('stokWarung', function ($q) {
-                    $q->where('id_warung', session('id_warung'));
-                })
-                ->sum('jumlah');
+        // Gabungkan semua barang dengan stok warung jika ada
+        $barangWithStok = $allBarang->map(function ($barang) use ($stokByBarangId) {
+            $stok = $stokByBarangId->get($barang->id);
 
-            $mutasiKeluar = $stok->mutasiBarang()
-                ->where('status', 'keluar')
-                ->whereHas('stokWarung', function ($q) {
-                    $q->where('id_warung', session('id_warung'));
-                })
-                ->sum('jumlah');
+            if ($stok) {
+                // Hitung stok saat ini sama seperti sebelumnya
+                $stokMasuk = $stok->barangMasuk()
+                    ->where('status', 'terima')
+                    ->whereHas('stokWarung', function ($q) {
+                        $q->where('id_warung', session('id_warung'));
+                    })
+                    ->sum('jumlah');
 
-            $stokSaatIni = $stokMasuk + $mutasiMasuk - $mutasiKeluar - $stokKeluar;
+                $stokKeluar = $stok->barangKeluar()
+                    ->whereHas('stokWarung', function ($q) {
+                        $q->where('id_warung', session('id_warung'));
+                    })
+                    ->sum('jumlah');
 
-            $transaksi = $stok->barang->transaksiBarang()->latest()->first();
+                $mutasiMasuk = $stok->mutasiBarang()
+                    ->where('status', 'terima')
+                    ->whereHas('stokWarung', function ($q) {
+                        $q->where('warung_tujuan', session('id_warung'));
+                    })
+                    ->sum('jumlah');
 
-            if (!$transaksi) {
-                $stok->harga_satuan = 0;
-                $stok->harga_jual = 0;
-                $stok->stok_saat_ini = $stokSaatIni; // tambahkan stok ke objek
-                return $stok;
+                $mutasiKeluar = $stok->mutasiBarang()
+                    ->where('status', 'terima')
+                    ->whereHas('stokWarung', function ($q) {
+                        $q->where('warung_asal', session('id_warung'));
+                    })
+                    ->sum('jumlah');
+
+                $stokSaatIni = $stokMasuk + $mutasiMasuk - $mutasiKeluar - $stokKeluar;
+
+                $transaksi = $stok->barang->transaksiBarang()->latest()->first();
+
+                if (!$transaksi) {
+                    $hargaSatuan = 0;
+                    $hargaJual = 0;
+                } else {
+                    $hargaDasar = $transaksi->harga / max($transaksi->jumlah, 1);
+                    $markupPercent = optional($transaksi->areaPembelian)->markup ?? 0;
+                    $hargaSatuan = $hargaDasar + ($hargaDasar * $markupPercent / 100);
+
+                    $laba = Laba::where('input_minimal', '<=', $hargaSatuan)
+                        ->where('input_maksimal', '>=', $hargaSatuan)
+                        ->first();
+                    $hargaJual = $laba ? $laba->harga_jual : 0;
+                }
+
+                // Gabungkan data stok ke barang
+                $barang->stok_saat_ini = $stokSaatIni;
+                $barang->harga_satuan = $hargaSatuan;
+                $barang->harga_jual = $hargaJual;
+                $barang->kuantitas = $stok->kuantitas;
+                $barang->keterangan = $stok->keterangan ?? '-';
+                $barang->id_stok_warung = $stok->id; // <--- ini yang penting
+
+            } else {
+                // Barang tidak ada stok di warung ini
+                $barang->stok_saat_ini = 0;
+                $barang->harga_satuan = 0;
+                $barang->harga_jual = 0;
+                $barang->kuantitas = collect();
+                $barang->keterangan = '-';
+
             }
 
-            // Harga dasar = total beli / jumlah
-            $hargaDasar = $transaksi->harga / max($transaksi->jumlah, 1);
-
-            // Tambahkan markup dari area pembelian
-            $markupPercent = optional($transaksi->areaPembelian)->markup ?? 0;
-            $hargaSatuan   = $hargaDasar + ($hargaDasar * $markupPercent / 100);
-            $stok->harga_satuan = $hargaSatuan;
-
-            // Ambil harga_jual dari tabel laba berdasarkan range input_minimal dan input_maksimal
-            $laba = Laba::where('input_minimal', '<=', $hargaSatuan)
-                ->where('input_maksimal', '>=', $hargaSatuan)
-                ->first();
-            $stok->harga_jual = $laba ? $laba->harga_jual : 0;
-
-            $stok->stok_saat_ini = $stokSaatIni; // tambahkan stok ke objek
-
-            return $stok;
+            return $barang;
         });
 
-        return view('warung.show', compact('warung'));
+        return view('warung.show', compact('warung', 'barangWithStok', 'stokWarung'));
     }
 }

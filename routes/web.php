@@ -40,7 +40,7 @@ use Illuminate\Http\Request;
 
 Route::get('/', function () {
     return view('welcome');
-});
+})->name('home');
 
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
@@ -101,7 +101,9 @@ Route::resource('hutang', HutangController::class);
 Route::resource('bunga', BungaController::class);
 Route::resource('pembayaranhutang', PembayaranHutangController::class);
 Route::resource('baranghutang', BarangHutangController::class);
+
 Route::resource('kuantitas', KuantitasController::class);
+Route::post('kuantitas/create', [KuantitasController::class, 'create'])->name('kuantitas.create');
 Route::resource('targetpencapaian', TargetPencapaianController::class);
 Route::resource('barangkeluar', BarangKeluarController::class);
 
