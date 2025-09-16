@@ -34,6 +34,9 @@ use App\Http\Controllers\Admin\TransaksiBarangController;
 use App\Http\Controllers\LabaController;
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Kasir\KasControllerAdmin;
+use App\Http\Controllers\Kasir\KasirControllerAdmin;
+use App\Http\Controllers\Kasir\StokBarangControllerAdmin;
 use App\Http\Controllers\StokBarangController;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Http\Request;
@@ -77,6 +80,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::resource('areapembelian', AreaPembelianController::class)->names('areapembelian');
 
     Route::resource('subkategori', SubKategoriControllerAdmin::class);
+
+});
+
+Route::prefix('kasir')->name('kasir.')->group(function () {
+    Route::get('/', [KasirControllerAdmin::class, 'index'])->name('kasir');
+
+    Route::get('/stok-barang', [StokBarangControllerAdmin::class, 'index'])->name('stokbarang.index');
+    Route::get('/stok-barang/barang-masuk', [StokBarangControllerAdmin::class, 'barangMasuk'])->name('stokbarang.barangmasuk');
+
+    Route::get('/kas', [KasControllerAdmin  ::class, 'index'])->name('kas.index');
 
 });
 

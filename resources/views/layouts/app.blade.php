@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Dashboard') - Pengelolaan Data</title>
+    <link rel="icon" type="image/png" href="/image/icon.png">
     <!-- Bootstrap CSS CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome CDN -->
@@ -169,32 +170,30 @@
         <div class="container-fluid">
             <ul class="navbar-nav w-100 d-flex flex-row justify-content-around">
                 <li class="nav-item">
-                    @auth
-                    <a href="{{ route('warung.show', session('id_warung')) }}"
-                        class="nav-link @if (Request::is('dashboard')) active @endif">
-                        <i class="fas fa-home"></i>
-                        <span>Dashboard</span>
-                    </a>
-                    @endauth
 
-                    @guest
-                    <a href="{{ route('home') }}"
-                        class="nav-link @if (Request::is('/')) active @endif">
-                        <i class="fas fa-home"></i>
-                        <span>Dashboard</span>
+                    <a href="{{ url('kasir') }}" class="nav-link @if (Request::is('kasir')) active @endif">
+                        <i class="fas fa-cash-register"></i>
+                        <span>Kasir</span>
                     </a>
-                    @endguest
+
+
+                    {{-- @guest
+                        <a href="{{ route('home') }}" class="nav-link @if (Request::is('/')) active @endif">
+                            <i class="fas fa-home"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    @endguest --}}
                 </li>
 
                 <li class="nav-item">
-                    <a href="{{ route('stokbarang.index') }}"
-                        class="nav-link @if (Request::is('stokbarang*')) active @endif">
+                    <a href="{{ url('/kasir/stok-barang') }}"
+                        class="nav-link @if (Request::is('kasir/stok-barang*')) active @endif">
                         <i class="fas fa-boxes"></i>
                         <span>Stok Barang</span>
                     </a>
                 </li>
 
-                <li class="nav-item">
+                {{-- <li class="nav-item">
                     <a href="{{ route('barangmasuk.index') }}"
                         class="nav-link @if (Request::is('barangmasuk*')) active @endif">
                         <i class="fas fa-cart-plus"></i>
@@ -209,18 +208,17 @@
                         <i class="fas fa-dolly"></i>
                         <span>Barang Keluar</span>
                     </a>
-                </li>
+                </li> --}}
                 @auth
 
-                <li class="nav-item">
-                    <a href="{{ route('kaswarung.show', session('id_warung')) }}"
-                        class="nav-link @if (Request::is('kaswarung*')) active @endif">
-                        <i class="fas fa-wallet"></i>
-                        <span>Kas</span>
-                    </a>
-                </li>
+                    <li class="nav-item">
+                        <a href="{{ url('/kasir/kas') }}"
+                            class="nav-link @if (Request::is('kasir/kas*')) active @endif">
+                            <i class="fas fa-wallet"></i>
+                            <span>Kas</span>
+                        </a>
+                    </li>
                 @endauth
-                <!-- 🔹 Tambahan Menu Hutang -->
                 <li class="nav-item">
                     <a href="{{ route('hutang.index') }}"
                         class="nav-link @if (Request::is('hutang*')) active @endif">
@@ -228,7 +226,6 @@
                         <span>Hutang</span>
                     </a>
                 </li>
-                <!-- 🔹 End Tambahan -->
                 {{-- <li class="nav-item">
                     <a href="{{ route('transaksikas.index', 1) }}"
                         class="nav-link @if (Request::is('transaksikas*')) active @endif">
