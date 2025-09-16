@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Dashboard') - Pengelolaan Data</title>
+    <link rel="icon" type="image/png" href="/image/icon.png">
     <!-- Bootstrap CSS CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome CDN -->
@@ -143,12 +144,12 @@
                 <div class="dropdown ms-3">
                     <a href="#" class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle"
                         id="dropdownUser" data-bs-toggle="dropdown">
-                        <img src="https://via.placeholder.com/32/cccccc/333333?text=JD" alt="User Avatar" width="32"
+                        <img src="/image/foto-profil.jpg" alt="User Avatar" width="32"
                             height="32" class="rounded-circle me-2">
                         <span class="d-none d-md-inline">John Doe</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0">
-                        <li><a class="dropdown-item" href="{{ url('/profile') }}">Profil</a></li>
+                        <li><a class="dropdown-item" href="{{ url('/kasir/profil') }}">Profil</a></li>
                         <li>
                             <hr class="dropdown-divider">
                         </li>
@@ -169,35 +170,30 @@
         <div class="container-fluid">
             <ul class="navbar-nav w-100 d-flex flex-row justify-content-around">
                 <li class="nav-item">
-                    @auth
-                    @if (Auth::user()->role === 'kasir')
-                    <a href="{{ route('admin.warung.show', session('id_warung')) }}"
-                        class="nav-link @if (Request::is('dashboard')) active @endif">
-                        <i class="fas fa-home"></i>
-                        <span>Dashboard</span>
+
+                    <a href="{{ url('kasir') }}" class="nav-link @if (Request::is('kasir')) active @endif">
+                        <i class="fas fa-cash-register"></i>
+                        <span>Kasir</span>
                     </a>
-                    @endif
-                    @endauth
 
 
-                    @guest
-                    <a href="{{ route('home') }}"
-                        class="nav-link @if (Request::is('/')) active @endif">
-                        <i class="fas fa-home"></i>
-                        <span>Dashboard</span>
-                    </a>
-                    @endguest
+                    {{-- @guest
+                        <a href="{{ route('home') }}" class="nav-link @if (Request::is('/')) active @endif">
+                            <i class="fas fa-home"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    @endguest --}}
                 </li>
 
                 <li class="nav-item">
-                    <a href="{{ route('stokbarang.index') }}"
-                        class="nav-link @if (Request::is('stokbarang*')) active @endif">
+                    <a href="{{ url('/kasir/stok-barang') }}"
+                        class="nav-link @if (Request::is('kasir/stok-barang*')) active @endif">
                         <i class="fas fa-boxes"></i>
                         <span>Stok Barang</span>
                     </a>
                 </li>
 
-                <li class="nav-item">
+                {{-- <li class="nav-item">
                     <a href="{{ route('barangmasuk.index') }}"
                         class="nav-link @if (Request::is('barangmasuk*')) active @endif">
                         <i class="fas fa-cart-plus"></i>
@@ -212,27 +208,24 @@
                         <i class="fas fa-dolly"></i>
                         <span>Barang Keluar</span>
                     </a>
-                </li>
+                </li> --}}
                 @auth
-                    @if (Auth::user()->role === 'kasir')
-                <li class="nav-item">
-                    <a href="{{ route('kaswarung.show', session('id_warung')) }}"
-                        class="nav-link @if (Request::is('kaswarung*')) active @endif">
-                        <i class="fas fa-wallet"></i>
-                        <span>Kas</span>
-                    </a>
-                </li>
-                @endif
+
+                    <li class="nav-item">
+                        <a href="{{ url('/kasir/kas') }}"
+                            class="nav-link @if (Request::is('kasir/kas*')) active @endif">
+                            <i class="fas fa-wallet"></i>
+                            <span>Kas</span>
+                        </a>
+                    </li>
                 @endauth
-                <!-- 🔹 Tambahan Menu Hutang -->
                 <li class="nav-item">
-                    <a href="{{ route('hutang.index') }}"
-                        class="nav-link @if (Request::is('hutang*')) active @endif">
+                    <a href="{{ url('/kasir/hutang') }}"
+                        class="nav-link @if (Request::is('kasir/hutang*')) active @endif">
                         <i class="fas fa-file-invoice-dollar"></i>
                         <span>Hutang</span>
                     </a>
                 </li>
-                <!-- 🔹 End Tambahan -->
                 {{-- <li class="nav-item">
                     <a href="{{ route('transaksikas.index', 1) }}"
                 class="nav-link @if (Request::is('transaksikas*')) active @endif">
@@ -248,18 +241,13 @@
                     </a>
                 </li> --}}
                 <li class="nav-item">
-                    <a href="{{ route('mutasibarang.index', 1) }}"
-                        class="nav-link @if (Request::is('mutasibarang*')) active @endif">
+                    <a href="{{ url('/kasir/mutasi-barang') }}"
+                        class="nav-link @if (Request::is('kasir/mutasi-barang*')) active @endif">
                         <i class="fas fa-random"></i>
                         <span>Mutasi</span>
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a href="{{ url('/profile') }}" class="nav-link @if (Request::is('profile')) active @endif">
-                        <i class="fas fa-user-circle"></i>
-                        <span>Profil</span>
-                    </a>
-                </li>
+
             </ul>
 
         </div>

@@ -34,6 +34,12 @@ use App\Http\Controllers\Admin\TransaksiBarangController;
 use App\Http\Controllers\LabaController;
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Kasir\HutangControllerAdmin;
+use App\Http\Controllers\Kasir\KasControllerAdmin;
+use App\Http\Controllers\Kasir\KasirControllerAdmin;
+use App\Http\Controllers\Kasir\MutasiBarangControllerAdmin;
+use App\Http\Controllers\Kasir\ProfilControllerKasir;
+use App\Http\Controllers\Kasir\StokBarangControllerAdmin;
 use App\Http\Controllers\StokBarangController;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Http\Request;
@@ -79,6 +85,21 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::resource('subkategori', SubKategoriControllerAdmin::class);
     Route::resource('warung', WarungController::class);
+});
+
+Route::prefix('kasir')->name('kasir.')->group(function () {
+    Route::get('/', [KasirControllerAdmin::class, 'index'])->name('kasir');
+
+    Route::get('/stok-barang', [StokBarangControllerAdmin::class, 'index'])->name('stokbarang.index');
+    Route::get('/stok-barang/barang-masuk', [StokBarangControllerAdmin::class, 'barangMasuk'])->name('stokbarang.barangmasuk');
+
+    Route::get('/kas', [KasControllerAdmin::class, 'index'])->name('kas.index');
+
+    Route::get('/hutang', [HutangControllerAdmin::class, 'index'])->name('hutang.index');
+
+    Route::get('/mutasi-barang', [MutasiBarangControllerAdmin::class, 'index'])->name('mutasibarang.index');
+
+    Route::get('/profil', [ProfilControllerKasir::class, 'index'])->name('profil.index');
 });
 
 
