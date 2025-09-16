@@ -90,7 +90,7 @@
                             <li><a class="dropdown-item" href="{{ route('kategori.index') }}">Kategori</a></li>
                             <li><a class="dropdown-item" href="{{ route('subkategori.index') }}">Sub Kategori</a></li>
                             <li><a class="dropdown-item" href="{{ route('barang.index') }}">Barang</a></li>
-                            <li><a class="dropdown-item" href="{{ route('warung.index') }}">Warung</a></li>
+                            <li><a class="dropdown-item" href="{{ route('admin.warung.index') }}">Warung</a></li>
                             <li><a class="dropdown-item" href="{{ route('area.index') }}">Area</a></li>
                             <li><a class="dropdown-item" href="{{ route('user.index') }}">Pengguna</a></li>
 
@@ -122,7 +122,7 @@
                             <li><a class="dropdown-item" href="{{ route('baranghutang.index') }}">Barang Hutang</a>
                             </li>
                             <li><a class="dropdown-item" href="{{ route('kuantitas.index') }}">Kuantitas</a></li>
-                            <li><a class="dropdown-item" href="{{ route('targetpencapaian.index') }}">Target
+                            <li><a class="dropdown-item" href="{{ route('admin.targetpencapaian.index') }}">Target
                                     Pencapaian</a></li>
                             <li><a class="dropdown-item" href="{{ route('aturantenggat.index') }}">Aturan Tenggat</a>
                             </li>
@@ -170,12 +170,15 @@
             <ul class="navbar-nav w-100 d-flex flex-row justify-content-around">
                 <li class="nav-item">
                     @auth
-                    <a href="{{ route('warung.show', session('id_warung')) }}"
+                    @if (Auth::user()->role === 'kasir')
+                    <a href="{{ route('admin.warung.show', session('id_warung')) }}"
                         class="nav-link @if (Request::is('dashboard')) active @endif">
                         <i class="fas fa-home"></i>
                         <span>Dashboard</span>
                     </a>
+                    @endif
                     @endauth
+
 
                     @guest
                     <a href="{{ route('home') }}"
@@ -211,7 +214,7 @@
                     </a>
                 </li>
                 @auth
-
+                    @if (Auth::user()->role === 'kasir')
                 <li class="nav-item">
                     <a href="{{ route('kaswarung.show', session('id_warung')) }}"
                         class="nav-link @if (Request::is('kaswarung*')) active @endif">
@@ -219,6 +222,7 @@
                         <span>Kas</span>
                     </a>
                 </li>
+                @endif
                 @endauth
                 <!-- 🔹 Tambahan Menu Hutang -->
                 <li class="nav-item">
@@ -231,10 +235,10 @@
                 <!-- 🔹 End Tambahan -->
                 {{-- <li class="nav-item">
                     <a href="{{ route('transaksikas.index', 1) }}"
-                        class="nav-link @if (Request::is('transaksikas*')) active @endif">
-                        <i class="fas fa-receipt"></i>
-                        <span>Transaksi</span>
-                    </a>
+                class="nav-link @if (Request::is('transaksikas*')) active @endif">
+                <i class="fas fa-receipt"></i>
+                <span>Transaksi</span>
+                </a>
                 </li>
                 <li class="nav-item">
                     <a href="{{ route('transaksibarang.index', 1) }}"

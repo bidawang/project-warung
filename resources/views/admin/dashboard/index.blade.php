@@ -45,7 +45,7 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 @forelse ($warungs as $warung)
-                <a href="{{ route('warung.show', $warung->id) }}" class="block group">
+                <a href="{{ route('admin.warung.show', $warung->id) }}" class="block group">
                     <div
                         class="bg-white rounded-lg shadow-md overflow-hidden transform group-hover:-translate-y-1 group-hover:shadow-xl transition-all duration-300">
                         <img class="h-48 w-full object-cover"

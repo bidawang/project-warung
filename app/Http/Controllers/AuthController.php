@@ -51,7 +51,7 @@ class AuthController extends Controller
             if ($user->role === 'admin') {
                 return redirect()->route('admin.dashboard');
             } elseif ($user->role === 'kasir') {
-                return redirect()->route('warung.show', session('id_warung'));
+                return redirect()->route('admin.warung.show', session('id_warung'));
             }
 
             return redirect()->intended('/'); // fallback

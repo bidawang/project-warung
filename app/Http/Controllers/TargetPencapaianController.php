@@ -11,13 +11,14 @@ class TargetPencapaianController extends Controller
     public function index()
     {
         $target = TargetPencapaian::with('warung')->get();
-        return view('targetpencapaian.index', compact('target'));
+        // dd($target);
+        return view('admin.targetpencapaian.index', compact('target'));
     }
 
     public function create()
     {
         $warung = Warung::all();
-        return view('targetpencapaian.create', compact('warung'));
+        return view('admin.targetpencapaian.create', compact('warung'));
     }
 
     public function store(Request $request)
@@ -30,22 +31,20 @@ class TargetPencapaianController extends Controller
             'status_pencapaian' => 'required|string',
             'keterangan' => 'nullable|string',
         ]);
-
         TargetPencapaian::create($request->all());
-
-        return redirect()->route('targetpencapaian.index')->with('success', 'Target Pencapaian berhasil ditambahkan.');
+        return redirect()->route('admin.targetpencapaian.index')->with('success', 'Target Pencapaian berhasil ditambahkan.');
     }
 
     public function show(TargetPencapaian $targetpencapaian)
     {
         $targetpencapaian->load('warung');
-        return view('targetpencapaian.show', compact('targetpencapaian'));
+        return view('admin.targetpencapaian.show', compact('targetpencapaian'));
     }
 
     public function edit(TargetPencapaian $targetpencapaian)
     {
         $warung = Warung::all();
-        return view('targetpencapaian.edit', compact('targetpencapaian', 'warung'));
+        return view('admin.targetpencapaian.edit', compact('targetpencapaian', 'warung'));
     }
 
     public function update(Request $request, TargetPencapaian $targetpencapaian)
@@ -61,12 +60,12 @@ class TargetPencapaianController extends Controller
 
         $targetpencapaian->update($request->all());
 
-        return redirect()->route('targetpencapaian.index')->with('success', 'Target Pencapaian berhasil diperbarui.');
+        return redirect()->route('admin.targetpencapaian.index')->with('success', 'Target Pencapaian berhasil diperbarui.');
     }
 
     public function destroy(TargetPencapaian $targetpencapaian)
     {
         $targetpencapaian->delete();
-        return redirect()->route('targetpencapaian.index')->with('success', 'Target Pencapaian berhasil dihapus.');
+        return redirect()->route('admin.targetpencapaian.index')->with('success', 'Target Pencapaian berhasil dihapus.');
     }
 }

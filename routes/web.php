@@ -75,9 +75,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::post('/kirim-massal-proses', [TransaksiBarangController::class, 'kirimMassalProses'])->name('transaksibarang.kirim.mass.proses');
     Route::resource('kategori', KategoriControllerAdmin::class);
     Route::resource('areapembelian', AreaPembelianController::class)->names('areapembelian');
+    Route::resource('targetpencapaian', TargetPencapaianController::class);
 
     Route::resource('subkategori', SubKategoriControllerAdmin::class);
-
+    Route::resource('warung', WarungController::class);
 });
 
 
@@ -87,7 +88,6 @@ Route::resource('barang', BarangController::class);
 Route::resource('aturantenggat', AturanTenggatController::class); // Tambahkan route untuk AturanTenggat
 Route::resource('user', UserController::class);
 
-Route::resource('warung', WarungController::class);
 Route::resource('area', AreaController::class);
 Route::resource('kaswarung', KasWarungController::class);
 Route::resource('detailkaswarung', DetailKasWarungController::class);
@@ -105,7 +105,6 @@ Route::resource('baranghutang', BarangHutangController::class);
 
 Route::resource('kuantitas', KuantitasController::class);
 Route::post('kuantitas/create', [KuantitasController::class, 'create'])->name('kuantitas.create');
-Route::resource('targetpencapaian', TargetPencapaianController::class);
 Route::resource('barangkeluar', BarangKeluarController::class);
 
 
@@ -119,4 +118,3 @@ Route::resource('laba', LabaController::class);
 //Harga Jual
 Route::get('/laba/import', [LabaController::class, 'formImport'])->name('laba.formImport');
 Route::post('/laba/import', [LabaController::class, 'import'])->name('laba.import');
-

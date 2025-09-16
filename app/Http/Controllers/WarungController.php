@@ -17,14 +17,14 @@ class WarungController extends Controller
     public function index()
     {
         $warungs = Warung::with(['user', 'area'])->get();
-        return view('warung.index', compact('warungs'));
+        return view('admin.warung.index', compact('warungs'));
     }
 
     public function create()
     {
         $users = User::where('role', 'kasir')->get();
         $areas = Area::all();
-        return view('warung.create', compact('users', 'areas'));
+        return view('admin.warung.create', compact('users', 'areas'));
     }
 
     public function store(Request $request)
@@ -39,7 +39,7 @@ class WarungController extends Controller
 
         Warung::create($request->all());
 
-        return redirect()->route('warung.index')->with('success', 'Warung berhasil ditambahkan.');
+        return redirect()->route('admin.warung.index')->with('success', 'Warung berhasil ditambahkan.');
     }
 
     public function edit($id)
@@ -47,7 +47,7 @@ class WarungController extends Controller
         $warung = Warung::findOrFail($id);
         $users = User::where('role', 'kasir')->get();
         $areas = Area::all();
-        return view('warung.edit', compact('warung', 'users', 'areas'));
+        return view('admin.warung.edit', compact('warung', 'users', 'areas'));
     }
 
     public function update(Request $request, $id)
@@ -63,7 +63,7 @@ class WarungController extends Controller
         $warung = Warung::findOrFail($id);
         $warung->update($request->all());
 
-        return redirect()->route('warung.index')->with('success', 'Warung berhasil diperbarui.');
+        return redirect()->route('admin.warung.index')->with('success', 'Warung berhasil diperbarui.');
     }
 
     public function destroy($id)
@@ -71,7 +71,7 @@ class WarungController extends Controller
         $warung = Warung::findOrFail($id);
         $warung->delete();
 
-        return redirect()->route('warung.index')->with('success', 'Warung berhasil dihapus.');
+        return redirect()->route('admin.warung.index')->with('success', 'Warung berhasil dihapus.');
     }
 
     public function show($id)
@@ -160,6 +160,6 @@ class WarungController extends Controller
             return $barang;
         });
 
-        return view('warung.show', compact('warung', 'barangWithStok', 'stokWarung'));
+        return view('admin.warung.show', compact('warung', 'barangWithStok', 'stokWarung'));
     }
 }
