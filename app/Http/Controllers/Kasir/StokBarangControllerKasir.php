@@ -8,7 +8,7 @@ use App\Models\BarangMasuk;
 use App\Models\StokWarung; // Pastikan model ini tersedia
 use Illuminate\Support\Facades\Auth;
 
-class StokBarangControllerAdmin extends Controller
+class StokBarangControllerKasir extends Controller
 {
     /**
      * Menampilkan daftar stok barang umum di warung.

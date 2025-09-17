@@ -34,12 +34,20 @@ use App\Http\Controllers\LabaController;
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Kasir\HutangControllerAdmin;
+use App\Http\Controllers\Kasir\HutangControllerKasir;
 use App\Http\Controllers\Kasir\KasControllerAdmin;
+use App\Http\Controllers\Kasir\KasControllerKasir;
 use App\Http\Controllers\Kasir\KasirControllerAdmin;
+use App\Http\Controllers\Kasir\KasirControllerKasir;
 use App\Http\Controllers\Kasir\MutasiBarangControllerAdmin;
+<<<<<<< HEAD
 use App\Http\Controllers\Kasir\MutasiBarangController;
+=======
+use App\Http\Controllers\Kasir\MutasiBarangControllerKasir;
+>>>>>>> 225d4b8d3226c08697f9c8f098ac18323aa11962
 use App\Http\Controllers\Kasir\ProfilControllerKasir;
 use App\Http\Controllers\Kasir\StokBarangControllerAdmin;
+use App\Http\Controllers\Kasir\StokBarangControllerKasir;
 use App\Http\Controllers\StokBarangController;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Http\Request;
@@ -88,16 +96,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
 });
 
 Route::prefix('kasir')->name('kasir.')->group(function () {
-    Route::get('/', [KasirControllerAdmin::class, 'index'])->name('kasir');
+    Route::get('/', [KasirControllerKasir::class, 'index'])->name('kasir');
 
-    Route::get('/stok-barang', [StokBarangControllerAdmin::class, 'index'])->name('stokbarang.index');
-    Route::get('/stok-barang/barang-masuk', [StokBarangControllerAdmin::class, 'barangMasuk'])->name('stokbarang.barangmasuk');
+    Route::get('/stok-barang', [StokBarangControllerKasir::class, 'index'])->name('stokbarang.index');
+    Route::get('/stok-barang/barang-masuk', [StokBarangControllerKasir::class, 'barangMasuk'])->name('stokbarang.barangmasuk');
 
-    Route::get('/kas', [KasControllerAdmin::class, 'index'])->name('kas.index');
+    Route::get('/kas', [KasControllerKasir::class, 'index'])->name('kas.index');
 
-    Route::get('/hutang', [HutangControllerAdmin::class, 'index'])->name('hutang.index');
+    Route::get('/hutang', [HutangControllerKasir::class, 'index'])->name('hutang.index');
 
-    Route::get('/mutasi-barang', [MutasiBarangControllerAdmin::class, 'index'])->name('mutasibarang.index');
+    Route::get('/mutasi-barang', [MutasiBarangControllerKasir::class, 'index'])->name('mutasibarang.index');
 
     Route::get('/profil', [ProfilControllerKasir::class, 'index'])->name('profil.index');
 });

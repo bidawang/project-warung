@@ -8,7 +8,7 @@ use App\Models\Laba;
 
 use Illuminate\Http\Request;
 
-class KasirControllerAdmin extends Controller
+class KasirControllerKasir extends Controller
 {
     public function index()
     {
