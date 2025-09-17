@@ -1,56 +1,58 @@
 <?php
+use App\Http\Controllers\{
+    KategoriController,
+    SubKategoriController,
+    BarangController,
+    AturanTenggatController,
+    UserController,
+    WarungController,
+    AreaController,
+    KasWarungController,
+    DetailKasWarungController,
+    TransaksiKasController,
+    DetailTransaksiController,
+    StokWarungController,
+    BarangMasukController,
+    HutangController,
+    BungaController,
+    PembayaranHutangController,
+    BarangHutangController,
+    KuantitasController,
+    TargetPencapaianController,
+    BarangKeluarController,
+    MutasiBarangController,
+    StokBarangController,
+    AuthController
+};
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\KategoriController;
-use App\Http\Controllers\SubKategoriController;
-use App\Http\Controllers\BarangController;
-use App\Http\Controllers\AturanTenggatController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\WarungController;
-use App\Http\Controllers\AreaController;
-use App\Http\Controllers\KasWarungController;
-use App\Http\Controllers\DetailKasWarungController;
-use App\Http\Controllers\TransaksiKasController;
-use App\Http\Controllers\DetailTransaksiController;
-use App\Http\Controllers\StokWarungController;
-use App\Http\Controllers\BarangMasukController;
-use App\Http\Controllers\HutangController;
-use App\Http\Controllers\BungaController;
-use App\Http\Controllers\PembayaranHutangController;
-use App\Http\Controllers\BarangHutangController;
-use App\Http\Controllers\KuantitasController;
-use App\Http\Controllers\TargetPencapaianController;
-use App\Http\Controllers\BarangKeluarController;
+use App\Http\Controllers\Admin\{
+    DashboardControllerAdmin,
+    UserControllerAdmin,
+    AreaControllerAdmin,
+    BarangControllerAdmin,
+    SubKategoriControllerAdmin,
+    KategoriControllerAdmin,
+    AreaPembelianController,
+    TransaksiBarangController
+};
 
-use App\Http\Controllers\Admin\DashboardControllerAdmin;
-use App\Http\Controllers\Admin\UserControllerAdmin;
-use App\Http\Controllers\Admin\AreaControllerAdmin;
-use App\Http\Controllers\Admin\BarangControllerAdmin;
-use App\Http\Controllers\Admin\SubKategoriControllerAdmin;
-use App\Http\Controllers\Admin\KategoriControllerAdmin;
-use App\Http\Controllers\Admin\AreaPembelianController;
-use App\Http\Controllers\Admin\TransaksiBarangController;
-use App\Http\Controllers\LabaController;
+use App\Http\Controllers\Kasir\{
+    HutangControllerAdmin,
+    HutangControllerKasir,
+    KasControllerAdmin,
+    KasControllerKasir,
+    KasirControllerAdmin,
+    KasirControllerKasir,
+    MutasiBarangControllerAdmin,
+    MutasiBarangControllerKasir,
+    ProfilControllerKasir,
+    StokBarangControllerAdmin,
+    StokBarangControllerKasir
+};
 
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\Kasir\HutangControllerAdmin;
-use App\Http\Controllers\Kasir\HutangControllerKasir;
-use App\Http\Controllers\Kasir\KasControllerAdmin;
-use App\Http\Controllers\Kasir\KasControllerKasir;
-use App\Http\Controllers\Kasir\KasirControllerAdmin;
-use App\Http\Controllers\Kasir\KasirControllerKasir;
-use App\Http\Controllers\Kasir\MutasiBarangControllerAdmin;
-<<<<<<< HEAD
-use App\Http\Controllers\Kasir\MutasiBarangController;
-=======
-use App\Http\Controllers\Kasir\MutasiBarangControllerKasir;
->>>>>>> 225d4b8d3226c08697f9c8f098ac18323aa11962
-use App\Http\Controllers\Kasir\ProfilControllerKasir;
-use App\Http\Controllers\Kasir\StokBarangControllerAdmin;
-use App\Http\Controllers\Kasir\StokBarangControllerKasir;
-use App\Http\Controllers\StokBarangController;
-use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\{Route, Password};
 use Illuminate\Http\Request;
+
 
 Route::get('/', function () {
     return view('welcome');
