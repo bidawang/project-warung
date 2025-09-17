@@ -73,7 +73,7 @@
         <div class="container-fluid">
             <a class="navbar-brand d-flex align-items-center" href="{{ url('/dashboard') }}">
                 <i class="fas fa-chart-bar me-2 text-primary"></i>
-                <span class="fw-bold">Dashboard App</span>
+                <span class="fw-bold">Kasir App</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNavbar"
                 aria-controls="topNavbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -146,7 +146,7 @@
                         id="dropdownUser" data-bs-toggle="dropdown">
                         <img src="/image/foto-profil.jpg" alt="User Avatar" width="32"
                             height="32" class="rounded-circle me-2">
-                        <span class="d-none d-md-inline">John Doe</span>
+                        <span class="d-none d-md-inline">Kasir</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0">
                         <li><a class="dropdown-item" href="{{ url('/kasir/profil') }}">Profil</a></li>
