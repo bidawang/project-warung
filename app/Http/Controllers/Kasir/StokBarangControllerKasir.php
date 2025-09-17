@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Kasir;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
-class StokBarangControllerAdmin extends Controller
+class StokBarangControllerKasir extends Controller
 {
     public function index()
     {

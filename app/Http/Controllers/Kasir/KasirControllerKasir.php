@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Kasir;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
-class KasirControllerAdmin extends Controller
+class KasirControllerKasir extends Controller
 {
     public function index()
     {
