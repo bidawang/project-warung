@@ -14,7 +14,6 @@ use App\Http\Controllers\TransaksiKasController;
 use App\Http\Controllers\DetailTransaksiController;
 use App\Http\Controllers\StokWarungController;
 use App\Http\Controllers\BarangMasukController;
-use App\Http\Controllers\MutasiBarangController;
 use App\Http\Controllers\HutangController;
 use App\Http\Controllers\BungaController;
 use App\Http\Controllers\PembayaranHutangController;
@@ -38,6 +37,7 @@ use App\Http\Controllers\Kasir\HutangControllerAdmin;
 use App\Http\Controllers\Kasir\KasControllerAdmin;
 use App\Http\Controllers\Kasir\KasirControllerAdmin;
 use App\Http\Controllers\Kasir\MutasiBarangControllerAdmin;
+use App\Http\Controllers\Kasir\MutasiBarangController;
 use App\Http\Controllers\Kasir\ProfilControllerKasir;
 use App\Http\Controllers\Kasir\StokBarangControllerAdmin;
 use App\Http\Controllers\StokBarangController;
@@ -139,3 +139,11 @@ Route::resource('laba', LabaController::class);
 //Harga Jual
 Route::get('/laba/import', [LabaController::class, 'formImport'])->name('laba.formImport');
 Route::post('/laba/import', [LabaController::class, 'import'])->name('laba.import');
+
+Route::get('/kasir/api/notif-barang-masuk', function () {
+    $count = \App\Models\BarangMasuk::whereHas('stokWarung.warung', function ($q) {
+        $q->where('id_user', auth()->id());
+    })->where('status', 'pending')->count();
+
+    return response()->json(['count' => $count]);
+})->middleware('auth');

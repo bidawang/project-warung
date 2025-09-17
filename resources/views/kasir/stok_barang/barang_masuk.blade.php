@@ -24,11 +24,11 @@
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table table-striped table-hover">
+                    <table class="table table-striped table-hover align-middle">
                         <thead>
                             <tr>
                                 <th scope="col">
-                                    {{-- Kotak centang untuk memilih semua item (opsional, perlu JS) --}}
+                                    {{-- Kotak centang untuk memilih semua item --}}
                                     <input type="checkbox" id="select-all">
                                 </th>
                                 <th scope="col">#</th>
@@ -39,32 +39,45 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {{-- Contoh data barang masuk --}}
+                            @forelse($barangMasuk as $index => $bm)
                             <tr>
                                 <td>
-                                    <input type="checkbox" name="item_ids[]" value="1">
+                                    <input type="checkbox" name="item_ids[]" value="{{ $bm->id }}">
                                 </td>
-                                <th scope="row">1</th>
-                                <td>Kerupuk Udang</td>
-                                <td>100 pcs</td>
-                                <td>2025-09-17</td>
-                                <td>Stok baru, langsung pajang</td>
+                                <th scope="row">{{ $loop->iteration + ($barangMasuk->currentPage() - 1) * $barangMasuk->perPage() }}</th>
+                                <td>{{ $bm->stokWarung->barang->nama_barang ?? '-' }}</td>
+                                <td>{{ $bm->jumlah }} {{ $bm->stokWarung->barang->satuan ?? 'pcs' }}</td>
+                                <td>{{ $bm->created_at?->format('Y-m-d') ?? '-' }}</td>
+                                <td>{{ $bm->keterangan ?? '-' }}</td>
                             </tr>
+                            @empty
                             <tr>
-                                <td>
-                                    <input type="checkbox" name="item_ids[]" value="2">
-                                </td>
-                                <th scope="row">2</th>
-                                <td>Biskuit Regal</td>
-                                <td>12 dus</td>
-                                <td>2025-09-16</td>
-                                <td>Barang titipan, jangan campur</td>
+                                <td colspan="6" class="text-center">Belum ada notifikasi barang masuk.</td>
                             </tr>
+                            @endforelse
                         </tbody>
                     </table>
+                </div>
+
+                {{-- Pagination --}}
+                <div class="mt-3">
+                    {{ $barangMasuk->links() }}
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+{{-- Script untuk select all checkbox --}}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectAllCheckbox = document.getElementById('select-all');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('input[name="item_ids[]"]');
+                checkboxes.forEach(cb => cb.checked = this.checked);
+            });
+        }
+    });
+</script>
 @endsection

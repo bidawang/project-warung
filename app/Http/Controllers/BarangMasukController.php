@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BarangMasuk;
+use App\Events\BarangMasukUpdated;
 use App\Models\StokWarung;
 use App\Models\TransaksiBarang;
 use Illuminate\Http\Request;
@@ -71,10 +72,6 @@ class BarangMasukController extends Controller
         return view('barangmasuk.index', compact('barangMasuk', 'status', 'search'));
     }
 
-
-
-
-
     /**
      * Form tambah barang masuk
      */
@@ -99,6 +96,7 @@ class BarangMasukController extends Controller
         ]);
 
         BarangMasuk::create($validated);
+        BarangMasukUpdated::dispatch(Auth::id());
 
         return redirect()->route('barangmasuk.index')->with('success', 'Barang masuk berhasil ditambahkan');
     }

@@ -3,12 +3,113 @@
 namespace App\Http\Controllers\Kasir;
 
 use App\Http\Controllers\Controller;
+use App\Models\StokWarung;
+use App\Models\Laba;
+
 use Illuminate\Http\Request;
 
 class KasirControllerAdmin extends Controller
 {
     public function index()
     {
-        return view('kasir.kasir.index');
+        $idWarung = session('id_warung');
+
+        if (!$idWarung) {
+            return redirect()->route('dashboard')->with('error', 'ID warung tidak ditemukan di sesi.');
+        }
+
+        $stok_warungs = StokWarung::where('id_warung', $idWarung)
+            ->with(['barang.transaksiBarang.areaPembelian', 'kuantitas'])
+            ->get();
+
+        $stok_warungs->transform(function ($stok) use ($idWarung) {
+            // Hitung stok saat ini
+            $stokMasuk = $stok->barangMasuk()
+                ->where('status', 'terima')
+                ->whereHas('stokWarung', fn($q) => $q->where('id_warung', $idWarung))
+                ->sum('jumlah');
+
+            $stokKeluar = $stok->barangKeluar()
+                ->whereHas('stokWarung', fn($q) => $q->where('id_warung', $idWarung))
+                ->sum('jumlah');
+
+            $mutasiMasuk = $stok->mutasiBarang()
+                ->where('status', 'terima')
+                ->whereHas('stokWarung', fn($q) => $q->where('warung_tujuan', $idWarung))
+                ->sum('jumlah');
+
+            $mutasiKeluar = $stok->mutasiBarang()
+                ->where('status', 'terima')
+                ->whereHas('stokWarung', fn($q) => $q->where('warung_asal', $idWarung))
+                ->sum('jumlah');
+
+            $stokSaatIni = $stokMasuk + $mutasiMasuk - $mutasiKeluar - $stokKeluar;
+            $stok->stok_saat_ini = $stokSaatIni;
+
+            // Ambil transaksi terbaru
+            $transaksi = $stok->barang->transaksiBarang()->latest()->first();
+
+            if (!$transaksi) {
+                $stok->harga_jual = 0;
+                $stok->kuantitas_list = [];
+                return $stok;
+            }
+
+            // Harga dasar per satuan
+            $hargaDasar = $transaksi->harga / max($transaksi->jumlah, 1);
+
+            // Markup dari area pembelian
+            $markupPercent = optional($transaksi->areaPembelian)->markup ?? 0;
+            $hargaSatuan = $hargaDasar + ($hargaDasar * $markupPercent / 100);
+
+            // Harga jual dasar dari tabel Laba
+            $laba = Laba::where('input_minimal', '<=', $hargaSatuan)
+                ->where('input_maksimal', '>=', $hargaSatuan)
+                ->first();
+
+            $hargaJualDasar = $laba ? $laba->harga_jual : 0;
+
+            // Ambil kuantitas (bundle) dan urutkan descending berdasarkan jumlah (kelipatan)
+            $kuantitasList = $stok->kuantitas->sortByDesc('jumlah')->values();
+
+            // Fungsi hitung harga total berdasarkan jumlah pembelian (beliQty)
+            $stok->calculateHargaJual = function (int $beliQty) use ($kuantitasList, $hargaJualDasar) {
+                $sisaQty = $beliQty;
+                $totalHarga = 0;
+
+                foreach ($kuantitasList as $bundle) {
+                    $bundleQty = $bundle->jumlah;
+                    $bundleHarga = $bundle->harga_jual;
+
+                    if ($bundleQty <= 0) continue;
+
+                    $kelipatan = intdiv($sisaQty, $bundleQty);
+                    if ($kelipatan > 0) {
+                        $totalHarga += $kelipatan * $bundleHarga;
+                        $sisaQty -= $kelipatan * $bundleQty;
+                    }
+                }
+
+                if ($sisaQty > 0) {
+                    $totalHarga += $sisaQty * $hargaJualDasar;
+                }
+
+                return $totalHarga;
+            };
+
+            $stok->kuantitas_list = $kuantitasList->map(fn($k) => [
+                'jumlah' => $k->jumlah,
+                'harga_jual' => $k->harga_jual,
+            ]);
+
+            $stok->harga_jual = $hargaJualDasar;
+
+            return $stok;
+        });
+
+        // Filter produk yang stoknya > 0
+        $products = $stok_warungs->filter(fn($stok) => $stok->stok_saat_ini > 0);
+
+        return view('kasir.kasir.index', compact('products'));
     }
 }
