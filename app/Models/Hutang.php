@@ -20,10 +20,6 @@ class Hutang extends Model
         'jumlah_pokok'
     ];
 
-    protected $casts = [
-        'status' => HutangStatusEnum::class,
-    ];
-
     public function warung()
     {
         return $this->belongsTo(Warung::class, 'id_warung');
@@ -33,10 +29,17 @@ class Hutang extends Model
     {
         return $this->belongsTo(User::class, 'id_user');
     }
-}
 
-enum HutangStatusEnum: string
-{
-    case LUNAS = 'lunas';
-    case BELUM_LUNAS = 'belum lunas';
+    public function bunga()
+    {
+        return $this->hasMany(Bunga::class, 'id_hutang');
+}
+    public function barangHutang()
+    {
+        return $this->hasMany(BarangHutang::class, 'id_hutang');
+}
+    public function transaksiKas()
+    {
+        return $this->hasMany(TransaksiKas::class, 'id_hutang');
+}
 }

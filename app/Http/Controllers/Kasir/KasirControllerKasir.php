@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Kasir;
 use App\Http\Controllers\Controller;
 use App\Models\StokWarung;
 use App\Models\Laba;
+use App\Models\User;
 
 use Illuminate\Http\Request;
 
@@ -15,7 +16,7 @@ class KasirControllerKasir extends Controller
         $idWarung = session('id_warung');
 
         if (!$idWarung) {
-            return redirect()->route('dashboard')->with('error', 'ID warung tidak ditemukan di sesi.');
+            return redirect()->route('kasir.kasir')->with('error', 'ID warung tidak ditemukan di sesi.');
         }
 
         $stok_warungs = StokWarung::where('id_warung', $idWarung)
@@ -110,6 +111,9 @@ class KasirControllerKasir extends Controller
         // Filter produk yang stoknya > 0
         $products = $stok_warungs->filter(fn($stok) => $stok->stok_saat_ini > 0);
 
-        return view('kasir.kasir.index', compact('products'));
+        // Ambil daftar pengguna dengan role 'member'
+        $members = User::where('role', 'member')->get();
+
+        return view('kasir.kasir.index', compact('products', 'members'));
     }
 }

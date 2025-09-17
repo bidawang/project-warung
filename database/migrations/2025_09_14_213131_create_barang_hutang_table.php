@@ -14,12 +14,12 @@ return new class extends Migration
         Schema::create('barang_hutang', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('id_hutang');
-            $table->unsignedBigInteger('id_transaksi_barang');
+            $table->unsignedBigInteger('id_barang_keluar');
             $table->timestamps();
 
             // Menambahkan kunci asing
             $table->foreign('id_hutang')->references('id')->on('hutang')->onDelete('cascade');
-            $table->foreign('id_transaksi_barang')->references('id')->on('transaksi_barang')->onDelete('cascade');
+            $table->foreign('id_barang_keluar')->references('id')->on('barang_keluar')->onDelete('cascade');
         });
     }
 

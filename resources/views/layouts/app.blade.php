@@ -243,8 +243,8 @@
                     </a>
                 </li> --}}
                 <li class="nav-item">
-                    <a href="{{ url('/kasir/mutasi-barang') }}"
-                        class="nav-link @if (Request::is('kasir/mutasi-barang*')) active @endif">
+                    <a href="{{ route('kasir.mutasibarang.index') }}"
+                        class="nav-link @if (Request::is('kasir/mutasibarang*')) active @endif">
                         <i class="fas fa-random"></i>
                         <span>Mutasi</span>
                     </a>

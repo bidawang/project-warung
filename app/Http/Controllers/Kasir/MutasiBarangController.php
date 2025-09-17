@@ -38,7 +38,7 @@ class MutasiBarangController extends Controller
             ->latest()
             ->get()
             ->groupBy('warung_tujuan');
-
+// dd($mutasiKeluarGrouped);
         return view('mutasibarang.index', compact('mutasiMasuk', 'mutasiKeluarGrouped'));
     }
 

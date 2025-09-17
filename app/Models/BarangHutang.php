@@ -15,15 +15,15 @@ class BarangHutang extends Model
 
     protected $fillable = [
         'id_hutang',
-        'id_transaksi_barang',
+        'id_barang_keluar',
     ];
 
     public function hutang(): BelongsTo
     {
         return $this->belongsTo(hutang::class, 'id_hutang', 'id');
     }
-    public function transaksiBarang(): BelongsTo
+    public function barangKeluar(): BelongsTo
     {
-        return $this->belongsTo(TransaksiBarang::class, 'id_transaksi_barang', 'id');
+        return $this->belongsTo(barangKeluar::class, 'id_barang_keluar', 'id');
     }
 }

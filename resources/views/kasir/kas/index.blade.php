@@ -13,7 +13,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h5 class="card-title">Total Pendapatan</h5>
-                            <h2 class="card-text">Rp 1.500.000</h2>
+                            <h2 class="card-text">Rp {{ number_format($totalPendapatan, 0, ',', '.') }}</h2>
                         </div>
                         <i class="fas fa-dollar-sign fa-2x"></i>
                     </div>
@@ -26,7 +26,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h5 class="card-title">Total Pengeluaran</h5>
-                            <h2 class="card-text">Rp 750.000</h2>
+                            <h2 class="card-text">Rp {{ number_format($totalPengeluaran, 0, ',', '.') }}</h2>
                         </div>
                         <i class="fas fa-shopping-cart fa-2x"></i>
                     </div>
@@ -39,7 +39,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h5 class="card-title">Saldo Bersih</h5>
-                            <h2 class="card-text">Rp 750.000</h2>
+                            <h2 class="card-text">Rp {{ number_format($saldoBersih, 0, ',', '.') }}</h2>
                         </div>
                         <i class="fas fa-wallet fa-2x"></i>
                     </div>
@@ -73,25 +73,37 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <th scope="row">1</th>
-                            <td>2025-09-17</td>
-                            <td><span class="badge bg-success">Pemasukan</span></td>
-                            <td>Penjualan harian</td>
-                            <td>+ Rp 150.000</td>
-                        </tr>
-                        <tr>
-                            <th scope="row">2</th>
-                            <td>2025-09-17</td>
-                            <td><span class="badge bg-danger">Pengeluaran</span></td>
-                            <td>Beli sabun cuci</td>
-                            <td>- Rp 25.000</td>
-                        </tr>
-                        </tbody>
+                        @forelse ($riwayatTransaksi as $transaksi)
+                            <tr>
+                                <th scope="row">{{ $loop->iteration }}</th>
+                                <td>{{ \Carbon\Carbon::parse($transaksi->created_at)->format('Y-m-d') }}</td>
+                                <td>
+                                    @if ($transaksi->jenis === 'penjualan')
+                                        <span class="badge bg-success">Pemasukan</span>
+                                    @else
+                                        <span class="badge bg-danger">Pengeluaran</span>
+                                    @endif
+                                </td>
+                                <td>{{ $transaksi->keterangan }}</td>
+                                <td>
+                                    @if ($transaksi->jenis === 'penjualan')
+                                        + Rp {{ number_format($transaksi->total, 0, ',', '.') }}
+                                    @else
+                                        - Rp {{ number_format($transaksi->total, 0, ',', '.') }}
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">Tidak ada riwayat transaksi kas.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
                 </table>
             </div>
 
-            <nav aria-label="Page navigation example">
+            {{-- Fitur Pagination (jika diperlukan) --}}
+            {{-- <nav aria-label="Page navigation example">
                 <ul class="pagination justify-content-center">
                     <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
                     <li class="page-item active"><a class="page-link" href="#">1</a></li>
@@ -99,7 +111,7 @@
                     <li class="page-item"><a class="page-link" href="#">3</a></li>
                     <li class="page-item"><a class="page-link" href="#">Next</a></li>
                 </ul>
-            </nav>
+            </nav> --}}
         </div>
     </div>
 </div>

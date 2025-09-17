@@ -28,6 +28,16 @@ class TransaksiKas extends Model
     {
         return $this->belongsTo(KasWarung::class, 'id_kas_warung');
     }
+
+    public function hutang()
+    {
+        return $this->belongsTo(Hutang::class, 'id_hutang');
+    }
+
+    public function transaksiBarangKeluar(){
+        return $this->hasMany(transaksiBarangKeluar::class, 'id_transaksi_kas');
+    }
+
 }
 
 // enum JenisTransaksiEnum: string

@@ -9,66 +9,71 @@
             <h5 class="mb-0">Daftar Hutang Pelanggan</h5>
         </div>
         <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center mb-3">
+            <form method="GET" class="d-flex justify-content-between align-items-center mb-3">
                 <div class="input-group" style="max-width: 300px;">
-                    <input type="text" class="form-control" placeholder="Cari nama pelanggan...">
-                    <button class="btn btn-outline-secondary" type="button">Cari</button>
+                    <input type="text" name="q" value="{{ request('q') }}" class="form-control" placeholder="Cari nama pelanggan...">
+                    <button class="btn btn-outline-secondary" type="submit">Cari</button>
                 </div>
-                <div class="btn-group" role="group" aria-label="Filter status hutang">
-                    <a href="#" class="btn btn-outline-secondary">Semua</a>
-                    <a href="#" class="btn btn-outline-secondary active">Belum Lunas</a>
-                    <a href="#" class="btn btn-outline-secondary">Lunas</a>
+                <div class="btn-group" role="group">
+                    <a href="{{ route('kasir.hutang.index') }}"
+                       class="btn btn-outline-secondary {{ request('status') == null ? 'active' : '' }}">
+                       Semua
+                    </a>
+                    <a href="{{ route('kasir.hutang.index', ['status' => 'belum lunas']) }}"
+                       class="btn btn-outline-secondary {{ request('status') == 'belum lunas' ? 'active' : '' }}">
+                       Belum Lunas
+                    </a>
+                    <a href="{{ route('kasir.hutang.index', ['status' => 'lunas']) }}"
+                       class="btn btn-outline-secondary {{ request('status') == 'lunas' ? 'active' : '' }}">
+                       Lunas
+                    </a>
                 </div>
-            </div>
+            </form>
 
             <div class="table-responsive">
                 <table class="table table-striped table-hover">
                     <thead>
                         <tr>
-                            <th scope="col">#</th>
-                            <th scope="col">Nama Pelanggan</th>
-                            <th scope="col">Jumlah Hutang</th>
-                            <th scope="col">Tanggal Jatuh Tempo</th>
-                            <th scope="col">Status</th>
-                            <th scope="col">Aksi</th>
+                            <th>#</th>
+                            <th>Nama Pelanggan</th>
+                            <th>Jumlah Hutang</th>
+                            <th>Tanggal Jatuh Tempo</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <th scope="row">1</th>
-                            <td>Andi Sucipto</td>
-                            <td>Rp 50.000</td>
-                            <td>2025-10-01</td>
-                            <td><span class="badge bg-danger">Belum Lunas</span></td>
-                            <td>
-                                <a href="#" class="btn btn-sm btn-info text-white">Detail</a>
-                                <a href="#" class="btn btn-sm btn-success">Bayar</a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row">2</th>
-                            <td>Citra Dewi</td>
-                            <td>Rp 15.000</td>
-                            <td>2025-09-25</td>
-                            <td><span class="badge bg-danger">Belum Lunas</span></td>
-                            <td>
-                                <a href="#" class="btn btn-sm btn-info text-white">Detail</a>
-                                <a href="#" class="btn btn-sm btn-success">Bayar</a>
-                            </td>
-                        </tr>
-                        </tbody>
+                        @forelse($hutangList as $index => $hutang)
+                            <tr>
+                                <td>{{ $loop->iteration + ($hutangList->firstItem() - 1) }}</td>
+                                <td>{{ $hutang->user->name ?? '-' }}</td>
+                                <td>Rp {{ number_format($hutang->jumlah_pokok, 0, ',', '.') }}</td>
+                                <td>{{ \Carbon\Carbon::parse($hutang->tenggat)->format('Y-m-d') }}</td>
+                                <td>
+                                    @if($hutang->status == 'belum lunas')
+                                        <span class="badge bg-danger">Belum Lunas</span>
+                                    @else
+                                        <span class="badge bg-success">Lunas</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    {{-- " class="btn btn-sm btn-info text-white">Detail</a>
+                                    @if($hutang->status == 'belum lunas')
+                                        <a href="{{ route('kasir.hutang.bayar', $hutang->id) }}" class="btn btn-sm btn-success">Bayar</a>
+                                    @endif --}}
+                                    <button type="button" class="btn btn-sm btn-info text-white" data-bs-toggle="modal" data-bs-target="#detailModal{{ $hutang->id }}">Bayar</button>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="text-center">Tidak ada data hutang</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
                 </table>
             </div>
 
-            <nav aria-label="Page navigation example">
-                <ul class="pagination justify-content-center">
-                    <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
-                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                    <li class="page-item"><a class="page-link" href="#">2</a></li>
-                    <li class="page-item"><a class="page-link" href="#">3</a></li>
-                    <li class="page-item"><a class="page-link" href="#">Next</a></li>
-                </ul>
-            </nav>
+            {{ $hutangList->withQueryString()->links() }}
         </div>
     </div>
 </div>

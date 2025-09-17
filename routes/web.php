@@ -19,10 +19,9 @@ use App\Http\Controllers\{
     BarangHutangController,
     KuantitasController,
     TargetPencapaianController,
-    BarangKeluarController,
-    MutasiBarangController,
     StokBarangController,
-    AuthController
+    AuthController,
+    LabaController
 };
 
 use App\Http\Controllers\Admin\{
@@ -37,13 +36,14 @@ use App\Http\Controllers\Admin\{
 };
 
 use App\Http\Controllers\Kasir\{
+        BarangKeluarController,
     HutangControllerAdmin,
     HutangControllerKasir,
     KasControllerAdmin,
     KasControllerKasir,
     KasirControllerAdmin,
     KasirControllerKasir,
-    MutasiBarangControllerAdmin,
+    MutasiBarangController,
     MutasiBarangControllerKasir,
     ProfilControllerKasir,
     StokBarangControllerAdmin,
@@ -106,8 +106,9 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::get('/kas', [KasControllerKasir::class, 'index'])->name('kas.index');
 
     Route::get('/hutang', [HutangControllerKasir::class, 'index'])->name('hutang.index');
+Route::resource('barangkeluar', BarangKeluarController::class);
 
-    Route::get('/mutasi-barang', [MutasiBarangControllerKasir::class, 'index'])->name('mutasibarang.index');
+    Route::get('/mutasibarang', [MutasiBarangController::class, 'index'])->name('mutasibarang.index');
 
     Route::get('/profil', [ProfilControllerKasir::class, 'index'])->name('profil.index');
 });
@@ -118,6 +119,7 @@ Route::resource('subkategori', SubKategoriController::class);
 Route::resource('barang', BarangController::class);
 Route::resource('aturantenggat', AturanTenggatController::class); // Tambahkan route untuk AturanTenggat
 Route::resource('user', UserController::class);
+Route::resource('mutasibarang', MutasiBarangController::class); // Tambahkan route untuk MutasiBarang
 
 Route::resource('area', AreaController::class);
 Route::resource('kaswarung', KasWarungController::class);
@@ -128,7 +130,6 @@ Route::resource('transaksibarang', TransaksiBarangController::class);
 Route::resource('stokwarung', StokWarungController::class);
 Route::resource('stokbarang', StokBarangController::class);
 Route::resource('barangmasuk', BarangMasukController::class);
-Route::resource('mutasibarang', MutasiBarangController::class); // Tambahkan route untuk MutasiBarang
 Route::resource('hutang', HutangController::class);
 Route::resource('bunga', BungaController::class);
 Route::resource('pembayaranhutang', PembayaranHutangController::class);
@@ -136,7 +137,6 @@ Route::resource('baranghutang', BarangHutangController::class);
 
 Route::resource('kuantitas', KuantitasController::class);
 Route::post('kuantitas/create', [KuantitasController::class, 'create'])->name('kuantitas.create');
-Route::resource('barangkeluar', BarangKeluarController::class);
 
 
 //Barang Masuk dari kasir

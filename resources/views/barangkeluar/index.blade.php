@@ -11,7 +11,7 @@
     <div class="p-4 bg-light min-vh-100">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
             <h1 class="h2 mb-3 mb-md-0 text-gray-800">Daftar Barang Keluar</h1>
-            <a href="{{ route('barangkeluar.create') }}" class="btn btn-primary">
+            <a href="{{ route('kasir.barangkeluar.create') }}" class="btn btn-primary">
                 + Tambah Barang Keluar
             </a>
         </div>
