@@ -9,35 +9,36 @@
     {{-- Memuat Tailwind CSS dari CDN --}}
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Gaya tambahan untuk modal */
-        .modal-overlay {
-            background-color: rgba(0, 0, 0, 0.5);
-        }
-
-        /* Transisi untuk sidebar */
+        /* Gaya tambahan untuk transisi sidebar */
         .sidebar {
             transition: transform 0.3s ease-in-out;
+            transform: translateX(-100%);
         }
 
         .sidebar.open {
             transform: translateX(0);
         }
 
-        .sidebar.closed {
-            transform: translateX(-100%);
+        @media (min-width: 1024px) {
+            .sidebar {
+                transform: translateX(0);
+            }
         }
     </style>
 </head>
 
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
 
-    <div class="flex h-screen bg-gray-200">
+    <div class="flex h-screen">
+        {{-- Overlay untuk mode mobile --}}
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black opacity-50 z-40 hidden lg:hidden"></div>
+
         {{-- Sidebar --}}
         <aside id="sidebar"
-            class="sidebar fixed inset-y-0 left-0 w-64 bg-gray-800 text-white flex-shrink-0 z-50 overflow-y-auto lg:static lg:block lg:closed">
+            class="sidebar fixed inset-y-0 left-0 w-64 bg-gray-800 text-white flex-shrink-0 z-50 overflow-y-auto lg:static lg:block">
             <div class="p-6 flex items-center justify-between">
                 <h2 class="text-2xl font-semibold text-white">Admin Panel</h2>
-                <button id="closeSidebarBtn" class="text-white lg:hidden">
+                <button id="closeSidebarBtn" class="text-white lg:hidden focus:outline-none">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                         xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
@@ -47,7 +48,7 @@
             </div>
             <nav class="mt-6">
                 <a href="/admin/dashboard"
-                    class="flex items-center px-6 py-3 mt-2 {{ request()->is('admin/dashboard') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    class="flex items-center px-6 py-3 mt-2 transition duration-200 ease-in-out {{ request()->is('admin/dashboard') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                         xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -58,7 +59,7 @@
                 </a>
 
                 <a href="/admin/barang"
-                    class="flex items-center px-6 py-3 mt-2 {{ request()->is('admin/barang*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    class="flex items-center px-6 py-3 mt-2 transition duration-200 ease-in-out {{ request()->is('admin/barang*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                         xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -67,7 +68,7 @@
                     <span class="ml-4">Barang</span>
                 </a>
                 <a href="/admin/transaksibarang"
-                    class="flex items-center px-6 py-3 mt-2 {{ request()->is('admin/transaksibarang*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    class="flex items-center px-6 py-3 mt-2 transition duration-200 ease-in-out {{ request()->is('admin/transaksibarang*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                         xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -77,7 +78,7 @@
                 </a>
 
                 <a href="/admin/area"
-                    class="flex items-center px-6 py-3 mt-2 {{ request()->is('admin/area*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    class="flex items-center px-6 py-3 mt-2 transition duration-200 ease-in-out {{ request()->is('admin/area*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                         xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -89,7 +90,7 @@
                 </a>
 
                 <a href="/admin/areapembelian"
-                    class="flex items-center px-6 py-3 mt-2 {{ request()->is('admin/areapembelian*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    class="flex items-center px-6 py-3 mt-2 transition duration-200 ease-in-out {{ request()->is('admin/areapembelian*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                         xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -101,7 +102,7 @@
                 </a>
 
                 <a href="{{ route('admin.warung.index') }}"
-                    class="flex items-center px-6 py-3 mt-2 {{ request()->is('admin/warung*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    class="flex items-center px-6 py-3 mt-2 transition duration-200 ease-in-out {{ request()->is('admin/warung*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                         xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -113,7 +114,7 @@
                 </a>
 
                 <a href="{{ route('admin.targetpencapaian.index') }}"
-                    class=" flex items-center px-6 py-3 mt-2 {{ request()->is('admin/target*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    class=" flex items-center px-6 py-3 mt-2 transition duration-200 ease-in-out {{ request()->is('admin/target*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                         xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -125,7 +126,7 @@
                 </a>
 
                 <a href="/admin/kategori"
-                    class="flex items-center px-6 py-3 mt-2 {{ request()->is('admin/target*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    class="flex items-center px-6 py-3 mt-2 transition duration-200 ease-in-out {{ request()->is('admin/kategori*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                         xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -137,7 +138,7 @@
                 </a>
 
                 <a href="/admin/subkategori"
-                    class="flex items-center px-6 py-3 mt-2 {{ request()->is('admin/target*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    class="flex items-center px-6 py-3 mt-2 transition duration-200 ease-in-out {{ request()->is('admin/subkategori*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                         xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -149,7 +150,7 @@
                 </a>
 
                 <a href="/admin/user"
-                    class="flex items-center px-6 py-3 mt-2 {{ request()->is('admin/user*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    class="flex items-center px-6 py-3 mt-2 transition duration-200 ease-in-out {{ request()->is('admin/user*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                         xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -160,7 +161,7 @@
                 </a>
                 <a href="{{ route('logout') }}"
                     onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
-                    class="flex items-center px-6 py-3 mt-2 {{ request()->is('logout') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    class="flex items-center px-6 py-3 mt-2 transition duration-200 ease-in-out {{ request()->is('logout') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                         xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -177,36 +178,51 @@
             </nav>
         </aside>
 
-
         {{-- Main Content --}}
+        <div class="flex-1 flex flex-col overflow-hidden">
+            {{-- Header/Navbar --}}
+            <header class="bg-white shadow-sm lg:hidden">
+                <div class="flex items-center justify-between px-4 py-4">
+                    <button id="openSidebarBtn" class="text-gray-500 focus:outline-none focus:text-gray-900">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                    <h1 class="text-lg font-semibold text-gray-800">@yield('title', 'Dashboard')</h1>
+                </div>
+            </header>
 
-        @yield('content')
-
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
+                @yield('content')
+            </main>
+        </div>
     </div>
-    </div>
 
-    {{-- Script untuk mengontrol modal dan sidebar --}}
+    {{-- Script untuk mengontrol sidebar --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-
-            const addUserBtn = document.getElementById('addUserBtn');
-            const closeModalBtn = document.getElementById('closeModalBtn');
-            const cancelModalBtn = document.getElementById('cancelModalBtn');
-
             const sidebar = document.getElementById('sidebar');
             const openSidebarBtn = document.getElementById('openSidebarBtn');
             const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
 
-            // Kontrol Sidebar
-            openSidebarBtn.addEventListener('click', function() {
-                sidebar.classList.remove('closed');
-                sidebar.classList.add('open');
-            });
+            const toggleSidebar = () => {
+                sidebar.classList.toggle('open');
+                sidebarOverlay.classList.toggle('hidden');
+            };
 
-            closeSidebarBtn.addEventListener('click', function() {
-                sidebar.classList.remove('open');
-                sidebar.classList.add('closed');
-            });
+            if (openSidebarBtn) {
+                openSidebarBtn.addEventListener('click', toggleSidebar);
+            }
+
+            if (closeSidebarBtn) {
+                closeSidebarBtn.addEventListener('click', toggleSidebar);
+            }
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', toggleSidebar);
+            }
         });
     </script>
 </body>

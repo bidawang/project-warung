@@ -199,14 +199,14 @@ class TransaksiBarangController extends Controller
 
     public function show(TransaksiBarang $transaksibarang)
     {
-        return view('admin/transaksibarang.show', compact('transaksibarang'));
+        return view('admin.transaksibarang.show', compact('transaksibarang'));
     }
 
     public function edit(TransaksiBarang $transaksibarang)
     {
         $transaksis = TransaksiKas::all();
         $barangs = Barang::all();
-        return view('admin/transaksibarang.edit', compact('transaksibarang', 'transaksis', 'barangs'));
+        return view('admin.transaksibarang.edit', compact('transaksibarang', 'transaksis', 'barangs'));
     }
 
     public function update(Request $request, TransaksiBarang $transaksibarang)

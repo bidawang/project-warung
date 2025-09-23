@@ -20,8 +20,8 @@ class LabaControllerAdmin extends Controller
         $labas = Laba::with('area')
             ->when($id_area, fn($q) => $q->where('id_area', $id_area))
             ->get();
-dd($labas);
-        return view('laba.index', compact('labas', 'id_area'));
+// dd($labas);
+        return view('admin.area.laba.index', compact('labas', 'id_area'));
     }
 
     /**
@@ -31,7 +31,7 @@ dd($labas);
     {
         $areas = Area::all();
         $id_area = $request->query('id_area');
-        return view('laba.create', compact('areas', 'id_area'));
+        return view('admin.area.laba.create', compact('areas', 'id_area'));
     }
 
     /**
@@ -66,7 +66,7 @@ dd($labas);
     public function edit(Laba $laba)
     {
         $areas = Area::all();
-        return view('laba.edit', compact('laba', 'areas'));
+        return view('admin.area.laba.edit', compact('laba', 'areas'));
     }
 
     /**
@@ -112,7 +112,7 @@ dd($labas);
 
     public function formImport()
     {
-        return view('laba.import');
+        return view('admin.area.laba.import');
     }
 
     public function import(Request $request)
