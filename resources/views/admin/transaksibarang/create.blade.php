@@ -53,6 +53,7 @@
                                                 <th class="border px-2 py-1 text-left">Barang</th>
                                                 <th class="border px-2 py-1 text-left">Jumlah</th>
                                                 <th class="border px-2 py-1 text-left">Total Harga (Rp)</th>
+                                                <th class="border px-2 py-1 text-left">Tgl Kadaluarsa</th>
                                                 <th class="border px-2 py-1 w-10">Aksi</th>
                                             </tr>
                                         </thead>
@@ -72,7 +73,10 @@
                                                     <input type="number" name="jumlah[0][]" class="input-jumlah w-full border rounded-lg px-2 py-1" min="1" required />
                                                 </td>
                                                 <td class="border px-2 py-1">
-                                                    <input type="text" name="total_harga[0][]" class="total-harga w-full border rounded-lg px-2 py-1" />
+                                                    <input type="text" name="total_harga[0][]" class="total-harga w-full border rounded-lg px-2 py-1" required />
+                                                </td>
+                                                <td class="border px-2 py-1">
+                                                    <input type="date" name="tanggal_kadaluarsa[0][]" class="input-tgl-kadaluarsa w-full border rounded-lg px-2 py-1" />
                                                 </td>
                                                 <td class="border px-2 py-1 text-center">
                                                     <button type="button" class="btn-remove-row text-red-600 hover:text-red-800 font-bold text-xl leading-none">&times;</button>
@@ -171,10 +175,11 @@
             });
 
             // Update name barang sesuai area index
-            newArea.querySelectorAll('select[name^="id_barang"], input[name^="jumlah"], input[name^="total_harga"]').forEach(el => {
+            newArea.querySelectorAll('select[name^="id_barang"], input[name^="jumlah"], input[name^="total_harga"], input[name^="tanggal_kadaluarsa"]').forEach(el => {
                 if (el.name.includes('id_barang')) el.name = `id_barang[${areaIndex}][]`;
                 if (el.name.includes('jumlah')) el.name = `jumlah[${areaIndex}][]`;
                 if (el.name.includes('total_harga')) el.name = `total_harga[${areaIndex}][]`;
+                if (el.name.includes('tanggal_kadaluarsa')) el.name = `tanggal_kadaluarsa[${areaIndex}][]`;
                 el.value = "";
             });
 
@@ -216,10 +221,31 @@
                     if (el.name.includes('id_barang')) el.name = `id_barang[${areaIndex}][]`;
                     if (el.name.includes('jumlah')) el.name = `jumlah[${areaIndex}][]`;
                     if (el.name.includes('total_harga')) el.name = `total_harga[${areaIndex}][]`;
+                    if (el.name.includes('tanggal_kadaluarsa')) el.name = `tanggal_kadaluarsa[${areaIndex}][]`;
                     el.value = "";
                 });
 
                 tbody.appendChild(newRow);
+            }
+        });
+
+        // Perhitungan Total Harga
+        document.addEventListener('input', e => {
+            if (e.target.classList.contains('input-jumlah') || e.target.classList.contains('select-barang')) {
+                const row = e.target.closest('tr');
+                const selectBarang = row.querySelector('.select-barang');
+                const inputJumlah = row.querySelector('.input-jumlah');
+                const totalHargaInput = row.querySelector('.total-harga');
+
+                const hargaPerBarang = selectBarang.options[selectBarang.selectedIndex].getAttribute('data-harga');
+                const jumlah = inputJumlah.value;
+
+                if (hargaPerBarang && jumlah) {
+                    const total = parseFloat(hargaPerBarang) * parseInt(jumlah);
+                    totalHargaInput.value = total;
+                } else {
+                    totalHargaInput.value = 0;
+                }
             }
         });
 

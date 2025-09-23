@@ -23,8 +23,6 @@ class TransaksiBarangController extends Controller
 
         $query = TransaksiBarang::with(['transaksiKas', 'barang', 'barangMasuk']);
 
-
-
         if (in_array($status, ['pending', 'kirim', 'terima', 'tolak'])) {
             $query->whereHas('barangMasuk', function ($q) use ($status) {
                 if ($status === 'kirim') {
@@ -95,6 +93,7 @@ class TransaksiBarangController extends Controller
 
     public function store(Request $request)
     {
+        // dd($request->all());
         // Simpan transaksi awal
         $transaksi = TransaksiAwal::create([
             'tanggal' => now(),
@@ -111,6 +110,7 @@ class TransaksiBarangController extends Controller
                     foreach ($request->id_barang[$areaIndex] as $i => $barangId) {
                         $jumlah = $request->jumlah[$areaIndex][$i] ?? 0;
                         $harga  = $request->total_harga[$areaIndex][$i] ?? 0;
+                        $tanggalKadaluarsa = $request->tanggal_kadaluarsa[$areaIndex][$i] ?? null;
 
                         TransaksiBarang::create([
                             'id_transaksi_awal'   => $transaksi->id,
@@ -118,6 +118,7 @@ class TransaksiBarangController extends Controller
                             'id_barang'           => $barangId,
                             'jumlah'              => $jumlah,
                             'harga'               => $harga,
+                            'tanggal_kadaluarsa'  => $tanggalKadaluarsa, // Menambahkan kolom baru
                             'jenis'               => 'masuk',
                         ]);
 
@@ -139,8 +140,8 @@ class TransaksiBarangController extends Controller
 
                 TransaksiLainLain::create([
                     'id_transaksi_awal' => $transaksi->id,
-                    'keterangan'       => $ket,
-                    'harga'            => $harga,
+                    'keterangan'        => $ket,
+                    'harga'             => $harga,
                 ]);
 
                 $grandTotal += $harga;

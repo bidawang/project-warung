@@ -17,6 +17,7 @@ return new class extends Migration
             $table->integer('jumlah');
             $table->decimal('harga', 15, 2);
             $table->enum('jenis', ['keluar', 'masuk']);
+            $table->date('tanggal_kadaluarsa')->nullable(); // Menambahkan kolom baru
             $table->text('keterangan')->nullable();
             $table->timestamps();
         });

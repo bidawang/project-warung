@@ -25,6 +25,7 @@ class BarangMasukControllerKasir extends Controller
 
     public function index(Request $request)
     {
+        // dd(123);
         $status = $request->get('status', 'pending');
         $search = $request->get('search');
 

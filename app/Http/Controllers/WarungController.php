@@ -76,24 +76,33 @@ class WarungController extends Controller
 
     public function show($id)
     {
-        $warung = Warung::with(['user', 'area'])
-            ->where('id_user', Auth::id())
-            ->findOrFail($id);
+        if (Auth::user()->role === 'admin') {
+            // Admin can access all stalls
+            $warung = Warung::with(['user', 'area'])->findOrFail($id);
+        } else {
+            // Cashier/regular user can only access their own stalls
+            $warung = Warung::with(['user', 'area'])
+                ->where('id_user', Auth::id())
+                ->findOrFail($id);
+        }
 
-        // Ambil semua barang
-        $allBarang = Barang::with(['transaksiBarang.areaPembelian'])->get();
+        // Fetch all items, with eager-loaded relations for the latest transaction and its purchasing area
+        $allBarang = Barang::with(['transaksiBarang' => function ($query) {
+            $query->with('areaPembelian')->latest();
+        }])->get();
 
-        // Ambil stok warung untuk warung ini, dengan relasi barang dan kuantitas
-        $stokWarung = $warung->stokWarung()->with(['barang.transaksiBarang.areaPembelian', 'kuantitas'])->get();
-        // Buat koleksi stok indexed by id_barang untuk akses cepat
+        // Fetch the stall's stock for this specific stall, with relations for item and quantity
+        $stokWarung = $warung->stokWarung()->with(['barang', 'kuantitas'])->get();
+// dd($stokWarung);
+        // Create a collection of stock indexed by item ID for quick access
         $stokByBarangId = $stokWarung->keyBy('id_barang');
 
-        // Gabungkan semua barang dengan stok warung jika ada
+        // Merge all items with stall stock if available
         $barangWithStok = $allBarang->map(function ($barang) use ($stokByBarangId) {
             $stok = $stokByBarangId->get($barang->id);
 
             if ($stok) {
-                // Hitung stok saat ini sama seperti sebelumnya
+                // Calculate current stock just as before
                 $stokMasuk = $stok->barangMasuk()
                     ->where('status', 'terima')
                     ->whereHas('stokWarung', function ($q) {
@@ -123,11 +132,13 @@ class WarungController extends Controller
 
                 $stokSaatIni = $stokMasuk + $mutasiMasuk - $mutasiKeluar - $stokKeluar;
 
-                $transaksi = $stok->barang->transaksiBarang()->latest()->first();
+                // Get the latest transaction from the eager-loaded relation
+                $transaksi = $barang->transaksiBarang->first();
 
                 if (!$transaksi) {
                     $hargaSatuan = 0;
                     $hargaJual = 0;
+                    $tanggalKadaluarsa = null; // Set expiration date to null
                 } else {
                     $hargaDasar = $transaksi->harga / max($transaksi->jumlah, 1);
                     $markupPercent = optional($transaksi->areaPembelian)->markup ?? 0;
@@ -137,24 +148,25 @@ class WarungController extends Controller
                         ->where('input_maksimal', '>=', $hargaSatuan)
                         ->first();
                     $hargaJual = $laba ? $laba->harga_jual : 0;
+                    $tanggalKadaluarsa = $transaksi->tanggal_kadaluarsa; // Get the expiration date from the latest transaction
                 }
 
-                // Gabungkan data stok ke barang
+                // Merge stock data into the item
                 $barang->stok_saat_ini = $stokSaatIni;
                 $barang->harga_satuan = $hargaSatuan;
                 $barang->harga_jual = $hargaJual;
                 $barang->kuantitas = $stok->kuantitas;
                 $barang->keterangan = $stok->keterangan ?? '-';
-                $barang->id_stok_warung = $stok->id; // <--- ini yang penting
-
+                $barang->tanggal_kadaluarsa = $tanggalKadaluarsa; // Add the expiration date
+                $barang->id_stok_warung = $stok->id;
             } else {
-                // Barang tidak ada stok di warung ini
+                // Item has no stock in this stall
                 $barang->stok_saat_ini = 0;
                 $barang->harga_satuan = 0;
                 $barang->harga_jual = 0;
                 $barang->kuantitas = collect();
                 $barang->keterangan = '-';
-
+                $barang->tanggal_kadaluarsa = null; // Set expiration date to null
             }
 
             return $barang;

@@ -18,7 +18,11 @@ class StokBarangControllerKasir extends Controller
         $search = $request->get('search');
 
         // Ambil stok barang milik warung kasir user yang login
-        $stokBarang = StokWarung::with(['barang.transaksiBarang.areaPembelian', 'warung'])
+        // Tambahkan relasi 'barang.transaksiBarang' untuk mengakses data transaksi
+        $stokBarang = StokWarung::with(['barang.transaksiBarang' => function ($query) {
+            // Eager load relasi areaPembelian dan urutkan berdasarkan tanggal terbaru
+            $query->with('areaPembelian')->latest();
+        }, 'warung'])
             ->whereHas('warung', function ($query) {
                 $query->where('id_user', Auth::id());
             })
@@ -31,7 +35,7 @@ class StokBarangControllerKasir extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        // Transform koleksi untuk hitung harga jual dengan markup
+        // Transform koleksi untuk hitung harga jual dan tambahkan tanggal kadaluarsa
         $stokBarang->getCollection()->transform(function ($stok) {
             // Hitung stok saat ini (jika belum ada properti stok_saat_ini, hitung di sini)
             if (!isset($stok->stok_saat_ini)) {
@@ -57,12 +61,14 @@ class StokBarangControllerKasir extends Controller
                 $stok->stok_saat_ini = $stokMasuk + $mutasiMasuk - $mutasiKeluar - $stokKeluar;
             }
 
-            // Ambil transaksiBarang terbaru untuk harga
-            $transaksi = $stok->barang->transaksiBarang()->latest()->first();
+            // Ambil transaksiBarang terbaru untuk harga dan tanggal kadaluarsa
+            // Menggunakan `first()` pada koleksi yang sudah di-eager load lebih efisien
+            $transaksi = $stok->barang->transaksiBarang->first();
 
             if (!$transaksi) {
                 $stok->harga_jual = 0;
                 $stok->markup_percent = 0;
+                $stok->tanggal_kadaluarsa = null; // Tambahkan properti baru
                 return $stok;
             }
 
@@ -70,8 +76,8 @@ class StokBarangControllerKasir extends Controller
             $markupPercent = optional($transaksi->areaPembelian)->markup ?? 0;
 
             $stok->markup_percent = $markupPercent;
-
             $stok->harga_jual = $hargaTotalBeli + ($hargaTotalBeli * $markupPercent / 100);
+            $stok->tanggal_kadaluarsa = $transaksi->tanggal_kadaluarsa; // Ambil tanggal kadaluarsa dari transaksi terbaru
 
             return $stok;
         });
@@ -127,7 +133,7 @@ class StokBarangControllerKasir extends Controller
 
             return $bm;
         });
-// dd($barangMasuk);
+        // dd($barangMasuk);
         return view('kasir.stok_barang.barang_masuk', compact('barangMasuk', 'status', 'search'));
     }
 

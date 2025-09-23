@@ -19,6 +19,7 @@ class TransaksiBarang extends Model
         'harga',
         'status',
         'jenis',
+        'tanggal_kadaluarsa',
         'keterangan'
     ];
 
