@@ -28,7 +28,7 @@ class AreaControllerAdmin extends Controller
 
         // Terapkan paginasi dengan 10 item per halaman dan tambahkan parameter pencarian ke URL paginasi
         $areas = $areas->paginate(10)->appends(['search' => $searchKeyword]);
-
+// dd($areas);
         // Mengirimkan data area dan kata kunci pencarian ke view
         return view('admin.area.index', compact('areas', 'searchKeyword'));
     }
@@ -38,6 +38,7 @@ class AreaControllerAdmin extends Controller
      */
     public function create()
     {
+
         return view('admin.area.create');
     }
 
@@ -54,7 +55,7 @@ class AreaControllerAdmin extends Controller
 
             Area::create($validatedData);
 
-            return redirect()->route('admin/area')->with('success', 'Area berhasil ditambahkan!');
+            return redirect()->route('admin.area.index')->with('success', 'Area berhasil ditambahkan!');
         } catch (ValidationException $e) {
             return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
@@ -67,6 +68,7 @@ class AreaControllerAdmin extends Controller
      */
     public function edit(Area $area)
     {
+        // dd($area);
         return view('admin.area.edit', compact('area'));
     }
 
@@ -83,7 +85,7 @@ class AreaControllerAdmin extends Controller
 
             $area->update($validatedData);
 
-            return redirect()->route('area.index')->with('success', 'Area berhasil diperbarui!');
+            return redirect()->route('admin.area.index')->with('success', 'Area berhasil diperbarui!');
         } catch (ValidationException $e) {
             return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
@@ -102,5 +104,13 @@ class AreaControllerAdmin extends Controller
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal menghapus area. Silakan coba lagi.');
         }
+    }
+
+    public function show(Area $area)
+    {
+        // Load relasi aturan tenggat, laba, dan warung
+        $area->load(['aturanTenggat', 'laba', 'warung']);
+// dd($area);
+        return view('admin.area.show', compact('area'));
     }
 }

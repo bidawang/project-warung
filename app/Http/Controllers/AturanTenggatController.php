@@ -15,7 +15,7 @@ class AturanTenggatController extends Controller
     public function index()
     {
         $aturanTenggats = AturanTenggat::with('area')->get();
-        return view('aturantenggat.index', compact('aturanTenggats'));
+        return view('aturanTenggat.index', compact('aturanTenggats'));
     }
 
     /**
@@ -45,7 +45,7 @@ class AturanTenggatController extends Controller
 
             AturanTenggat::create($validatedData);
 
-            return redirect()->route('aturantenggat.index')->with('success', 'Aturan tenggat berhasil ditambahkan!');
+            return redirect()->route('aturanTenggat.index')->with('success', 'Aturan tenggat berhasil ditambahkan!');
         } catch (ValidationException $e) {
             return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
@@ -80,7 +80,7 @@ class AturanTenggatController extends Controller
 
             $aturanTenggat->update($validatedData);
 
-            return redirect()->route('aturantenggat.index')->with('success', 'Aturan tenggat berhasil diperbarui!');
+            return redirect()->route('aturanTenggat.index')->with('success', 'Aturan tenggat berhasil diperbarui!');
         } catch (ValidationException $e) {
             return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
@@ -95,7 +95,7 @@ class AturanTenggatController extends Controller
     {
         try {
             $aturanTenggat->delete();
-            return redirect()->route('aturantenggat.index')->with('success', 'Aturan tenggat berhasil dihapus!');
+            return redirect()->route('aturanTenggat.index')->with('success', 'Aturan tenggat berhasil dihapus!');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal menghapus aturan tenggat. Silakan coba lagi.');
         }

@@ -15,4 +15,21 @@ class Area extends Model
         'area',
         'keterangan'
     ];
+
+    public function aturanTenggat()
+    {
+        return $this->hasMany(AturanTenggat::class, 'id_area');
+    }
+
+    public function laba()
+    {
+        return $this->hasMany(Laba::class, 'id_area');
+    }
+
+    public function warung()
+    {
+        return $this->hasMany(Warung::class, 'id_area');
+    }
+
+    
 }

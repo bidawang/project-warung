@@ -12,12 +12,11 @@ return new class extends Migration
         Schema::create('aturan_tenggat', function (Blueprint $table) {
             $table->id();
             $table->foreignId('id_area')->constrained('area');
-            $table->date('tanggal_awal');
-            $table->date('tanggal_akhir');
+            $table->integer('tanggal_awal');
+            $table->integer('tanggal_akhir');
             $table->integer('jatuh_tempo_hari');
-            $table->integer('jatuh_tempo_bulan');
-            $table->text('keterangan')->nullable();
             $table->string('bunga', 50);
+            $table->text('keterangan')->nullable();
             $table->timestamps();
         });
     }

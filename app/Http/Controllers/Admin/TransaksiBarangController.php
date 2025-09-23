@@ -23,11 +23,11 @@ class TransaksiBarangController extends Controller
 
         $query = TransaksiBarang::with(['transaksiKas', 'barang', 'barangMasuk']);
 
-        
 
-        if (in_array($status, ['pending', 'dikirim', 'terima', 'tolak'])) {
+
+        if (in_array($status, ['pending', 'kirim', 'terima', 'tolak'])) {
             $query->whereHas('barangMasuk', function ($q) use ($status) {
-                if ($status === 'dikirim') {
+                if ($status === 'kirim') {
                     // Ada barang masuk, tapi belum diterima / ditolak
                     $q->whereNull('status');
                 } elseif (in_array($status, ['terima', 'tolak'])) {
@@ -180,7 +180,7 @@ class TransaksiBarangController extends Controller
             );
 
 
-            // Buat barang masuk (status masih null = dikirim, belum diterima/ditolak)
+            // Buat barang masuk (status masih null = kirim, belum diterima/ditolak)
             BarangMasuk::create([
                 'id_transaksi_barang' => $transaksiBarang->id,
                 'id_stok_warung' => $stokWarung->id,
@@ -190,8 +190,8 @@ class TransaksiBarangController extends Controller
             ]);
         }
 
-        return redirect()->route('transaksibarang.index', ['status' => 'dikirim'])
-            ->with('success', 'Barang berhasil dikirim ke warung!');
+        return redirect()->route('transaksibarang.index', ['status' => 'kirim'])
+            ->with('success', 'Barang berhasil kirim ke warung!');
     }
 
 

@@ -19,6 +19,7 @@ return new class extends Migration
             $table->integer('jumlah');
             $table->string('keterangan')->nullable();
             $table->enum('status', ['pending', 'terima', 'tolak'])->default('pending');
+            $table->dateTime('tanggal_kedaluarsa')->nullable();
             $table->timestamps();
 
             $table->foreign('id_transaksi_barang')->references('id')->on('transaksi_barang')->onDelete('cascade');

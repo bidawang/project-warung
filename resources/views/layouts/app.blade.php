@@ -127,8 +127,8 @@
                             <li><a class="dropdown-item" href="{{ route('kuantitas.index') }}">Kuantitas</a></li>
                             <li><a class="dropdown-item" href="{{ route('admin.targetpencapaian.index') }}">Target
                                     Pencapaian</a></li>
-                            <li><a class="dropdown-item" href="{{ route('aturantenggat.index') }}">Aturan Tenggat</a>
-                            </li>
+                            {{-- <li><a class="dropdown-item" href="{{ route('aturanTenggat.index') }}">Aturan Tenggat</a>
+                            </li> --}}
                             <li>
                                 <form action="{{ route('logout') }}" method="POST" class="d-inline">
                                     @csrf
