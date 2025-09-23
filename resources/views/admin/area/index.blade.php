@@ -30,8 +30,11 @@
                 <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">Daftar Area</h1>
                 <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 w-full md:w-auto">
                     <a href="{{ route('admin.area.create') }}"
-                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition-colors duration-200 text-center">
-                        + Tambah Area
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition-colors duration-200 text-center flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Tambah Area
                     </a>
                     <form action="{{ route('admin.area.index') }}" method="GET" class="relative w-full sm:w-auto">
                         <input type="text" name="search" value="{{ request('search') }}"
@@ -48,77 +51,92 @@
                 </div>
             </div>
 
-            {{-- Tabel Daftar Area --}}
-            <div class="bg-white shadow-md rounded-lg overflow-hidden overflow-x-auto">
-                <table class="min-w-full leading-normal">
-                    <thead>
-                        <tr>
-                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                Area
-                            </th>
-                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                Keterangan
-                            </th>
-                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                Aksi
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($areas as $area)
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-5 py-5 border-b border-gray-200 text-sm">
-                                    <p class="text-gray-900 whitespace-no-wrap">{{ $area->area }}</p>
-                                </td>
-                                <td class="px-5 py-5 border-b border-gray-200 text-sm">
-                                    <p class="text-gray-900 whitespace-no-wrap">{{ $area->keterangan ?? '-' }}</p>
-                                </td>
-                                <td class="px-5 py-5 border-b border-gray-200 text-sm text-right space-x-1">
-                                    <a href="{{ route('admin.area.show', $area->id) }}"
-                                        class="inline-block px-2 py-1 text-gray-800 bg-yellow-100 hover:bg-yellow-200 rounded transition-colors duration-200">
-                                        Show
-                                    </a>
-                                    <a href="{{route('admin.aturanTenggat.index', ['id_area' => $area->id])}}"
-                                        class="inline-block px-2 py-1 text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors duration-200">
-                                        Aturan Tenggat
-                                    </a>
-                                    <a href="{{ route('admin.laba.index', ['id_area' => $area->id]) }}"
-                                        class="inline-block px-2 py-1 text-white bg-green-600 hover:bg-green-700 rounded transition-colors duration-200">
-                                        Laba
-                                    </a>
-                                    <a href="{{ route('admin.area.edit', $area->id) }}"
-                                        class="inline-block px-2 py-1 text-blue-600 hover:text-blue-900 transition-colors duration-200">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-7.293 7.293a1 1 0 01-.39.293l-2 1a1 1 0 01-1.206-1.206l1-2a1 1 0 01.293-.39l7.293-7.293z" />
-                                        </svg>
-                                    </a>
-                                    <form action="{{ route('admin.area.destroy', $area->id) }}" method="POST"
-                                        class="inline-block ml-2" onsubmit="return confirm('Apakah Anda yakin ingin menghapus area ini?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit"
-                                            class="inline-block px-2 py-1 text-red-600 hover:text-red-900 transition-colors duration-200">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                            </svg>
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="3" class="px-5 py-5 border-b border-gray-200 text-center text-sm text-gray-500">
-                                    Tidak ada data area yang ditemukan.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+            @if (session('success'))
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <span class="block sm:inline">{{ session('success') }}</span>
+                <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
+                    <svg class="fill-current h-6 w-6 text-green-500" role="button" xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20" onclick="this.parentElement.parentElement.style.display='none'">
+                        <title>Close</title>
+                        <path
+                            d="M14.348 14.849a1.2 1.2 0 01-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 11-1.697-1.697l3.029-2.651-3.029-2.651a1.2 1.2 0 011.697-1.697l2.651 3.029 2.651-3.029a1.2 1.2 0 111.697 1.697L11.819 10l3.029 2.651a1.2 1.2 0 010 1.698z" />
+                    </svg>
+                </span>
             </div>
+            @endif
 
-            {{-- Pagination --}}
-            <div class="mt-8">
-                {{-- Tampilkan link pagination jika menggunakan paginate() --}}
+            {{-- Tabel Daftar Area --}}
+            <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full leading-normal">
+                        <thead>
+                            <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                                <th class="py-3 px-6 text-left font-bold">Area</th>
+                                <th class="py-3 px-6 text-left font-bold">Keterangan</th>
+                                <th class="py-3 px-6 text-center font-bold">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-gray-600 text-sm font-light">
+                            @forelse ($areas as $area)
+                                <tr class="border-b border-gray-200 hover:bg-gray-100 transition duration-200">
+                                    <td class="py-4 px-6 text-left whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="mr-2">
+                                                <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                            </div>
+                                            <span class="font-medium text-gray-900">{{ $area->area }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-6 text-left">
+                                        <p class="text-gray-700">{{ $area->keterangan ?? '-' }}</p>
+                                    </td>
+                                    <td class="py-4 px-6 text-center">
+                                        <div class="flex justify-center items-center space-x-2">
+                                            <a href="{{ route('admin.area.show', $area->id) }}"
+                                                class="transform hover:scale-110 transition-transform duration-200 text-gray-500 hover:text-gray-900" title="Detail">
+                                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                            </a>
+                                            <a href="{{route('admin.aturanTenggat.index', ['id_area' => $area->id])}}"
+                                                class="transform hover:scale-110 transition-transform duration-200 text-blue-600 hover:text-blue-800" title="Aturan Tenggat">
+                                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            </a>
+                                            <a href="{{ route('admin.laba.index', ['id_area' => $area->id]) }}"
+                                                class="transform hover:scale-110 transition-transform duration-200 text-green-600 hover:text-green-800" title="Laba">
+                                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                            </a>
+                                            <a href="{{ route('admin.area.edit', $area->id) }}"
+                                                class="transform hover:scale-110 transition-transform duration-200 text-yellow-500 hover:text-yellow-700" title="Edit">
+                                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                            </a>
+                                            <form action="{{ route('admin.area.destroy', $area->id) }}" method="POST"
+                                                class="inline-block" onsubmit="return confirm('Apakah Anda yakin ingin menghapus area ini?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit"
+                                                    class="transform hover:scale-110 transition-transform duration-200 text-red-500 hover:text-red-700" title="Hapus">
+                                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1H9a1 1 0 00-1 1v3m-4 0h12"></path></svg>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="3" class="px-5 py-5 border-b border-gray-200 text-center text-sm text-gray-500">
+                                        Tidak ada data area yang ditemukan.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                {{-- Pagination --}}
+                @if ($areas->hasPages())
+                <div class="p-5">
+                    {{ $areas->links('vendor.pagination.tailwind') }}
+                </div>
+                @endif
             </div>
         </div>
     </main>

@@ -40,6 +40,7 @@ use App\Http\Controllers\Admin\{
 
 use App\Http\Controllers\Kasir\{
     BarangKeluarController,
+    BarangMasukControllerKasir,
     HutangControllerAdmin,
     HutangControllerKasir,
     KasControllerAdmin,
@@ -103,7 +104,7 @@ Route::prefix('/admin')->name('admin.')->group(function () {
 });
 
 
-Route::prefix('kasir')->name('kasir.')->group(function () {
+Route::prefix('/kasir')->name('kasir.')->group(function () {
     Route::get('/', [KasirControllerKasir::class, 'index'])->name('kasir');
 
     Route::get('/stok-barang', [StokBarangControllerKasir::class, 'index'])->name('stokbarang.index');
@@ -113,7 +114,7 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
 
     Route::get('/hutang', [HutangControllerKasir::class, 'index'])->name('hutang.index');
     Route::resource('barangkeluar', BarangKeluarController::class);
-
+    Route::post('kasir/stok-barang/barang-masuk/konfirmasi', [BarangMasukControllerKasir::class, 'updateStatus'])->name('kasir.barang-masuk.konfirmasi');
     Route::get('/mutasibarang', [MutasiBarangController::class, 'index'])->name('mutasibarang.index');
 
     Route::get('/profil', [ProfilControllerKasir::class, 'index'])->name('profil.index');
