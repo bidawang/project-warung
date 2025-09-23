@@ -93,7 +93,7 @@ class WarungController extends Controller
 
         // Fetch the stall's stock for this specific stall, with relations for item and quantity
         $stokWarung = $warung->stokWarung()->with(['barang', 'kuantitas'])->get();
-// dd($stokWarung);
+        // dd($stokWarung);
         // Create a collection of stock indexed by item ID for quick access
         $stokByBarangId = $stokWarung->keyBy('id_barang');
 
@@ -105,32 +105,24 @@ class WarungController extends Controller
                 // Calculate current stock just as before
                 $stokMasuk = $stok->barangMasuk()
                     ->where('status', 'terima')
-                    ->whereHas('stokWarung', function ($q) {
-                        $q->where('id_warung', session('id_warung'));
-                    })
+                    ->whereHas('stokWarung', fn($q) => $q->where('id_warung', $stok->id_warung))
                     ->sum('jumlah');
 
                 $stokKeluar = $stok->barangKeluar()
-                    ->whereHas('stokWarung', function ($q) {
-                        $q->where('id_warung', session('id_warung'));
-                    })
+                    ->whereHas('stokWarung', fn($q) => $q->where('id_warung', $stok->id_warung))
                     ->sum('jumlah');
 
                 $mutasiMasuk = $stok->mutasiBarang()
                     ->where('status', 'terima')
-                    ->whereHas('stokWarung', function ($q) {
-                        $q->where('warung_tujuan', session('id_warung'));
-                    })
+                    ->whereHas('stokWarung', fn($q) => $q->where('warung_tujuan', $stok->id_warung))
                     ->sum('jumlah');
 
                 $mutasiKeluar = $stok->mutasiBarang()
                     ->where('status', 'terima')
-                    ->whereHas('stokWarung', function ($q) {
-                        $q->where('warung_asal', session('id_warung'));
-                    })
+                    ->whereHas('stokWarung', fn($q) => $q->where('warung_asal', $stok->id_warung))
                     ->sum('jumlah');
 
-                $stokSaatIni = $stokMasuk + $mutasiMasuk - $mutasiKeluar - $stokKeluar;
+                $stok->stok_saat_ini = $stokMasuk + $mutasiMasuk - $mutasiKeluar - $stokKeluar;
 
                 // Get the latest transaction from the eager-loaded relation
                 $transaksi = $barang->transaksiBarang->first();
@@ -152,13 +144,15 @@ class WarungController extends Controller
                 }
 
                 // Merge stock data into the item
-                $barang->stok_saat_ini = $stokSaatIni;
+                $barang->stok_saat_ini = $stok->stok_saat_ini;
                 $barang->harga_satuan = $hargaSatuan;
                 $barang->harga_jual = $hargaJual;
                 $barang->kuantitas = $stok->kuantitas;
                 $barang->keterangan = $stok->keterangan ?? '-';
                 $barang->tanggal_kadaluarsa = $tanggalKadaluarsa; // Add the expiration date
                 $barang->id_stok_warung = $stok->id;
+
+                // dd($barang);
             } else {
                 // Item has no stock in this stall
                 $barang->stok_saat_ini = 0;
