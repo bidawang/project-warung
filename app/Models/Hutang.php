@@ -17,7 +17,8 @@ class Hutang extends Model
         'tenggat',
         'status',
         'keterangan',
-        'jumlah_pokok'
+        'jumlah_hutang_awal',
+        'jumlah_sisa_hutang',
     ];
 
     public function warung()
