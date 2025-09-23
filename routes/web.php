@@ -124,6 +124,7 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::get('/profil', [ProfilControllerKasir::class, 'index'])->name('profil.index');
 });
 
+Route::resource('transaksibarang', TransaksiBarangController::class);
 
 Route::resource('kategori', KategoriController::class);
 Route::resource('subkategori', SubKategoriController::class);
@@ -137,7 +138,6 @@ Route::resource('kaswarung', KasWarungController::class);
 Route::resource('detailkaswarung', DetailKasWarungController::class);
 Route::resource('transaksikas', TransaksiKasController::class);
 Route::resource('detailtransaksi', DetailTransaksiController::class);
-Route::resource('transaksibarang', TransaksiBarangController::class);
 Route::resource('stokwarung', StokWarungController::class);
 Route::resource('stokbarang', StokBarangController::class);
 Route::resource('barangmasuk', BarangMasukController::class);

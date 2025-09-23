@@ -30,6 +30,7 @@
                             <th scope="col">Nama Barang</th>
                             <th scope="col">Stok</th>
                             <th scope="col">Harga Jual</th>
+                            <th scope="col">Tanggal Kadaluarsa</th> {{-- Tambah kolom baru di sini --}}
                         </tr>
                     </thead>
                     <tbody>
@@ -39,10 +40,11 @@
                             <td>{{ $item->barang->nama_barang ?? '-' }}</td>
                             <td>{{ $item->stok_saat_ini }}</td>
                             <td>Rp {{ number_format($item->harga_jual, 0, ',', '.') }}</td>
+                            <td>{{ $item->tanggal_kadaluarsa ? \Carbon\Carbon::parse($item->tanggal_kadaluarsa)->format('d-m-Y') : 'Tidak Ada' }}</td> {{-- Tampilkan data di sini --}}
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="4" class="text-center">Belum ada data stok barang.</td>
+                            <td colspan="5" class="text-center">Belum ada data stok barang.</td> {{-- Perbarui colspan --}}
                         </tr>
                         @endforelse
                     </tbody>
