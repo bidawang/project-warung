@@ -13,7 +13,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('id_kas_warung')->constrained('kas_warung');
             $table->decimal('total', 15, 2);
-            $table->string('metode_pembayaran', 50);
+            $table->string('metode_pembayaran', 50)->nullable();
             $table->enum('jenis', ['penjualan', 'hutang','expayet','hilang']);
             $table->text('keterangan')->nullable();
             $table->timestamps();

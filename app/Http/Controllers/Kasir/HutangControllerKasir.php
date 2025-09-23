@@ -36,4 +36,54 @@ class HutangControllerKasir extends Controller
 
         return view('kasir.hutang.index', compact('hutangList', 'status'));
     }
+
+    public function detail($id)
+    {
+        $idWarung = session('id_warung');
+
+        if (! $idWarung) {
+            return redirect()->route('dashboard')->with('error', 'ID warung tidak ditemukan di sesi.');
+        }
+
+        $hutang = Hutang::with('user')->where('id_warung', $idWarung)->findOrFail($id);
+
+        return view('kasir.hutang.detail', compact('hutang'));
+    }
+
+    public function bayar(Request $request, $id)
+    {
+        $idWarung = session('id_warung');
+
+        if (!$idWarung) {
+            return redirect()->route('dashboard')->with('error', 'ID warung tidak ditemukan di sesi.');
+        }
+
+        $hutang = Hutang::where('id_warung', $idWarung)->findOrFail($id);
+
+        if ($hutang->status == 'lunas') {
+            return redirect()->back()->with('info', 'Hutang sudah lunas.');
+        }
+
+        // Validasi input jumlah bayar
+        $request->validate([
+
+            'jumlah_bayar' => 'required|numeric|min:1|max:' . $hutang->jumlah_pokok,
+        ]);
+
+        $jumlahBayar = $request->input('jumlah_bayar');
+
+        // Kurangi jumlah hutang
+        $hutang->jumlah_pokok -= $jumlahBayar;
+
+        // Jika hutang sudah lunas
+        if ($hutang->jumlah_pokok <= 0) {
+            $hutang->jumlah_pokok = 0;
+            $hutang->status = 'lunas';
+        }
+
+        $hutang->save();
+
+        return redirect()->route('kasir.hutang.detail', $hutang->id)
+            ->with('success', 'Pembayaran berhasil.');
+    }
 }

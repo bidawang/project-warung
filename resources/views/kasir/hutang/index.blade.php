@@ -61,7 +61,7 @@
                                     @if($hutang->status == 'belum lunas')
                                         <a href="{{ route('kasir.hutang.bayar', $hutang->id) }}" class="btn btn-sm btn-success">Bayar</a>
                                     @endif --}}
-                                    <button type="button" class="btn btn-sm btn-info text-white" data-bs-toggle="modal" data-bs-target="#detailModal{{ $hutang->id }}">Bayar</button>
+                                    <a type="button" href="{{ url('/kasir/hutang/detail/' . $hutang->id ) }}" class="btn btn-sm btn-info text-white" >Bayar</a>
                                 </td>
                             </tr>
                         @empty
