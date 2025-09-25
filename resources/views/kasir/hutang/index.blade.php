@@ -47,7 +47,7 @@
                             <tr>
                                 <td>{{ $loop->iteration + ($hutangList->firstItem() - 1) }}</td>
                                 <td>{{ $hutang->user->name ?? '-' }}</td>
-                                <td>Rp {{ number_format($hutang->jumlah_pokok, 0, ',', '.') }}</td>
+                                <td>Rp {{ number_format($hutang->jumlah_hutang_awal, 0, ',', '.') }}</td>
                                 <td>{{ \Carbon\Carbon::parse($hutang->tenggat)->format('Y-m-d') }}</td>
                                 <td>
                                     @if($hutang->status == 'belum lunas')
@@ -61,7 +61,7 @@
                                     @if($hutang->status == 'belum lunas')
                                         <a href="{{ route('kasir.hutang.bayar', $hutang->id) }}" class="btn btn-sm btn-success">Bayar</a>
                                     @endif --}}
-                                    <a type="button" href="{{ url('/kasir/hutang/detail/' . $hutang->id ) }}" class="btn btn-sm btn-info text-white" >Bayar</a>
+                                    <a type="button" href="{{ url('/kasir/hutang/detail/' . $hutang->id ) }}" class="btn btn-sm btn-info text-white" >Detail</a>
                                 </td>
                             </tr>
                         @empty

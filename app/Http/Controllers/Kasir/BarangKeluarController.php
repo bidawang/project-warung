@@ -145,7 +145,8 @@ class BarangKeluarController extends Controller
                 $hutang = \App\Models\Hutang::create([
                     'id_warung'    => $idWarung,
                     'id_user'      => $validated['id_user_member'],
-                    'jumlah_pokok' => $validated['total_harga'],
+                    'jumlah_hutang_awal' => $validated['total_harga'],
+                    'jumlah_sisa_hutang'   => $validated['total_harga'],
                     'tenggat'      => $validated['tenggat'] ?? now()->addDays(7),
                     'status'       => 'belum lunas',
                     'keterangan'   => $validated['keterangan'] ?? null,

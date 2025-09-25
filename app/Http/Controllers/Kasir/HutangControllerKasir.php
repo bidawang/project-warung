@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Kasir;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Hutang;
+use App\Models\LogPembayaranHutang;
 
 class HutangControllerKasir extends Controller
 {
@@ -47,7 +48,12 @@ class HutangControllerKasir extends Controller
 
         $hutang = Hutang::with('user')->where('id_warung', $idWarung)->findOrFail($id);
 
-        return view('kasir.hutang.detail', compact('hutang'));
+        $logPembayaran = LogPembayaranHutang::where('id_hutang', $hutang->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+
+        return view('kasir.hutang.detail', compact('hutang', 'logPembayaran'));
     }
 
     public function bayar(Request $request, $id)
@@ -64,20 +70,26 @@ class HutangControllerKasir extends Controller
             return redirect()->back()->with('info', 'Hutang sudah lunas.');
         }
 
+
+
         // Validasi input jumlah bayar
         $request->validate([
-
-            'jumlah_bayar' => 'required|numeric|min:1|max:' . $hutang->jumlah_pokok,
+            'jumlah_bayar' => 'required|numeric|min:1|max:' . $hutang->jumlah_sisa_hutang,
         ]);
 
         $jumlahBayar = $request->input('jumlah_bayar');
 
         // Kurangi jumlah hutang
-        $hutang->jumlah_pokok -= $jumlahBayar;
+        $hutang->jumlah_sisa_hutang = $hutang->jumlah_sisa_hutang - $jumlahBayar;
+
+        // Simpan log pembayaran
+        LogPembayaranHutang::create([
+            'id_hutang' => $hutang->id,
+            'jumlah_pembayaran' => $jumlahBayar,
+        ]);
 
         // Jika hutang sudah lunas
-        if ($hutang->jumlah_pokok <= 0) {
-            $hutang->jumlah_pokok = 0;
+        if ($hutang->jumlah_sisa_hutang <= 0) {
             $hutang->status = 'lunas';
         }
 
