@@ -38,7 +38,7 @@ class MutasiBarangController extends Controller
             ->latest()
             ->get()
             ->groupBy('warung_tujuan');
-// dd($mutasiKeluarGrouped);
+        // dd($mutasiKeluarGrouped);
         return view('mutasibarang.index', compact('mutasiMasuk', 'mutasiKeluarGrouped'));
     }
 
@@ -147,74 +147,39 @@ class MutasiBarangController extends Controller
      */
     public function store(Request $request)
     {
-        // $request->validate([
-        //     'warung_tujuan' => 'required|exists:warung,id',
-        //     'barang'        => 'required|array',
-        //     'barang.*.id_stok_warung' => 'required|integer|exists:stok_warung,id',
-        //     'barang.*.jumlah' => 'required|integer|min:1',
-        //     'keterangan'    => 'nullable|string'
-        // ]);
-
-        $warungAsal = session('id_warung'); // ambil dari session
+        $warungAsal = session('id_warung');
         if (!$warungAsal) {
             return back()->withErrors(['warung' => 'Warung asal tidak ditemukan di session.'])->withInput();
         }
-        // Jangan izinkan mutasi ke warung yang sama
+
         if ($request->warung_tujuan == $warungAsal) {
             return back()->withErrors(['warung_tujuan' => 'Warung tujuan tidak boleh sama dengan warung asal.'])->withInput();
         }
+
         DB::beginTransaction();
         try {
             $created = 0;
             foreach ($request->barang as $key => $data) {
-                // form menggunakan struktur barang[id_stok_warung][...]
-                // $key biasanya = id_stok_warung — tapi kita tetap baca id dari data untuk safety
-                $idStok = isset($data['id_stok_warung']) ? (int)$data['id_stok_warung'] : (int)$key;
+                if (!isset($data['pilih']) || !$data['pilih']) continue;
 
-                // hanya proses yang dicentang
-                if (!isset($data['pilih']) || !$data['pilih']) {
-                    continue;
-                }
-
+                $idStok = $data['id_stok_warung'] ?? $key;
                 $jumlahMutasi = (int) ($data['jumlah'] ?? 0);
-                if ($jumlahMutasi <= 0) {
-                    return back()->withErrors(['barang' => "Jumlah mutasi untuk item {$idStok} harus lebih dari 0."])->withInput();
-                }
+                if ($jumlahMutasi <= 0) continue;
 
-                $stok = StokWarung::with(['barang'])->findOrFail($idStok);
+                $stok = StokWarung::with('barang')->findOrFail($idStok);
 
-                // HITUNG stok saat ini sesuai logika di show()
-                $stokMasuk = $stok->barangMasuk()
-                    ->where('status', 'terima')
-                    ->sum('jumlah');
-
-                $stokKeluar = $stok->barangKeluar()
-                    ->sum('jumlah');
-
-                $mutasiMasuk = $stok->mutasiBarang()
-                    ->where('status', 'terima')
-                    ->sum('jumlah');
-
-                // catatan: di beberapa kode sebelumnya kamu memakai status 'keluar' untuk mutasi keluar.
-                // Jika di implementasimu mutasi keluar hanya tercatat sebagai entry dengan warung_asal = this warung,
-                // mungkin cukup hitung semua mutasi yang dibuat dari stok ini. Saya pakai filter 'status' === 'keluar'
-                // sesuai contoh sebelumnya; sesuaikan bila implementasimu berbeda.
-                $mutasiKeluar = $stok->mutasiBarang()
-                    ->where('status', 'keluar')
-                    ->sum('jumlah');
+                $stokMasuk = $stok->barangMasuk()->where('status', 'terima')->sum('jumlah');
+                $stokKeluar = $stok->barangKeluar()->sum('jumlah');
+                $mutasiMasuk = $stok->mutasiBarang()->where('warung_tujuan', $warungAsal)->where('status', 'terima')->sum('jumlah');
+                $mutasiKeluar = $stok->mutasiBarang()->where('warung_asal', $warungAsal)->where('status', 'terima')->sum('jumlah');
 
                 $stokSaatIni = $stokMasuk + $mutasiMasuk - $mutasiKeluar - $stokKeluar;
 
-                // validasi stok cukup
                 if ($jumlahMutasi > $stokSaatIni) {
                     DB::rollBack();
-                    return back()->withErrors([
-                        'barang' => "Jumlah mutasi untuk {$stok->barang->nama_barang} melebihi stok tersedia ({$stokSaatIni})."
-                    ])->withInput();
+                    return back()->withErrors(['barang' => "Jumlah mutasi untuk {$stok->barang->nama_barang} melebihi stok tersedia ({$stokSaatIni})."])->withInput();
                 }
 
-                // dd($request->all());
-                // Simpan Mutasi (status pending)
                 MutasiBarang::create([
                     'id_stok_warung' => $stok->id,
                     'warung_asal'    => $warungAsal,
@@ -225,9 +190,8 @@ class MutasiBarangController extends Controller
                 ]);
 
                 $created++;
-                // Jangan decrement stok di sini kecuali kamu menyimpan stok_saat_ini di DB secara nyata
-                // dan memang ingin menguranginya segera. Biasanya pengurangan stok dilakukan saat mutasi "diterima".
             }
+
             DB::commit();
 
             if ($created === 0) {
@@ -237,11 +201,11 @@ class MutasiBarangController extends Controller
             return redirect()->route('mutasibarang.index')->with('success', 'Mutasi berhasil disimpan (pending).');
         } catch (\Throwable $e) {
             DB::rollBack();
-            // logging optional
             Log::error('Mutasi store error: ' . $e->getMessage());
             return back()->withErrors(['error' => 'Terjadi kesalahan saat menyimpan mutasi.'])->withInput();
         }
     }
+
 
     /**
      * Form edit mutasi

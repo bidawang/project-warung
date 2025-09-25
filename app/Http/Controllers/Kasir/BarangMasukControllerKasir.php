@@ -155,7 +155,7 @@ class BarangMasukControllerKasir extends Controller
         try {
             BarangMasuk::whereIn('id', $request->barangMasuk)->update(['status' => $request->status_baru]);
             $message = 'Status barang masuk berhasil diperbarui menjadi ' . $request->status_baru;
-            return redirect()->route('kasir.stok-barang.index')->with('success', $message);
+            return redirect()->route('kasir.stokbarang.index')->with('success', $message);
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Terjadi kesalahan saat memperbarui status.');
         }

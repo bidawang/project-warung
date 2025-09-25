@@ -45,7 +45,7 @@
                             <th scope="col" class="text-center">#</th>
                             <th scope="col">Nama Barang</th>
                             <th scope="col" class="text-center">Stok</th>
-                            <th scope="col">Harga & Kuantitas</th>
+                            <th scope="col">Harga Jual</th>
                             <th scope="col" class="text-center">Tanggal Kadaluarsa</th>
                         </tr>
                     </thead>
@@ -103,7 +103,7 @@
                                 {{-- Tombol tambah kuantitas --}}
                                 @if($item->id)
                                 <a href="{{ route('kasir.kuantitas.create', ['id_stok_warung' => $item->id]) }}"
-                                   class="btn btn-sm btn-primary rounded-pill mt-2">
+                                   class="btn btn-sm btn-primary mt-2">
                                     <i class="fas fa-plus me-1"></i> Tambah
                                 </a>
                                 @endif

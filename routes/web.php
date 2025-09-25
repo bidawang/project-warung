@@ -41,8 +41,8 @@ use App\Http\Controllers\Kasir\{
     BarangKeluarController,
     BarangMasukControllerKasir,
     KuantitasController,
-    HutangControllerAdmin,
     HutangControllerKasir,
+    HutangBarangMasukControllerKasir,
     KasControllerAdmin,
     KasControllerKasir,
     KasirControllerAdmin,
@@ -126,6 +126,10 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::get('/hutang/detail/{id}', [HutangControllerKasir::class, 'detail'])->name('hutang.detail');
     Route::post('/hutang/bayar/{id}', [HutangControllerKasir::class, 'bayar'])->name('hutang.bayar');
 
+    // Hutang Barang Masuk
+    Route::get('/hutangBarangamMasuk', [HutangBarangMasukControllerKasir::class, 'index'])->name('hutang.barangmasuk.index');
+    Route::get('/hutangBarangamMasuk/detail/{id}', [HutangBarangMasukControllerKasir::class, 'detail'])->name('hutang.barangmasuk.detail');
+    Route::post('/hutangBarangamMasuk/bayar/{id}', [HutangBarangMasukControllerKasir::class, 'bayar'])->name('hutang.barangmasuk.bayar');
 
     Route::resource('barangkeluar', BarangKeluarController::class);
     Route::post('kasir/stok-barang/barang-masuk/konfirmasi', [BarangMasukControllerKasir::class, 'updateStatus'])->name('barang-masuk.konfirmasi');

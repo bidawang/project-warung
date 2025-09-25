@@ -13,6 +13,8 @@ use App\Models\Warung;
 use App\Models\StokWarung;
 use App\Models\TransaksiAwal;
 use App\Models\TransaksiLainLain;
+use App\Models\HutangBarangMasuk; // Import Model HutangBarangMasuk
+
 use Illuminate\Http\Request;
 
 class TransaksiBarangController extends Controller
@@ -165,10 +167,11 @@ class TransaksiBarangController extends Controller
         $ids = explode(',', $request->transaksi_ids);
 
         foreach ($ids as $id) {
-            $transaksiBarang = TransaksiBarang::find($id);
+            $transaksiBarang = TransaksiBarang::with('areaPembelian')->find($id);
             if (!$transaksiBarang) {
                 continue;
             }
+
             // Cari stok warung untuk barang ini
             $stokWarung = StokWarung::firstOrCreate(
                 [
@@ -182,13 +185,26 @@ class TransaksiBarangController extends Controller
 
 
             // Buat barang masuk (status masih null = kirim, belum diterima/ditolak)
-            BarangMasuk::create([
+            $barangMasuk = BarangMasuk::create([
                 'id_transaksi_barang' => $transaksiBarang->id,
                 'id_stok_warung' => $stokWarung->id,
                 'id_barang' => $transaksiBarang->id_barang, // pastikan pakai field yang benar
                 'jumlah' => $transaksiBarang->jumlah,
                 'status' => 'pending',
             ]);
+
+            // Hitung harga total dengan markup
+            $hargaTotalBeli = $transaksiBarang->harga ?? 0;
+            $markupPercent = optional($transaksiBarang->areaPembelian)->markup ?? 0;
+            $hargaFinalTotal = $hargaTotalBeli + ($hargaTotalBeli * $markupPercent / 100);
+
+            // --- Simpan ke tabel hutang_barang_masuk dengan harga yang sudah di-markup ---
+            HutangBarangMasuk::create([
+                'id_warung'       => $request->warung_id,
+                'id_barang_masuk' => $barangMasuk->id,
+                'total'           => $hargaFinalTotal,
+            ]);
+            // --- Akhir Tambahan ---
         }
 
         return redirect()->route('transaksibarang.index', ['status' => 'kirim'])

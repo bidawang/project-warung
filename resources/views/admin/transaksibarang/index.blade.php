@@ -53,7 +53,7 @@
                 @php
                 $tabs = [
                 'pending' => 'Belum Dikirim',
-                'dikirim' => 'Dikirim',
+                'kirim' => 'Dikirim',
                 'terima' => 'Sudah Diterima',
                 'tolak' => 'Ditolak'
                 ];
