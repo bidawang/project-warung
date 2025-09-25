@@ -18,7 +18,6 @@ use App\Http\Controllers\{
     BungaController,
     PembayaranHutangController,
     BarangHutangController,
-    KuantitasController,
     TargetPencapaianController,
     StokBarangController,
     AuthController,
@@ -41,6 +40,7 @@ use App\Http\Controllers\Admin\{
 use App\Http\Controllers\Kasir\{
     BarangKeluarController,
     BarangMasukControllerKasir,
+    KuantitasController,
     HutangControllerAdmin,
     HutangControllerKasir,
     KasControllerAdmin,
@@ -101,11 +101,21 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::resource('warung', WarungController::class);
     Route::resource('aturanTenggat', AturanTenggatControllerAdmin::class);
     Route::resource('laba', LabaControllerAdmin::class);
+    Route::get('/mutasibarang', [MutasiBarangController::class, 'index'])->name('mutasibarang.index');
 });
 
 
 Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::get('/', [KasirControllerKasir::class, 'index'])->name('kasir');
+
+    // Kuantitas routes manual
+    Route::get('kuantitas/create', [KuantitasController::class, 'create'])->name('kuantitas.create');
+    Route::post('kuantitas/store', [KuantitasController::class, 'store'])->name('kuantitas.store');
+
+    Route::get('kuantitas/{id}/edit', [KuantitasController::class, 'edit'])->name('kuantitas.edit');
+    Route::put('kuantitas/{id}/update', [KuantitasController::class, 'update'])->name('kuantitas.update');
+    Route::delete('kuantitas/{id}', [KuantitasController::class, 'destroy'])->name('kuantitas.destroy');
+
 
     Route::get('/stok-barang', [StokBarangControllerKasir::class, 'index'])->name('stokbarang.index');
     Route::get('/stok-barang/barang-masuk', [StokBarangControllerKasir::class, 'barangMasuk'])->name('stokbarang.barangmasuk');
@@ -146,7 +156,8 @@ Route::resource('bunga', BungaController::class);
 Route::resource('pembayaranhutang', PembayaranHutangController::class);
 Route::resource('baranghutang', BarangHutangController::class);
 
-Route::resource('kuantitas', KuantitasController::class);
+// // Route::resource('kuantitas', KuantitasController::class);
+// route::post('kuantitas/store', [KuantitasController::class, 'store'])->name('kuantitas.store');
 // Route::post('kuantitas/create', [KuantitasController::class, 'create'])->name('kuantitas.create');
 
 

@@ -3,7 +3,7 @@
 @section('title', 'Notifikasi Barang Masuk')
 
 @section('content')
-<div class="container mt-4">
+<div class="">
     <div class="card shadow-sm">
         <div class="card-header bg-success text-white">
             <h5 class="mb-0">Daftar Barang Masuk</h5>

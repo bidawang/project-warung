@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Kasir;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\BarangMasuk;
+use App\Models\Laba;
 use App\Models\StokWarung; // Pastikan model ini tersedia
 use Illuminate\Support\Facades\Auth;
 
@@ -17,12 +18,15 @@ class StokBarangControllerKasir extends Controller
     {
         $search = $request->get('search');
 
-        // Ambil stok barang milik warung kasir user yang login
-        // Tambahkan relasi 'barang.transaksiBarang' untuk mengakses data transaksi
-        $stokBarang = StokWarung::with(['barang.transaksiBarang' => function ($query) {
-            // Eager load relasi areaPembelian dan urutkan berdasarkan tanggal terbaru
-            $query->with('areaPembelian')->latest();
-        }, 'warung'])
+        $stokBarang = StokWarung::with([
+            'barang.transaksiBarang' => function ($query) {
+                // Urutkan transaksi barang agar yang terbaru (latest) berada di paling atas
+                // untuk digunakan sebagai basis harga beli
+                $query->with('areaPembelian')->latest();
+            },
+            'warung',
+            'kuantitas'
+        ])
             ->whereHas('warung', function ($query) {
                 $query->where('id_user', Auth::id());
             })
@@ -35,55 +39,72 @@ class StokBarangControllerKasir extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        // Transform koleksi untuk hitung harga jual dan tambahkan tanggal kadaluarsa
         $stokBarang->getCollection()->transform(function ($stok) {
-            // Hitung stok saat ini (jika belum ada properti stok_saat_ini, hitung di sini)
+            $idWarung = $stok->id_warung;
+
+            // --- 1. Hitung Stok Saat Ini (Sama seperti sebelumnya) ---
             if (!isset($stok->stok_saat_ini)) {
                 $stokMasuk = $stok->barangMasuk()
                     ->where('status', 'terima')
-                    ->whereHas('stokWarung', fn($q) => $q->where('id_warung', $stok->id_warung))
+                    ->whereHas('stokWarung', fn($q) => $q->where('id_warung', $idWarung))
                     ->sum('jumlah');
 
                 $stokKeluar = $stok->barangKeluar()
-                    ->whereHas('stokWarung', fn($q) => $q->where('id_warung', $stok->id_warung))
+                    ->whereHas('stokWarung', fn($q) => $q->where('id_warung', $idWarung))
                     ->sum('jumlah');
 
                 $mutasiMasuk = $stok->mutasiBarang()
                     ->where('status', 'terima')
-                    ->whereHas('stokWarung', fn($q) => $q->where('warung_tujuan', $stok->id_warung))
+                    ->whereHas('stokWarung', fn($q) => $q->where('warung_tujuan', $idWarung))
                     ->sum('jumlah');
 
                 $mutasiKeluar = $stok->mutasiBarang()
                     ->where('status', 'terima')
-                    ->whereHas('stokWarung', fn($q) => $q->where('warung_asal', $stok->id_warung))
+                    ->whereHas('stokWarung', fn($q) => $q->where('warung_asal', $idWarung))
                     ->sum('jumlah');
 
                 $stok->stok_saat_ini = $stokMasuk + $mutasiMasuk - $mutasiKeluar - $stokKeluar;
             }
 
-            // Ambil transaksiBarang terbaru untuk harga dan tanggal kadaluarsa
-            // Menggunakan `first()` pada koleksi yang sudah di-eager load lebih efisien
+            // --- 2. Hitung Harga Jual Satuan (Sesuai Logika Sebelumnya) ---
+            // Ambil transaksi terbaru (sudah di-eager load dan di-sort latest di atas)
             $transaksi = $stok->barang->transaksiBarang->first();
 
-            if (!$transaksi) {
-                $stok->harga_jual = 0;
-                $stok->markup_percent = 0;
-                $stok->tanggal_kadaluarsa = null; // Tambahkan properti baru
+            if (!$transaksi || $transaksi->jumlah == 0) {
+                $stok->harga_jual = 0; // Harga Jual Satuan Dasar
+                $stok->tanggal_kadaluarsa = null;
+                $stok->kuantitas_list = $stok->kuantitas; // Pastikan kuantitas tetap ada
                 return $stok;
             }
 
-            $hargaTotalBeli = $transaksi->harga ?? 0;
-            $markupPercent = optional($transaksi->areaPembelian)->markup ?? 0;
+            // Harga dasar per satuan (Harga total beli / jumlah unit)
+            $hargaDasarPerSatuan = ($transaksi->harga ?? 0) / max($transaksi->jumlah, 1);
 
-            $stok->markup_percent = $markupPercent;
-            $stok->harga_jual = $hargaTotalBeli + ($hargaTotalBeli * $markupPercent / 100);
-            $stok->tanggal_kadaluarsa = $transaksi->tanggal_kadaluarsa; // Ambil tanggal kadaluarsa dari transaksi terbaru
+            // Markup dari area pembelian
+            $markupPercent = optional($transaksi->areaPembelian)->markup ?? 0;
+            $hargaSetelahMarkup = $hargaDasarPerSatuan + ($hargaDasarPerSatuan * $markupPercent / 100);
+
+            // Harga jual dasar dari tabel Laba
+            $laba = Laba::where('input_minimal', '<=', $hargaSetelahMarkup)
+                ->where('input_maksimal', '>=', $hargaSetelahMarkup)
+                ->first();
+
+            // **Ini adalah Harga Jual Satuan Dasar**
+            $hargaJualDasar = $laba ? $laba->harga_jual : 0;
+
+            $stok->harga_jual = $hargaJualDasar;
+            $stok->tanggal_kadaluarsa = $transaksi->tanggal_kadaluarsa;
+
+            // Memastikan koleksi kuantitas dikirim ke view
+            // Kuangitas sudah di-eager load, cukup memastikan namanya konsisten jika diperlukan
+            $stok->kuantitas_list = $stok->kuantitas->sortByDesc('jumlah');
 
             return $stok;
         });
 
         return view('kasir.stok_barang.index', compact('stokBarang', 'search'));
     }
+
 
     /**
      * Menampilkan daftar barang masuk (pending/diterima/ditolak) untuk konfirmasi.

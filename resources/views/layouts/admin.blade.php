@@ -125,6 +125,18 @@
                     <span class="ml-4">Target Pencapaian</span>
                 </a>
 
+                <a href="{{ route('admin.mutasibarang.index') }}"
+                    class=" flex items-center px-6 py-3 mt-2 transition duration-200 ease-in-out {{ request()->is('admin/target*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
+                    </svg>
+                    <span class="ml-4">Mutasi Barang</span>
+                </a>
+
                 <a href="/admin/kategori"
                     class="flex items-center px-6 py-3 mt-2 transition duration-200 ease-in-out {{ request()->is('admin/kategori*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
