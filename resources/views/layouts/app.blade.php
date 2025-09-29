@@ -229,6 +229,13 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="{{ route('kasir.rencanabelanja.index') }}"
+                        class="nav-link @if (Request::is('kasir/rencanabelanja*')) active @endif">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span>Rencana Belanja</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="{{ url('/kasir/hutangBarangamMasuk') }}"
                         class="nav-link @if (Request::is('kasir/hutang*')) active @endif">
                         <i class="fas fa-file-invoice-dollar"></i>

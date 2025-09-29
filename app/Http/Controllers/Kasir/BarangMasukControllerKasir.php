@@ -9,6 +9,9 @@ use App\Models\StokWarung;
 use App\Models\TransaksiBarang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Exception;
+use Illuminate\Support\Facades\Log; // Pastikan ini diimpor jika menggunakan Log::error
+use Illuminate\Support\Facades\DB;
 
 class BarangMasukControllerKasir extends Controller
 {
@@ -70,7 +73,7 @@ class BarangMasukControllerKasir extends Controller
             return $bm;
         });
 
-
+        dd($barangMasuk);
         return view('barangmasuk.index', compact('barangMasuk', 'status', 'search'));
     }
 
@@ -103,72 +106,94 @@ class BarangMasukControllerKasir extends Controller
         return redirect()->route('barangmasuk.index')->with('success', 'Barang masuk berhasil ditambahkan');
     }
 
-    /**
-     * Tampilkan detail barang masuk
-     */
-    public function show($id)
-    {
-        $barangMasuk = BarangMasuk::with(['transaksiBarang', 'stokWarung.barang'])->findOrFail($id);
-        return view('barangmasuk.show', compact('barangMasuk'));
-    }
+    // /**
+    //  * Form edit barang masuk
+    //  */
+    // public function edit($id)
+    // {
+    //     $barangMasuk = BarangMasuk::findOrFail($id);
+    //     $transaksiBarang = TransaksiBarang::all();
+    //     $stokWarung = StokWarung::with('barang')->get();
 
-    /**
-     * Form edit barang masuk
-     */
-    public function edit($id)
-    {
-        $barangMasuk = BarangMasuk::findOrFail($id);
-        $transaksiBarang = TransaksiBarang::all();
-        $stokWarung = StokWarung::with('barang')->get();
+    //     return view('barangmasuk.edit', compact('barangMasuk', 'transaksiBarang', 'stokWarung'));
+    // }
 
-        return view('barangmasuk.edit', compact('barangMasuk', 'transaksiBarang', 'stokWarung'));
-    }
+    // /**
+    //  * Update barang masuk
+    //  */
+    // public function update(Request $request, $id)
+    // {
+    //     $validated = $request->validate([
+    //         'id_transaksi_barang' => 'required|exists:transaksi_barang,id',
+    //         'id_stok_warung' => 'required|exists:stok_warung,id',
+    //         'jumlah' => 'required|integer|min:1',
+    //         'status' => 'required|string|max:100',
+    //         'keterangan' => 'nullable|string',
+    //     ]);
 
-    /**
-     * Update barang masuk
-     */
-    public function update(Request $request, $id)
-    {
-        $validated = $request->validate([
-            'id_transaksi_barang' => 'required|exists:transaksi_barang,id',
-            'id_stok_warung' => 'required|exists:stok_warung,id',
-            'jumlah' => 'required|integer|min:1',
-            'status' => 'required|string|max:100',
-            'keterangan' => 'nullable|string',
-        ]);
+    //     $barangMasuk = BarangMasuk::findOrFail($id);
+    //     $barangMasuk->update($validated);
 
-        $barangMasuk = BarangMasuk::findOrFail($id);
-        $barangMasuk->update($validated);
-
-        return redirect()->route('barangmasuk.index')->with('success', 'Barang masuk berhasil diperbarui');
-    }
+    //     return redirect()->route('barangmasuk.index')->with('success', 'Barang masuk berhasil diperbarui');
+    // }
 
     public function updateStatus(Request $request)
     {
-        // dd($request->all());
+        // 1. Validasi Input
         $request->validate([
             'barangMasuk' => 'required|array',
             'barangMasuk.*' => 'exists:barang_masuk,id',
             'status_baru' => 'required|in:terima,tolak',
         ]);
-        // dd($request->all());
+
         try {
+            // Memulai Transaksi Database untuk menjamin atomisitas (semua berhasil atau semua gagal)
+            DB::beginTransaction();
+
+            // 2. Update status di tabel barang_masuk
             BarangMasuk::whereIn('id', $request->barangMasuk)->update(['status' => $request->status_baru]);
+// dd()
             $message = 'Status barang masuk berhasil diperbarui menjadi ' . $request->status_baru;
+
+            // 3. Logika Update Stok (Hanya jika status_baru adalah 'terima')
+            if ($request->status_baru === 'terima') {
+
+                // Ambil semua BarangMasuk yang statusnya baru saja 'terima'
+                $barangMasukItems = BarangMasuk::whereIn('id', $request->barangMasuk)
+                    ->where('status', 'terima')
+                    ->get();
+
+                foreach ($barangMasukItems as $item) {
+
+                    // PENCEGAHAN ERROR: Pastikan nilai jumlah_masuk adalah numerik yang valid.
+                    // Gunakan (float) jika stok bisa berbentuk desimal (misal: 1.5),
+                    // atau (int) jika stok selalu bilangan bulat.
+                    $jumlahMasuk = (float) $item->jumlah;
+// dd($jumlahMasuk);
+                    // Lakukan penambahan hanya jika jumlahMasuk positif
+                    if ($jumlahMasuk > 0) {
+                        // Tambahkan jumlah_masuk ke stok yang ada di stok_warung
+                        // MENGGUNAKAN id_stok_warung DARI ITEM BARANG MASUK
+                        StokWarung::where('id', $item->id_stok_warung)
+                            ->increment('jumlah', $jumlahMasuk);
+                    }
+                }
+
+                $message .= ' dan stok barang berhasil ditambahkan.';
+            }
+
+            // Terapkan semua perubahan ke database
+            DB::commit();
+
             return redirect()->route('kasir.stokbarang.index')->with('success', $message);
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Terjadi kesalahan saat memperbarui status.');
+        } catch (Exception $e) {
+            // Batalkan semua perubahan jika terjadi kesalahan
+            DB::rollBack();
+
+            // Log error untuk debugging
+            Log::error("Gagal update status dan stok: " . $e->getMessage());
+
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat memperbarui status dan/atau stok. Mohon periksa log server.');
         }
-    }
-
-    /**
-     * Hapus barang masuk
-     */
-    public function destroy($id)
-    {
-        $barangMasuk = BarangMasuk::findOrFail($id);
-        $barangMasuk->delete();
-
-        return redirect()->route('barangmasuk.index')->with('success', 'Barang masuk berhasil dihapus');
     }
 }

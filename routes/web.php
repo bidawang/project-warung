@@ -43,7 +43,7 @@ use App\Http\Controllers\Kasir\{
     KuantitasController,
     HutangControllerKasir,
     HutangBarangMasukControllerKasir,
-    KasControllerAdmin,
+    RencanaBelanjaControllerKasir,
     KasControllerKasir,
     KasirControllerAdmin,
     KasirControllerKasir,
@@ -61,6 +61,9 @@ use Illuminate\Http\Request;
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
+Route::get('/testailwind', function () {
+    return view('testailwind');
+});
 
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
@@ -130,6 +133,14 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::get('/hutangBarangamMasuk', [HutangBarangMasukControllerKasir::class, 'index'])->name('hutang.barangmasuk.index');
     Route::get('/hutangBarangamMasuk/detail/{id}', [HutangBarangMasukControllerKasir::class, 'detail'])->name('hutang.barangmasuk.detail');
     Route::post('/hutangBarangamMasuk/bayar/{id}', [HutangBarangMasukControllerKasir::class, 'bayar'])->name('hutang.barangmasuk.bayar');
+
+    Route::get('/rencana-belanja', [RencanaBelanjaControllerKasir::class, 'rencanaBelanja'])->name('rencanabelanja.index');
+    Route::get('/rencana-belanja-list', [RencanaBelanjaControllerKasir::class, 'rencanaBelanja'])->name('rencanabelanja.list');
+    Route::get('/rencana-belanja/history', [RencanaBelanjaControllerKasir::class, 'history'])->name('rencanabelanja.history');
+
+    // Rute BARU untuk CREATE dan STORE
+    Route::get('/rencana-belanja/create', [RencanaBelanjaControllerKasir::class, 'create'])->name('rencanabelanja.create');
+    Route::post('/rencana-belanja/store', [RencanaBelanjaControllerKasir::class, 'store'])->name('rencanabelanja.store');
 
     Route::resource('barangkeluar', BarangKeluarController::class);
     Route::post('kasir/stok-barang/barang-masuk/konfirmasi', [BarangMasukControllerKasir::class, 'updateStatus'])->name('barang-masuk.konfirmasi');

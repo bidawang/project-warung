@@ -20,8 +20,6 @@ class StokBarangControllerKasir extends Controller
 
         $stokBarang = StokWarung::with([
             'barang.transaksiBarang' => function ($query) {
-                // Urutkan transaksi barang agar yang terbaru (latest) berada di paling atas
-                // untuk digunakan sebagai basis harga beli
                 $query->with('areaPembelian')->latest();
             },
             'warung',
@@ -40,63 +38,30 @@ class StokBarangControllerKasir extends Controller
             ->withQueryString();
 
         $stokBarang->getCollection()->transform(function ($stok) {
-            $idWarung = $stok->id_warung;
+            // --- 1. Ambil stok langsung dari tabel stok_warung ---
+            $stok->stok_saat_ini = $stok->jumlah;
 
-            // --- 1. Hitung Stok Saat Ini (Sama seperti sebelumnya) ---
-            if (!isset($stok->stok_saat_ini)) {
-                $stokMasuk = $stok->barangMasuk()
-                    ->where('status', 'terima')
-                    ->whereHas('stokWarung', fn($q) => $q->where('id_warung', $idWarung))
-                    ->sum('jumlah');
-
-                $stokKeluar = $stok->barangKeluar()
-                    ->whereHas('stokWarung', fn($q) => $q->where('id_warung', $idWarung))
-                    ->sum('jumlah');
-
-                $mutasiMasuk = $stok->mutasiBarang()
-                    ->where('status', 'terima')
-                    ->whereHas('stokWarung', fn($q) => $q->where('warung_tujuan', $idWarung))
-                    ->sum('jumlah');
-
-                $mutasiKeluar = $stok->mutasiBarang()
-                    ->where('status', 'terima')
-                    ->whereHas('stokWarung', fn($q) => $q->where('warung_asal', $idWarung))
-                    ->sum('jumlah');
-
-                $stok->stok_saat_ini = $stokMasuk + $mutasiMasuk - $mutasiKeluar - $stokKeluar;
-            }
-
-            // --- 2. Hitung Harga Jual Satuan (Sesuai Logika Sebelumnya) ---
-            // Ambil transaksi terbaru (sudah di-eager load dan di-sort latest di atas)
+            // --- 2. Hitung Harga Jual Satuan (seperti sebelumnya) ---
             $transaksi = $stok->barang->transaksiBarang->first();
 
             if (!$transaksi || $transaksi->jumlah == 0) {
-                $stok->harga_jual = 0; // Harga Jual Satuan Dasar
+                $stok->harga_jual = 0;
                 $stok->tanggal_kadaluarsa = null;
-                $stok->kuantitas_list = $stok->kuantitas; // Pastikan kuantitas tetap ada
+                $stok->kuantitas_list = $stok->kuantitas;
                 return $stok;
             }
 
-            // Harga dasar per satuan (Harga total beli / jumlah unit)
             $hargaDasarPerSatuan = ($transaksi->harga ?? 0) / max($transaksi->jumlah, 1);
 
-            // Markup dari area pembelian
             $markupPercent = optional($transaksi->areaPembelian)->markup ?? 0;
             $hargaSetelahMarkup = $hargaDasarPerSatuan + ($hargaDasarPerSatuan * $markupPercent / 100);
 
-            // Harga jual dasar dari tabel Laba
             $laba = Laba::where('input_minimal', '<=', $hargaSetelahMarkup)
                 ->where('input_maksimal', '>=', $hargaSetelahMarkup)
                 ->first();
 
-            // **Ini adalah Harga Jual Satuan Dasar**
-            $hargaJualDasar = $laba ? $laba->harga_jual : 0;
-
-            $stok->harga_jual = $hargaJualDasar;
+            $stok->harga_jual = $laba ? $laba->harga_jual : 0;
             $stok->tanggal_kadaluarsa = $transaksi->tanggal_kadaluarsa;
-
-            // Memastikan koleksi kuantitas dikirim ke view
-            // Kuangitas sudah di-eager load, cukup memastikan namanya konsisten jika diperlukan
             $stok->kuantitas_list = $stok->kuantitas->sortByDesc('jumlah');
 
             return $stok;
@@ -104,6 +69,7 @@ class StokBarangControllerKasir extends Controller
 
         return view('kasir.stok_barang.index', compact('stokBarang', 'search'));
     }
+
 
 
     /**
@@ -114,6 +80,12 @@ class StokBarangControllerKasir extends Controller
         $status = $request->get('status', 'pending');
         $search = $request->get('search');
 
+        //         $barangMasuk = BarangMasuk::with([
+        //     'transaksiBarang.areaPembelian',
+        //     'stokWarung.barang',
+        //     'stokWarung.warung.user'
+        // ])->get();
+        // dd($barangMasuk);
         $barangMasuk = BarangMasuk::with([
             'transaksiBarang.areaPembelian',
             'stokWarung.barang',

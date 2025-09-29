@@ -5,9 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Dashboard') - Pengelolaan Data</title>
+<link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    {{-- Memuat Tailwind CSS dari CDN --}}
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Gaya tambahan untuk transisi sidebar */
         .sidebar {
@@ -24,7 +25,9 @@
                 transform: translateX(0);
             }
         }
+
     </style>
+
 </head>
 
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
@@ -74,7 +77,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7l8 4"></path>
                     </svg>
-                    <span class="ml-4">Transaksi Barang</span>
+                    <span class="ml-4">Rencana Belanja</span>
                 </a>
 
                 <a href="/admin/area"

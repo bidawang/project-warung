@@ -16,41 +16,22 @@ class KasirControllerKasir extends Controller
         $idWarung = session('id_warung');
 
         if (!$idWarung) {
-            return redirect()->route('kasir.kasir')->with('error', 'ID warung tidak ditemukan di sesi.');
+            return redirect()->route('kasir.kasir')
+                ->with('error', 'ID warung tidak ditemukan di sesi.');
         }
 
         $stok_warungs = StokWarung::where('id_warung', $idWarung)
             ->with(['barang.transaksiBarang.areaPembelian', 'kuantitas'])
             ->get();
 
-        $stok_warungs->transform(function ($stok) use ($idWarung) {
-            // Hitung stok saat ini
-            $stokMasuk = $stok->barangMasuk()
-                ->where('status', 'terima')
-                ->whereHas('stokWarung', fn($q) => $q->where('id_warung', $idWarung))
-                ->sum('jumlah');
+        $stok_warungs->transform(function ($stok) {
+            // --- 1. Ambil stok langsung dari tabel stok_warung ---
+            $stok->stok_saat_ini = $stok->jumlah;
 
-            $stokKeluar = $stok->barangKeluar()
-                ->whereHas('stokWarung', fn($q) => $q->where('id_warung', $idWarung))
-                ->sum('jumlah');
-
-            $mutasiMasuk = $stok->mutasiBarang()
-                ->where('status', 'terima')
-                ->whereHas('stokWarung', fn($q) => $q->where('warung_tujuan', $idWarung))
-                ->sum('jumlah');
-
-            $mutasiKeluar = $stok->mutasiBarang()
-                ->where('status', 'terima')
-                ->whereHas('stokWarung', fn($q) => $q->where('warung_asal', $idWarung))
-                ->sum('jumlah');
-
-            $stokSaatIni = $stokMasuk + $mutasiMasuk - $mutasiKeluar - $stokKeluar;
-            $stok->stok_saat_ini = $stokSaatIni;
-
-            // Ambil transaksi terbaru
+            // --- 2. Ambil transaksi terbaru untuk hitung harga ---
             $transaksi = $stok->barang->transaksiBarang()->latest()->first();
 
-            if (!$transaksi) {
+            if (!$transaksi || $transaksi->jumlah == 0) {
                 $stok->harga_jual = 0;
                 $stok->kuantitas_list = [];
                 return $stok;
@@ -70,10 +51,10 @@ class KasirControllerKasir extends Controller
 
             $hargaJualDasar = $laba ? $laba->harga_jual : 0;
 
-            // Ambil kuantitas (bundle) dan urutkan descending berdasarkan jumlah (kelipatan)
+            // Ambil kuantitas (bundle) dan urutkan descending
             $kuantitasList = $stok->kuantitas->sortByDesc('jumlah')->values();
 
-            // Fungsi hitung harga total berdasarkan jumlah pembelian (beliQty)
+            // Hitung harga jual sesuai kuantitas pembelian
             $stok->calculateHargaJual = function (int $beliQty) use ($kuantitasList, $hargaJualDasar) {
                 $sisaQty = $beliQty;
                 $totalHarga = 0;

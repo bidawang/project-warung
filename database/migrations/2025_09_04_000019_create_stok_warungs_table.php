@@ -13,7 +13,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('id_warung')->constrained('warung');
             $table->foreignId('id_barang')->constrained('barang');
-            $table->text('keterangan')->nullable();
+            $table->integer('jumlah');
             $table->timestamps();
         });
     }

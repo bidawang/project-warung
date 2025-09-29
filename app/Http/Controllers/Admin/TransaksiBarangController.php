@@ -13,7 +13,8 @@ use App\Models\Warung;
 use App\Models\StokWarung;
 use App\Models\TransaksiAwal;
 use App\Models\TransaksiLainLain;
-use App\Models\HutangBarangMasuk; // Import Model HutangBarangMasuk
+use App\Models\HutangBarangMasuk;
+use App\Models\RencanaBelanja;
 
 use Illuminate\Http\Request;
 
@@ -80,15 +81,41 @@ class TransaksiBarangController extends Controller
 
     public function create()
     {
+        // Ambil data yang sudah ada
+        // Asumsi model-model ini sudah didefinisikan dengan benar
         $transaksis = TransaksiKas::all();
-
-        // Ambil semua barang
         $barangs = Barang::all();
-
-        // Ambil semua area pembelian
         $areas = AreaPembelian::all();
 
-        return view('admin.transaksibarang.create', compact('transaksis', 'barangs', 'areas'));
+        // Ambil semua data Rencana Belanja, eager load relasi yang dibutuhkan
+        $rencanaBelanjas = RencanaBelanja::with(['barang', 'warung'])
+            ->whereColumn('jumlah_dibeli', '<', 'jumlah_awal') // Lebih aman menggunakan whereColumn
+            ->get();
+
+        // Opsi 1: Pengelompokan berdasarkan Warung
+        $rencanaBelanjaByWarung = $rencanaBelanjas->groupBy('warung.nama_warung');
+
+        // Opsi 2: Pengelompokan berdasarkan Barang (Detail Warung)
+        $rencanaBelanjaByBarang = $rencanaBelanjas->groupBy('barang.nama_barang');
+
+        // Opsi 3: Menghitung TOTAL KEBUTUHAN untuk setiap jenis Barang (Sesuai Permintaan)
+        $rencanaBelanjaTotalByBarang = $rencanaBelanjas
+            ->groupBy('barang.nama_barang') // Kelompokkan berdasarkan nama barang
+            ->map(function ($items, $namaBarang) {
+                // Hitung total kebutuhan (jumlah_awal - jumlah_dibeli) untuk barang ini
+                return $items->sum(function ($item) {
+                    return $item->jumlah_awal - $item->jumlah_dibeli;
+                });
+            });
+
+        return view('admin.transaksibarang.create', compact(
+            'transaksis',
+            'barangs',
+            'areas',
+            'rencanaBelanjaByWarung',
+            'rencanaBelanjaByBarang',
+            'rencanaBelanjaTotalByBarang' // Tambahkan variabel baru ini
+        ));
     }
 
 

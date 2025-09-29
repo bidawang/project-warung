@@ -14,6 +14,7 @@ class StokWarung extends Model
     protected $fillable = [
         'id_warung',
         'id_barang',
+        'jumlah',
         'keterangan'
     ];
 
