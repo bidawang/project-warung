@@ -26,8 +26,8 @@ class RencanaBelanjaControllerKasir extends Controller
             ->where('id_warung', $idWarung)
             ->where(function ($query) {
                 $query->whereNull('jumlah_dibeli')
-                      ->orWhere('jumlah_dibeli', 0);
-                    //   ->orWhereColumn('status','pending');
+                    ->orWhere('jumlah_dibeli', 0);
+                //   ->orWhereColumn('status','pending');
             })
             ->get();
 
@@ -41,8 +41,8 @@ class RencanaBelanjaControllerKasir extends Controller
      */
     public function history()
     {
-        // PENTING: ID Warung harus diambil secara dinamis dari user yang login (Kasir).
-        $idWarung = Auth::check() ? Auth::user()->id_warung : 1;
+        // ID Warung ambil dari session kasir login
+        $idWarung = session('id_warung');
 
         $historyRencanaBelanja = RencanaBelanja::with('barang')
             ->where('id_warung', $idWarung)
@@ -51,6 +51,7 @@ class RencanaBelanjaControllerKasir extends Controller
 
         return view('kasir.rencana_belanja.history', compact('historyRencanaBelanja'));
     }
+
 
     /**
      * Tampilkan form untuk membuat Rencana Belanja baru.
@@ -61,13 +62,13 @@ class RencanaBelanjaControllerKasir extends Controller
     public function create()
     {
         // PENTING: ID Warung harus diambil secara dinamis dari user yang login (Kasir).
-    $idWarung = session('id_warung');
+        $idWarung = session('id_warung');
         // Mengambil semua data stok barang di warung, diurutkan dari stok terkecil (0 hingga tertinggi).
         $stokBarang = StokWarung::with('barang')
             ->where('id_warung', $idWarung)
             ->orderBy('jumlah', 'asc')
             ->get();
-// dd($stokBarang);
+        // dd($stokBarang);
         return view('kasir.rencana_belanja.create', compact('stokBarang'));
     }
 
@@ -88,7 +89,7 @@ class RencanaBelanjaControllerKasir extends Controller
             'rencana.*.id_barang' => 'required|exists:barang,id',
             'rencana.*.jumlah_awal' => 'nullable|min:0', // Izinkan 0 untuk item yang tidak dipilih
         ]);
-// dd($validatedData);
+        // dd($validatedData);
         $itemsToInsert = [];
         $totalItems = 0;
 
@@ -111,7 +112,7 @@ class RencanaBelanjaControllerKasir extends Controller
         }
 
         if ($totalItems === 0) {
-             return redirect()->back()->withInput()->with('error', 'Tidak ada barang dengan jumlah rencana beli yang valid (minimal 1) yang disubmit.');
+            return redirect()->back()->withInput()->with('error', 'Tidak ada barang dengan jumlah rencana beli yang valid (minimal 1) yang disubmit.');
         }
 
         try {
@@ -119,7 +120,6 @@ class RencanaBelanjaControllerKasir extends Controller
             RencanaBelanja::insert($itemsToInsert);
 
             return redirect()->route('kasir.rencanabelanja.index')->with('success', $totalItems . ' Rencana belanja berhasil ditambahkan!');
-
         } catch (\Exception $e) {
             \Log::error("Gagal menyimpan Rencana Belanja Massal: " . $e->getMessage());
             return redirect()->back()->withInput()->with('error', 'Gagal menyimpan rencana belanja. Silakan coba lagi.');

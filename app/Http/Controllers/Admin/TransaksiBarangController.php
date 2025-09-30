@@ -29,7 +29,6 @@ class TransaksiBarangController extends Controller
         if (in_array($status, ['pending', 'kirim', 'terima', 'tolak'])) {
             $query->whereHas('barangMasuk', function ($q) use ($status) {
                 if ($status === 'kirim') {
-                    // Ada barang masuk, tapi belum diterima / ditolak
                     $q->whereNull('status');
                 } elseif (in_array($status, ['terima', 'tolak'])) {
                     $q->where('status', $status);
@@ -37,7 +36,6 @@ class TransaksiBarangController extends Controller
             }, $status === 'pending' ? '=' : '>', 0);
 
             if ($status === 'pending') {
-                // Pending = tidak ada relasi barang masuk sama sekali
                 $query->doesntHave('barangMasuk');
             }
         }
@@ -57,8 +55,55 @@ class TransaksiBarangController extends Controller
                 'stok' => $item->stok ?? 0,
             ]);
 
-        return view('admin.transaksibarang.index', compact('transaksibarangs', 'status', 'warungs', 'stokWarungData'));
+        // =======================================================
+        // Tambahan: data untuk frontend (stockByBarang)
+        // =======================================================
+        $allTransactions = $transaksibarangs->getCollection()->map(function ($trx) {
+            return [
+                'id'          => $trx->id,
+                'barang_id'   => $trx->barang->id ?? null,
+                'barang_nama' => $trx->barang->nama_barang ?? '-',
+                'jumlah_awal' => $trx->jumlah_awal,
+                'harga'       => $trx->harga,
+            ];
+        });
+
+        // Group by barang_id -> list stok
+        $stockByBarang = $allTransactions->groupBy('barang_id')->map(function ($items) {
+            return $items->map(fn($i) => [
+                'id'          => $i['id'],
+                'jumlah_awal' => $i['jumlah_awal'],
+                'harga'       => $i['harga'],
+            ])->values();
+        });
+
+        // =======================================================
+        // Tambahan: Rencana Belanja
+        // =======================================================
+        $rencanaBelanjas = RencanaBelanja::with(['barang', 'warung'])
+            ->whereColumn('jumlah_dibeli', '<', 'jumlah_awal')
+            ->get();
+
+        $rencanaBelanjaByWarung = $rencanaBelanjas->groupBy('warung.nama_warung');
+        $rencanaBelanjaByBarang = $rencanaBelanjas->groupBy('barang.nama_barang');
+        $rencanaBelanjaTotalByBarang = $rencanaBelanjas
+            ->groupBy('barang.nama_barang')
+            ->map(fn($items) => $items->sum(fn($item) => $item->jumlah_awal - $item->jumlah_dibeli));
+// dd($transaksibarangs->take(2));
+
+        return view('admin.transaksibarang.index2', compact(
+            'transaksibarangs',
+            'status',
+            'warungs',
+            'stokWarungData',
+            'rencanaBelanjaByWarung',
+            'rencanaBelanjaByBarang',
+            'rencanaBelanjaTotalByBarang',
+            'stockByBarang',       // 👈 baru
+            'allTransactions'      // 👈 baru
+        ));
     }
+
 
 
 
@@ -186,6 +231,7 @@ class TransaksiBarangController extends Controller
 
     public function kirimMassalProses(Request $request)
     {
+        dd($request->all());
         $request->validate([
             'transaksi_ids' => 'required|string',
             'warung_id' => 'required|exists:warung,id',
