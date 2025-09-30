@@ -148,12 +148,12 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::get('/mutasibarang', [MutasiBarangController::class, 'index'])->name('mutasibarang.index');
 
     Route::get('/member', [MemberControllerKasir::class, 'index'])->name('member.index');
-    Route::get('/member/detail/{id}', [MemberControllerKasir::class, 'index'])->name('member.detail');
+    Route::get('/member/detail/{id}', [MemberControllerKasir::class, 'detail'])->name('member.detail');
     Route::get('/member/create', [MemberControllerKasir::class, 'create'])->name('member.create');
-    Route::post('/member', [MemberControllerKasir::class, 'store'])->name('member.store');
-    Route::get('/member/{id}/edit', [MemberControllerKasir::class, 'edit'])->name('member.edit');
-    Route::put('/member//{id}', [MemberControllerKasir::class, 'update'])->name('member.update');
-    Route::delete('/member/{id}', [MemberControllerKasir::class, 'destroy'])->name('member.destroy');
+    Route::post('/member/store', [MemberControllerKasir::class, 'store'])->name('member.store');
+    Route::get('/member/edit/{id}', [MemberControllerKasir::class, 'edit'])->name('member.edit');
+    Route::put('/member/update/{id}', [MemberControllerKasir::class, 'update'])->name('member.update');
+    Route::delete('/member/delete/{id}', [MemberControllerKasir::class, 'destroy'])->name('member.destroy');
 
     Route::get('/profil', [ProfilControllerKasir::class, 'index'])->name('profil.index');
 });

@@ -19,4 +19,9 @@ class User extends Authenticatable
         'email',
         'keterangan'
     ];
+
+    public function hutang()
+    {
+        return $this->hasMany(Hutang::class, 'id_user', 'id');
+    }
 }
