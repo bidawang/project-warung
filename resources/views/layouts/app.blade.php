@@ -90,64 +90,22 @@
                             <i class="fas fa-database"></i> Master Data
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="{{ route('kategori.index') }}">Kategori</a></li>
-                            <li><a class="dropdown-item" href="{{ route('subkategori.index') }}">Sub Kategori</a></li>
-                            <li><a class="dropdown-item" href="{{ route('barang.index') }}">Barang</a></li>
-                            <li><a class="dropdown-item" href="{{ route('admin.warung.index') }}">Warung</a></li>
-                            <li><a class="dropdown-item" href="{{ route('area.index') }}">Area</a></li>
-                            <li><a class="dropdown-item" href="{{ route('user.index') }}">Pengguna</a></li>
-
-                        </ul>
-                    </li>
-
-                    <!-- Transaksi -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-exchange-alt"></i> Transaksi
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="{{ route('kaswarung.index') }}">Kas Warung</a></li>
-                            <li><a class="dropdown-item" href="{{ route('detailkaswarung.index') }}">Detail Kas
-                                    Warung</a></li>
-                            <li><a class="dropdown-item" href="{{ route('transaksikas.index') }}">Transaksi Kas</a></li>
-                            <li><a class="dropdown-item" href="{{ route('detailtransaksi.index') }}">Detail
-                                    Transaksi</a></li>
-                            <li><a class="dropdown-item" href="{{ route('transaksibarang.index') }}">Transaksi
-                                    Barang</a></li>
-                            <li><a class="dropdown-item" href="{{ route('stokwarung.index') }}">Stok Warung</a></li>
-                            <li><a class="dropdown-item" href="{{ route('barangmasuk.index') }}">Barang Masuk</a></li>
-                            <li><a class="dropdown-item" href="{{ route('mutasibarang.index') }}">Mutasi Barang</a>
-                            </li>
-                            <li><a class="dropdown-item" href="{{ route('hutang.index') }}">Hutang</a></li>
-                            <li><a class="dropdown-item" href="{{ route('bunga.index') }}">Bunga</a></li>
-                            <li><a class="dropdown-item" href="{{ route('pembayaranhutang.index') }}">Pembayaran
-                                    Hutang</a></li>
-                            <li><a class="dropdown-item" href="{{ route('baranghutang.index') }}">Barang Hutang</a>
-                            </li>
-                            {{-- <li><a class="dropdown-item" href="{{ route('kuantitas.index') }}">Kuantitas</a></li> --}}
-                            <li><a class="dropdown-item" href="{{ route('admin.targetpencapaian.index') }}">Target
-                                    Pencapaian</a></li>
-                            {{-- <li><a class="dropdown-item" href="{{ route('aturanTenggat.index') }}">Aturan Tenggat</a>
-                            </li> --}}
                             <li>
-                                <form action="{{ route('logout') }}" method="POST" class="d-inline">
-                                    @csrf
-                                    <button type="submit" class="dropdown-item text-danger">
-                                        <i class="bi bi-box-arrow-right"></i> Logout
-                                    </button>
-                                </form>
+                                <a class="dropdown-item" href="{{ url('/kasir/member') }}">
+                                    <i class="fas fa-users"></i> Member
+                                </a>
                             </li>
+
                         </ul>
                     </li>
-
                 </ul>
 
                 <!-- User -->
                 <div class="dropdown ms-3">
                     <a href="#" class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle"
                         id="dropdownUser" data-bs-toggle="dropdown">
-                        <img src="/image/foto-profil.jpg" alt="User Avatar" width="32"
-                            height="32" class="rounded-circle me-2">
+                        <img src="/image/foto-profil.jpg" alt="User Avatar" width="32" height="32"
+                            class="rounded-circle me-2">
                         <span class="d-none d-md-inline">Kasir</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0">
@@ -214,8 +172,7 @@
                 @auth
 
                     <li class="nav-item">
-                        <a href="{{ url('/kasir/kas') }}"
-                            class="nav-link @if (Request::is('kasir/kas*')) active @endif">
+                        <a href="{{ url('/kasir/kas') }}" class="nav-link @if (Request::is('kasir/kas*')) active @endif">
                             <i class="fas fa-wallet"></i>
                             <span>Kas</span>
                         </a>

@@ -51,7 +51,8 @@ use App\Http\Controllers\Kasir\{
     MutasiBarangControllerKasir,
     ProfilControllerKasir,
     StokBarangControllerAdmin,
-    StokBarangControllerKasir
+    StokBarangControllerKasir,
+    MemberControllerKasir
 };
 
 use Illuminate\Support\Facades\{Route, Password};
@@ -145,6 +146,13 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::resource('barangkeluar', BarangKeluarController::class);
     Route::post('kasir/stok-barang/barang-masuk/konfirmasi', [BarangMasukControllerKasir::class, 'updateStatus'])->name('barang-masuk.konfirmasi');
     Route::get('/mutasibarang', [MutasiBarangController::class, 'index'])->name('mutasibarang.index');
+
+    Route::get('/member', [MemberControllerKasir::class, 'index'])->name('member.index');
+    Route::get('/member/create', [MemberControllerKasir::class, 'create'])->name('member.create');
+    Route::post('/member', [MemberControllerKasir::class, 'store'])->name('member.store');
+    Route::get('/member/{id}/edit', [MemberControllerKasir::class, 'edit'])->name('member.edit');
+    Route::put('/member/{id}', [MemberControllerKasir::class, 'update'])->name('member.update');
+    Route::delete('/member/{id}', [MemberControllerKasir::class, 'destroy'])->name('member.destroy');
 
     Route::get('/profil', [ProfilControllerKasir::class, 'index'])->name('profil.index');
 });
