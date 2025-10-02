@@ -10,13 +10,16 @@ use App\Models\Barang;
 use App\Models\BarangMasuk;
 use App\Models\AreaPembelian;
 use App\Models\Warung;
+use App\Models\Laba;
 use App\Models\StokWarung;
 use App\Models\TransaksiAwal;
 use App\Models\TransaksiLainLain;
 use App\Models\HutangBarangMasuk;
 use App\Models\RencanaBelanja;
+use App\Models\HargaJual; // ⭐ Model baru
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class TransaksiBarangController extends Controller
 {
@@ -26,18 +29,21 @@ class TransaksiBarangController extends Controller
 
         $query = TransaksiBarang::with(['transaksiKas', 'barang', 'barangMasuk']);
 
-        if (in_array($status, ['pending', 'kirim', 'terima', 'tolak'])) {
-            $query->whereHas('barangMasuk', function ($q) use ($status) {
-                if ($status === 'kirim') {
-                    $q->whereNull('status');
-                } elseif (in_array($status, ['terima', 'tolak'])) {
-                    $q->where('status', $status);
-                }
-            }, $status === 'pending' ? '=' : '>', 0);
-
-            if ($status === 'pending') {
-                $query->doesntHave('barangMasuk');
-            }
+        if ($status === 'pending') {
+            // Logika eksklusif untuk 'pending': Transaksi Barang (Stok Sumber) yang belum pernah dikirim.
+            $query->doesntHave('barangMasuk');
+        } elseif ($status === 'kirim') {
+            $query->whereHas('barangMasuk', function ($q) {
+                $q->where('status', 'pending');
+            });
+        } elseif ($status === 'terima') {
+            $query->whereHas('barangMasuk', function ($q) {
+                $q->where('status', 'terima');
+            });
+        } elseif ($status === 'tolak') {
+            $query->whereHas('barangMasuk', function ($q) {
+                $q->where('status', 'tolak');
+            });
         }
 
         $transaksibarangs = $query->paginate(10)->appends(['status' => $status]);
@@ -89,8 +95,8 @@ class TransaksiBarangController extends Controller
         $rencanaBelanjaTotalByBarang = $rencanaBelanjas
             ->groupBy('barang.nama_barang')
             ->map(fn($items) => $items->sum(fn($item) => $item->jumlah_awal - $item->jumlah_dibeli));
-// dd($transaksibarangs->take(2));
-
+        // dd($transaksibarangs->take(2));
+        // dd($transaksibarangs);
         return view('admin.transaksibarang.index2', compact(
             'transaksibarangs',
             'status',
@@ -114,7 +120,7 @@ class TransaksiBarangController extends Controller
     {
         $request->validate([
             'ids' => 'required|array',
-            'status' => 'required|in:terima,tolak',
+            'status' => 'required|in:diterima,ditolak',
         ]);
 
         TransaksiBarang::whereIn('id', $request->ids)->update(['status' => $request->status]);
@@ -194,6 +200,7 @@ class TransaksiBarangController extends Controller
                             'harga'               => $harga,
                             'tanggal_kadaluarsa'  => $tanggalKadaluarsa, // Menambahkan kolom baru
                             'jenis'               => 'masuk',
+                            'status'              => 'pending',
                         ]);
 
                         $grandTotal += ($jumlah * $harga);
@@ -229,68 +236,266 @@ class TransaksiBarangController extends Controller
             ->with('success', 'Transaksi berhasil ditambahkan!');
     }
 
+
     public function kirimMassalProses(Request $request)
     {
-        dd($request->all());
-        $request->validate([
-            'transaksi_ids' => 'required|string',
-            'warung_id' => 'required|exists:warung,id',
+        // ... (Filter dan Validasi tetap sama)
+        $allData = $request->all();
+        $transaksiFiltered = collect($allData['transaksi'] ?? [])
+            ->filter(function ($trx) {
+                return isset($trx['barang_id']) && !empty($trx['details']);
+            })
+            ->toArray();
+
+        $request->merge(['transaksi' => $transaksiFiltered]);
+        $data = $request->validate([
+            'transaksi' => 'required|array',
+            'transaksi.*.barang_id' => 'required|exists:barang,id',
+            'transaksi.*.details' => 'required|array',
+            'transaksi.*.details.*.warung_id' => 'required|exists:warung,id',
+            'transaksi.*.details.*.jumlah' => 'required|integer|min:1',
+        ], [
+            // ... (Pesan Validasi)
+            'transaksi.required' => 'Data transaksi wajib diisi.',
+            'transaksi.*.barang_id.required' => 'Barang harus dipilih.',
+            'transaksi.*.barang_id.exists' => 'Barang tidak valid.',
+            'transaksi.*.details.required' => 'Detail pengiriman harus ada.',
+            'transaksi.*.details.*.warung_id.required' => 'Warung tujuan wajib dipilih.',
+            'transaksi.*.details.*.warung_id.exists' => 'Warung tujuan tidak valid.',
+            'transaksi.*.details.*.jumlah.required' => 'Jumlah pengiriman wajib diisi.',
+            'transaksi.*.details.*.jumlah.integer' => 'Jumlah pengiriman harus berupa angka.',
+            'transaksi.*.details.*.jumlah.min' => 'Jumlah minimal adalah 1.',
         ]);
 
-        $ids = explode(',', $request->transaksi_ids);
+        $transaksiIdsDiproses = [];
 
-        foreach ($ids as $id) {
-            $transaksiBarang = TransaksiBarang::with('areaPembelian')->find($id);
-            if (!$transaksiBarang) {
-                continue;
+        DB::transaction(function () use ($data, &$transaksiIdsDiproses) {
+
+            // ⭐ Fetch Warung data with Area and Laba relations outside the loop (optimization)
+            $warungIds = collect($data['transaksi'])->pluck('details.*.warung_id')->flatten()->unique()->toArray();
+            $warungs = Warung::with('area.laba')->whereIn('id', $warungIds)->get()->keyBy('id');
+
+            foreach ($data['transaksi'] as $transaksiId => $transaksiData) {
+                $transaksiBarang = TransaksiBarang::with('areaPembelian')->findOrFail($transaksiId);
+                $totalDikirim = 0;
+                $hargaBeliPerUnit = $transaksiBarang->harga / $transaksiBarang->jumlah ?? 0;
+                $markupPercent = optional($transaksiBarang->areaPembelian)->markup ?? 0;
+                $hargaModalWarung = $hargaBeliPerUnit * (1 + ($markupPercent / 100)); // Ini adalah 'harga modal' untuk Warung
+
+                foreach ($transaksiData['details'] as $detail) {
+                    $warungId = $detail['warung_id'];
+                    $jumlahKirim = $detail['jumlah'];
+
+                    // Dapatkan data Warung
+                    $warung = $warungs->get($warungId);
+                    if (!$warung) continue; // Skip jika warung tidak ditemukan
+
+                    $totalDikirim += $jumlahKirim;
+
+                    // 1. Cari atau buat Stok Warung
+                    $stokWarung = StokWarung::firstOrCreate(
+                        [
+                            'id_warung' => $warungId,
+                            'id_barang' => $transaksiBarang->id_barang,
+                        ],
+                        ['jumlah' => 0]
+                    );
+
+                    // 2. Buat Barang Masuk
+                    $barangMasuk = BarangMasuk::create([
+                        'id_transaksi_barang' => $transaksiBarang->id,
+                        'id_stok_warung' => $stokWarung->id,
+                        'id_barang' => $transaksiBarang->id_barang,
+                        'jumlah' => $jumlahKirim,
+                        'status' => 'pending',
+                    ]);
+
+                    // 3. Logika Markup dan Hutang (sama seperti sebelumnya)
+                    $hargaTotalJual = $hargaModalWarung * $jumlahKirim;
+
+                    HutangBarangMasuk::create([
+                        'id_warung' => $warungId,
+                        'id_barang_masuk' => $barangMasuk->id,
+                        'total' => $hargaTotalJual,
+                        'jumlah_unit' => $jumlahKirim,
+                        'status_pembayaran' => 'belum_lunas',
+                    ]);
+
+                    // ⭐ 4. LOGIKA TAMBAHAN: INSERT KE HARGAJUAL
+                    $laba = Laba::where('id_area', optional($warung->area)->id)
+                        ->where('input_minimal', '<=', $hargaModalWarung)
+                        ->where('input_maksimal', '>=', $hargaModalWarung)
+                        ->first();
+
+                    // Ambil nilai harga_jual dari entri laba yang cocok
+                    $hargaJualSatuan = optional($laba)->harga_jual ?? 0;
+
+                    HargaJual::create([
+                        'id_warung' => $warungId,
+                        'id_barang' => $transaksiBarang->id_barang,
+                        'harga_sebelum_markup' => $hargaBeliPerUnit,
+                        'harga_modal' => round($hargaModalWarung),
+                        // ⭐ Mengisi kedua range dengan harga jual yang ditemukan
+                        'harga_jual_range_awal' => $hargaJualSatuan,
+                        'harga_jual_range_akhir' => $hargaJualSatuan,
+                        'periode_awal' => now(),
+                        'periode_akhir' => null,
+                    ]);
+                }
+
+                // 5. Perbarui status TransaksiBarang (Stok Sumber)
+                $transaksiBarang->status = 'dikirim';
+                $transaksiBarang->save();
+                $transaksiIdsDiproses[] = $transaksiId;
+            }
+        });
+
+        return redirect()->route('transaksibarang.index', ['status' => 'pending'])
+            ->with('success', count($transaksiIdsDiproses) . ' item stok berhasil dikirim ke warung!');
+    }
+
+    // ... di dalam TransaksiBarangController Anda
+
+    public function kirimRencanaProses(Request $request)
+    {
+        // ... (Filter dan Validasi tetap sama)
+        $allData = $request->all();
+        $rencanaFiltered = collect($allData['rencana'] ?? [])
+            ->map(function ($warungRencana) {
+                return collect($warungRencana)
+                    ->filter(function ($item) {
+                        return isset($item['rencana_id'], $item['jumlah_kirim'], $item['barang_id'], $item['transaksi_id'])
+                            && $item['jumlah_kirim'] !== null
+                            && $item['jumlah_kirim'] !== '';
+                    })
+                    ->toArray();
+            })
+            ->filter(fn($items) => !empty($items))
+            ->toArray();
+
+        $request->merge(['rencana' => $rencanaFiltered]);
+        $data = $request->validate([
+            'rencana' => 'required|array',
+            'rencana.*.*.rencana_id' => 'required|exists:rencana_belanja,id',
+            'rencana.*.*.jumlah_kirim' => 'required|integer|min:1',
+            'rencana.*.*.barang_id' => 'required|exists:barang,id',
+            'rencana.*.*.transaksi_id' => 'required|exists:transaksi_barang,id',
+        ]);
+
+        $rencanaIdsDiproses = [];
+        $updateDataRencana = [];
+
+        DB::transaction(function () use ($data, &$rencanaIdsDiproses, &$updateDataRencana) {
+
+            // ⭐ Fetch Warung data with Area and Laba relations outside the loop (optimization)
+            $warungIds = array_keys($data['rencana']);
+            $warungs = Warung::with('area.laba')->whereIn('id', $warungIds)->get()->keyBy('id');
+
+            // =========================================================
+            // A. PROSES PENGIRIMAN, PENGURANGAN STOK SUMBER, DAN HUTANG
+            // =========================================================
+            foreach ($data['rencana'] as $warungId => $rencanaItems) {
+                $warung = $warungs->get($warungId);
+                if (!$warung) continue; // Skip jika warung tidak ditemukan
+
+                foreach ($rencanaItems as $item) {
+                    $rencanaId = $item['rencana_id'];
+                    $jumlahKirim = $item['jumlah_kirim'];
+                    $transaksiId = $item['transaksi_id'];
+
+                    $transaksiBarang = TransaksiBarang::with('areaPembelian')->findOrFail($transaksiId);
+
+                    if ($transaksiBarang->jumlah < $jumlahKirim) {
+                        throw new \Exception("Stok sumber #{$transaksiId} tidak mencukupi untuk rencana #{$rencanaId}.");
+                    }
+
+                    $hargaBeliPerUnit = $transaksiBarang->harga / $transaksiBarang->jumlah ?? 0;
+                    $markupPercent = optional($transaksiBarang->areaPembelian)->markup ?? 0;
+                    $hargaModalWarung = $hargaBeliPerUnit * (1 + ($markupPercent / 100)); // Ini adalah 'harga modal' untuk Warung
+
+                    // 1. Cari atau buat Stok Warung
+                    $stokWarung = StokWarung::firstOrCreate(
+                        ['id_warung' => $warungId, 'id_barang' => $transaksiBarang->id_barang],
+                        ['jumlah' => 0]
+                    );
+
+                    // 2. Buat Barang Masuk
+                    $barangMasuk = BarangMasuk::create([
+                        'id_transaksi_barang' => $transaksiBarang->id,
+                        'id_stok_warung' => $stokWarung->id,
+                        'id_barang' => $transaksiBarang->id_barang,
+                        'id_rencana_belanja' => $rencanaId,
+                        'jumlah' => $jumlahKirim,
+                        'status' => 'pending',
+                    ]);
+
+                    // 3. Catat Hutang Barang Masuk (Logika Markup)
+                    $hargaTotalJual = $hargaModalWarung * $jumlahKirim;
+
+                    HutangBarangMasuk::create([
+                        'id_warung' => $warungId,
+                        'id_barang_masuk' => $barangMasuk->id,
+                        'total' => $hargaTotalJual,
+                        'jumlah_unit' => $jumlahKirim,
+                        'status_pembayaran' => 'belum_lunas',
+                    ]);
+
+                    // ⭐ 4. LOGIKA TAMBAHAN: INSERT KE HARGAJUAL
+                    $laba = Laba::where('id_area', optional($warung->area)->id)
+                        ->where('input_minimal', '<=', $hargaModalWarung)
+                        ->where('input_maksimal', '>=', $hargaModalWarung)
+                        ->first();
+
+                    // Ambil nilai harga_jual dari entri laba yang cocok
+                    $hargaJualSatuan = optional($laba)->harga_jual ?? 0;
+
+                    HargaJual::create([
+                        'id_warung' => $warungId,
+                        'id_barang' => $transaksiBarang->id_barang,
+                        'harga_sebelum_markup' => $hargaBeliPerUnit, // Harga dari TransaksiBarang
+                        'harga_modal' => round($hargaModalWarung), // Harga Beli + Markup
+                        'harga_jual_range_awal' => $hargaJualSatuan ?? 0,
+                        'harga_jual_range_akhir' => $hargaJualSatuan ?? 0,
+                        'periode_awal' => now(),
+                        'periode_akhir' => null,
+                    ]);
+
+                    // 5. Perbarui TransaksiBarang (Stok Sumber)
+                    $transaksiBarang->status = 'dikirim';
+                    $transaksiBarang->save();
+
+                    $rencanaIdsDiproses[] = $rencanaId;
+
+                    // Siapkan data untuk update RencanaBelanja
+                    if (!isset($updateDataRencana[$rencanaId])) {
+                        $updateDataRencana[$rencanaId] = 0;
+                    }
+                    $updateDataRencana[$rencanaId] += $jumlahKirim;
+                }
             }
 
-            // Cari stok warung untuk barang ini
-            $stokWarung = StokWarung::firstOrCreate(
-                [
-                    'id_warung' => $request->warung_id,
-                    'id_barang' => $transaksiBarang->id_barang, // pastikan pakai field yang benar
-                ],
-                [
-                    'jumlah' => 0
-                ]
-            );
+            // =========================================================
+            // B. UPDATE JUMLAH DIBELI DI RENCANABELANJA (SESUAI PERMINTAAN)
+            // =========================================================
+            foreach ($updateDataRencana as $rencanaId => $jumlahKirimTotal) {
+                $rencana = RencanaBelanja::findOrFail($rencanaId);
+                $rencana->update([
+                    'jumlah_dibeli' => $rencana->jumlah_dibeli + $jumlahKirimTotal
+                ]);
+            }
+        });
 
-
-            // Buat barang masuk (status masih null = kirim, belum diterima/ditolak)
-            $barangMasuk = BarangMasuk::create([
-                'id_transaksi_barang' => $transaksiBarang->id,
-                'id_stok_warung' => $stokWarung->id,
-                'id_barang' => $transaksiBarang->id_barang, // pastikan pakai field yang benar
-                'jumlah' => $transaksiBarang->jumlah,
-                'status' => 'pending',
-            ]);
-
-            // Hitung harga total dengan markup
-            $hargaTotalBeli = $transaksiBarang->harga ?? 0;
-            $markupPercent = optional($transaksiBarang->areaPembelian)->markup ?? 0;
-            $hargaFinalTotal = $hargaTotalBeli + ($hargaTotalBeli * $markupPercent / 100);
-
-            // --- Simpan ke tabel hutang_barang_masuk dengan harga yang sudah di-markup ---
-            HutangBarangMasuk::create([
-                'id_warung'       => $request->warung_id,
-                'id_barang_masuk' => $barangMasuk->id,
-                'total'           => $hargaFinalTotal,
-            ]);
-            // --- Akhir Tambahan ---
-        }
-
-        return redirect()->route('transaksibarang.index', ['status' => 'kirim'])
-            ->with('success', 'Barang berhasil kirim ke warung!');
+        return redirect()->route('transaksibarang.index', ['status' => 'pending'])
+            ->with('success', count(array_unique($rencanaIdsDiproses)) . ' item rencana belanja berhasil dikirim dan diperbarui!');
     }
 
 
 
 
-    public function show(TransaksiBarang $transaksibarang)
-    {
-        return view('admin.transaksibarang.show', compact('transaksibarang'));
-    }
+    // public function show(TransaksiBarang $transaksibarang)
+    // {
+    //     return view('admin.transaksibarang.show', compact('transaksibarang'));
+    // }
 
     public function edit(TransaksiBarang $transaksibarang)
     {

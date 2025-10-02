@@ -89,7 +89,8 @@
                                     @endforelse
                                 </ul>
                                 @if($barang->stok_saat_ini > 0)
-                                <form action="{{ route('kuantitas.create') }}" method="POST" class="d-inline">
+                                {{-- <form action="{{ route('kuantitas.create') }}" method="POST" class="d-inline"> --}}
+                                <form action="#" method="POST" class="d-inline">
                                     @csrf
                                     <input type="hidden" name="id_stok_warung" value="{{ $barang->id_stok_warung }}">
                                     <button type="submit" class="btn btn-sm btn-outline-primary"

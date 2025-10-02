@@ -4,7 +4,7 @@
 
 @section('content')
 
-<div class="container mt-4">
+<div class="">
 <div class="card shadow-sm">
 <div class="card-header bg-warning text-dark">
 <h5 class="mb-0">Rencana Belanja (Menunggu Pembelian)</h5>

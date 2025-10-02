@@ -13,6 +13,7 @@ class HargaJual extends Model
     protected $fillable = [
         'id_warung',
         'id_barang',
+        'harga_sebelum_markup',
         'harga_modal',
         'harga_jual_range_awal',
         'harga_jual_range_akhir',

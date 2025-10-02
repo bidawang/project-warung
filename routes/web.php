@@ -98,6 +98,7 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::resource('transaksibarang', TransaksiBarangController::class);
     Route::post('transaksibarang/update-status-massal', [TransaksiBarangController::class, 'updateStatusMassal'])->name('transaksibarang.updateStatusMassal');
     Route::post('/kirim-massal-proses', [TransaksiBarangController::class, 'kirimMassalProses'])->name('transaksibarang.kirim.mass.proses');
+    Route::post('/kirim-rencana-proses', [TransaksiBarangController::class, 'kirimRencanaProses'])->name('transaksibarang.kirim.rencana.proses');
     Route::resource('kategori', KategoriControllerAdmin::class);
     Route::resource('areapembelian', AreaPembelianController::class)->names('areapembelian');
     Route::resource('targetpencapaian', TargetPencapaianController::class);

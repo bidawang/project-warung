@@ -116,14 +116,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const rowId = `row-${trxId}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
         return `
-            <div class="flex space-x-2 items-center delivery-row" data-trx="${trxId}" data-row-id="${rowId}">
-                <select name="transaksi[${trxId}][details][${rowId}][warung_id]" required class="warung-select border border-gray-300 rounded px-2 py-1 text-sm flex-1 focus:ring-blue-500 focus:border-blue-500 bg-white transition duration-150">
-                    ${baseOptions}
-                </select>
-                <input type="number" name="transaksi[${trxId}][details][${rowId}][jumlah]" value="${defaultQty}" min="1" max="${maxQty}" required class="qty-input border border-gray-300 rounded px-2 py-1 text-sm w-16 text-center focus:ring-blue-500 focus:border-blue-500 transition duration-150"/>
-                <button type="button" class="btn-del text-red-500 hover:text-red-700 text-xs font-semibold w-10 py-1 transition duration-150 rounded" title="Hapus baris" ${isFirst ? 'style="visibility:hidden;"' : ''}>Hapus</button>
-            </div>
-        `;
+    <div class="flex space-x-2 items-center delivery-row" data-trx="${trxId}" data-row-id="${rowId}">
+        <select name="transaksi[${trxId}][details][${rowId}][warung_id]" required
+            class="warung-select border border-gray-300 rounded px-2 py-1 text-sm flex-1 focus:ring-blue-500 focus:border-blue-500 bg-white transition duration-150">
+            ${baseOptions}
+        </select>
+        <input type="hidden" name="transaksi[${trxId}][barang_id]" value="${stockByBarang[Object.keys(stockByBarang).find(bid => stockByBarang[bid].some(s => s.id == trxId))]?.[0].id_barang ?? ''}">
+        <input type="number" name="transaksi[${trxId}][details][${rowId}][jumlah]" value="${defaultQty}" min="1" max="${maxQty}" required
+            class="qty-input border border-gray-300 rounded px-2 py-1 text-sm w-16 text-center focus:ring-blue-500 focus:border-blue-500 transition duration-150"/>
+        <button type="button" class="btn-del text-red-500 hover:text-red-700 text-xs font-semibold w-10 py-1 transition duration-150 rounded" title="Hapus baris" ${isFirst ? 'style="visibility:hidden;"' : ''}>Hapus</button>
+    </div>
+`;
+
     }
 
     function toggleInputs(id, enable) {

@@ -24,6 +24,7 @@ return new class extends Migration
                   ->onDelete('cascade');
 
             // Harga beli barang dari supplier
+            $table->decimal('harga_sebelum_markup', 15, 2);
             $table->decimal('harga_modal', 15, 2);
 
             // Batas bawah harga jual yang diizinkan

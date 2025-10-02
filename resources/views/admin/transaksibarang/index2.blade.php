@@ -18,7 +18,16 @@
             <div class="w-10 h-10 bg-blue-500 rounded-full"></div>
         </div>
     </header>
-
+@if ($errors->any())
+    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <strong>Terjadi kesalahan:</strong>
+        <ul class="mt-2 list-disc list-inside text-sm">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
     {{-- Main Content --}}
     <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6 md:p-10">
         <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -131,7 +140,7 @@
                                     <td class="px-4 py-4 border-b text-sm">
                                         {{-- Container untuk input pengiriman Warung & Qty (Awalnya kosong) --}}
                                         <div id="deliveries-{{ $trx->id }}" data-id="{{ $trx->id }}" class="space-y-2"></div>
-                                        <input type="hidden" name="transaksi[{{ $trx->id }}][barang_id]" value="{{ $trx->barang_id }}">
+                                        <input type="hidden" name="transaksi[{{ $trx->id }}][barang_id]" value="{{ $trx->barang->id }}">
                                     </td>
 
                                     <td class="px-4 py-4 border-b text-sm text-gray-600">{{ number_format($trx->harga, 0, ',', '.') }}</td>
@@ -164,8 +173,8 @@
 
             {{-- Kolom Kanan: Rencana Belanja (1/3) --}}
             <div class="md:col-span-1 bg-white p-6 rounded-xl shadow-xl h-fit sticky top-6 border border-gray-100">
-                {{-- <form id="formKirimRencana" method="POST" action="{{ route('admin.transaksibarang.kirim.rencana.proses') }}"> --}}
-                <form id="formKirimRencana" method="POST" action="#">
+                <form id="formKirimRencana" method="POST" action="{{ route('admin.transaksibarang.kirim.rencana.proses') }}">
+                {{-- <form id="formKirimRencana" method="POST" action="#"> --}}
                     @csrf
                     <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
                         <svg class="w-6 h-6 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -191,7 +200,7 @@
                                 @foreach($items as $i)
                                 @php
                                     $rencanaId = $i->id;
-                                    $barangId = $i->barang_id;
+                                    $barangId = $i->barang->id;
                                     $namaBarang = $i->barang->nama_barang;
                                     $jumlahKebutuhan = $i->jumlah_awal - $i->jumlah_dibeli;
                                 @endphp
@@ -201,18 +210,18 @@
                                     <div class="flex items-center space-x-2">
                                         <span class="text-xs text-gray-500 w-16">Kebutuhan:</span>
                                         <span class="font-bold text-sm text-red-600 w-10">{{ $jumlahKebutuhan }}</span>
-                                        <input type="hidden" name="rencana[{{ $warungId }}][{{ $rencanaId }}][rencana_id]" value="{{ $rencanaId }}">
+                                        <input type="hidden" name="rencana[{{ $items[0]->warung->id }}][{{ $rencanaId }}][rencana_id]" value="{{ $rencanaId }}">
                                     </div>
                                     <div class="flex items-center space-x-2">
                                         <span class="text-xs text-gray-500 w-16">Jml. Kirim:</span>
-                                        <input type="number" name="rencana[{{ $warungId }}][{{ $rencanaId }}][jumlah_kirim]" value="{{ $jumlahKebutuhan }}"
+                                        <input type="number" name="rencana[{{ $items[0]->warung->id }}][{{ $rencanaId }}][jumlah_kirim]" value="{{ $jumlahKebutuhan }}"
                                             min="0" max="{{ $jumlahKebutuhan }}" disabled required
                                             class="rencana-qty-input border border-gray-300 rounded px-2 py-1 text-xs w-12 text-center focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 transition duration-150"/>
                                         <span class="text-xs text-gray-500">pcs</span>
-                                        <input type="hidden" name="rencana[{{ $warungId }}][{{ $rencanaId }}][barang_id]" value="{{ $barangId }}">
+                                        <input type="hidden" name="rencana[{{ $items[0]->warung->id }}][{{ $rencanaId }}][barang_id]" value="{{ $barangId }}">
                                         {{-- Dropdown untuk memilih sumber pengiriman (stok) --}}
                                         <select
-    name="rencana[{{ $warungId }}][{{ $rencanaId }}][transaksi_id]"
+    name="rencana[{{ $items[0]->warung->id }}][{{ $rencanaId }}][transaksi_id]"
     disabled required
     class="rencana-trx-select border border-gray-300 rounded px-2 py-1 text-xs flex-1 focus:ring-blue-500 focus:border-blue-500 bg-white disabled:bg-gray-100 transition duration-150"
     data-barang-id="{{ $i->id_barang }}"> {{-- Bukan $barangId dari relasi --}}

@@ -19,6 +19,7 @@ class RencanaBelanjaControllerKasir extends Controller
      */
     public function rencanaBelanja()
     {
+        // dd(Auth::user());
         // PENTING: ID Warung harus diambil secara dinamis dari user yang login (Kasir).
         $idWarung = session('id_warung');
 
@@ -61,16 +62,19 @@ class RencanaBelanjaControllerKasir extends Controller
      */
     public function create()
     {
-        // PENTING: ID Warung harus diambil secara dinamis dari user yang login (Kasir).
         $idWarung = session('id_warung');
-        // Mengambil semua data stok barang di warung, diurutkan dari stok terkecil (0 hingga tertinggi).
-        $stokBarang = StokWarung::with('barang')
-            ->where('id_warung', $idWarung)
-            ->orderBy('jumlah', 'asc')
+
+        // Ambil semua barang, lalu join stok warung berdasarkan id_warung
+        $stokBarang = Barang::with(['stokWarung' => function ($q) use ($idWarung) {
+            $q->where('id_warung', $idWarung);
+        }])
+            ->orderBy('nama_barang', 'asc') // urut sesuai nama barang
             ->get();
+
         // dd($stokBarang);
         return view('kasir.rencana_belanja.create', compact('stokBarang'));
     }
+
 
     /**
      * Simpan Rencana Belanja baru ke database (Multiple Items).
@@ -80,6 +84,7 @@ class RencanaBelanjaControllerKasir extends Controller
      */
     public function store(Request $request)
     {
+        // dd($request->all());
         // PENTING: ID Warung harus diambil secara dinamis dari user yang login (Kasir).
         $idWarung = session('id_warung');
 
