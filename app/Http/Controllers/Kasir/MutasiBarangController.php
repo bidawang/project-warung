@@ -168,6 +168,7 @@ class MutasiBarangController extends Controller
 
                 $stok = StokWarung::with('barang')->findOrFail($idStok);
 
+                // --- Hitung stok aktual ---
                 $stokMasuk = $stok->barangMasuk()->where('status', 'terima')->sum('jumlah');
                 $stokKeluar = $stok->barangKeluar()->sum('jumlah');
                 $mutasiMasuk = $stok->mutasiBarang()->where('warung_tujuan', $warungAsal)->where('status', 'terima')->sum('jumlah');
@@ -180,6 +181,7 @@ class MutasiBarangController extends Controller
                     return back()->withErrors(['barang' => "Jumlah mutasi untuk {$stok->barang->nama_barang} melebihi stok tersedia ({$stokSaatIni})."])->withInput();
                 }
 
+                // --- Buat data mutasi barang ---
                 MutasiBarang::create([
                     'id_stok_warung' => $stok->id,
                     'warung_asal'    => $warungAsal,
@@ -188,6 +190,11 @@ class MutasiBarangController extends Controller
                     'keterangan'     => $request->keterangan,
                     'status'         => 'pending'
                 ]);
+
+                // --- Kurangi stok di warung asal berdasarkan id_warung & id_barang ---
+                StokWarung::where('id_warung', $warungAsal)
+                    ->where('id_barang', $stok->id_barang)
+                    ->decrement('jumlah', $jumlahMutasi);
 
                 $created++;
             }
@@ -201,10 +208,13 @@ class MutasiBarangController extends Controller
             return redirect()->route('mutasibarang.index')->with('success', 'Mutasi berhasil disimpan (pending).');
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('Mutasi store error: ' . $e->getMessage());
+            Log::error('Mutasi store error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
             return back()->withErrors(['error' => 'Terjadi kesalahan saat menyimpan mutasi.'])->withInput();
         }
     }
+
 
 
     /**

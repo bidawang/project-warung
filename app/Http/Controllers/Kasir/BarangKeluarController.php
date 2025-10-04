@@ -102,6 +102,7 @@ class BarangKeluarController extends Controller
      */
     public function store(Request $request)
     {
+        // dd($request->all());
         // validasi
         $validated = $request->validate([
             'items' => 'required|array|min:1',
@@ -129,7 +130,7 @@ class BarangKeluarController extends Controller
             $kasWarung = \App\Models\KasWarung::where('id_warung', $idWarung)
                 ->where('jenis_kas', 'cash')
                 ->firstOrFail();
-
+            // dd($kasWarung);
             // buat transaksi kas (total ambil dari input)
             $transaksiKas = \App\Models\TransaksiKas::create([
                 'id_kas_warung'     => $kasWarung->id,
@@ -154,6 +155,7 @@ class BarangKeluarController extends Controller
             }
 
             // loop simpan barang keluar + transaksi barang keluar
+            // loop simpan barang keluar + transaksi barang keluar
             foreach ($validated['items'] as $item) {
                 $barangKeluar = \App\Models\BarangKeluar::create([
                     'id_stok_warung' => $item['id_stok_warung'],
@@ -165,18 +167,22 @@ class BarangKeluarController extends Controller
                 $transaksiBarangKeluar = \App\Models\TransaksiBarangKeluar::create([
                     'id_transaksi_kas' => $transaksiKas->id,
                     'id_barang_keluar' => $barangKeluar->id,
-                    'jumlah'           => $item['jumlah'], // qty, sesuai request
+                    'jumlah'           => $item['jumlah'],
                 ]);
 
-                // kalau hutang, insert relasi ke barang_hutang menggunakan id_barang_keluar
+                // kurangi stok di tabel stok_warung
+                \App\Models\StokWarung::where('id', $item['id_stok_warung'])
+                    ->where('id_warung', $idWarung)
+                    ->decrement('jumlah', $item['jumlah']);
+
+                // jika hutang, buat relasi ke barang_hutang
                 if ($hutang) {
                     \App\Models\BarangHutang::create([
                         'id_hutang'        => $hutang->id,
-                        'id_barang_keluar' => $barangKeluar->id, // <- sesuai perubahanmu
+                        'id_barang_keluar' => $barangKeluar->id,
                     ]);
                 }
             }
-
             \Illuminate\Support\Facades\DB::commit();
 
             return redirect()->route('kasir.kasir')->with('success', 'Transaksi berhasil disimpan!');

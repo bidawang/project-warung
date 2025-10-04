@@ -32,4 +32,9 @@ class Barang extends Model
     {
         return $this->hasMany(StokWarung::class, 'id_barang');
     }
+
+    public function hargaJual()
+    {
+        return $this->hasMany(HargaJual::class, 'id_barang');
+    }
 }

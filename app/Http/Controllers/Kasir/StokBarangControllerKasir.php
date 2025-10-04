@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\BarangMasuk;
 use App\Models\Laba;
+use App\Models\BarangKeluar;
 use App\Models\StokWarung; // Pastikan model ini tersedia
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class StokBarangControllerKasir extends Controller
 {
@@ -17,7 +19,10 @@ class StokBarangControllerKasir extends Controller
     public function index(Request $request)
     {
         $search = $request->get('search');
+        $userId = Auth::id();
+        $today = Carbon::today(); // Ambil tanggal hari ini
 
+        // 1. Ambil Data Stok Barang (TIDAK BERUBAH)
         $stokBarang = StokWarung::with([
             'barang.transaksiBarang' => function ($query) {
                 $query->with('areaPembelian')->latest();
@@ -25,8 +30,8 @@ class StokBarangControllerKasir extends Controller
             'warung',
             'kuantitas'
         ])
-            ->whereHas('warung', function ($query) {
-                $query->where('id_user', Auth::id());
+            ->whereHas('warung', function ($query) use ($userId) {
+                $query->where('id_user', $userId);
             })
             ->when($search, function ($query) use ($search) {
                 $query->whereHas('barang', function ($q) use ($search) {
@@ -37,11 +42,11 @@ class StokBarangControllerKasir extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        // Transformasi Data Stok Barang (TIDAK BERUBAH)
         $stokBarang->getCollection()->transform(function ($stok) {
-            // --- 1. Ambil stok langsung dari tabel stok_warung ---
+            // ... (Logika perhitungan harga jual dan kadaluarsa tetap sama) ...
             $stok->stok_saat_ini = $stok->jumlah;
 
-            // --- 2. Hitung Harga Jual Satuan (seperti sebelumnya) ---
             $transaksi = $stok->barang->transaksiBarang->first();
 
             if (!$transaksi || $transaksi->jumlah == 0) {
@@ -67,7 +72,40 @@ class StokBarangControllerKasir extends Controller
             return $stok;
         });
 
-        return view('kasir.stok_barang.index', compact('stokBarang', 'search'));
+        // 2. Ambil Data Barang Keluar HARI INI
+        $barangKeluar = BarangKeluar::whereHas('stokWarung.warung', function ($query) use ($userId) {
+            $query->where('id_user', $userId);
+        })
+            // === PERUBAHAN DI SINI: Filter berdasarkan created_at hari ini ===
+            ->whereDate('created_at', $today)
+            // =================================================================
+            ->with([
+                'stokWarung.barang',
+                'transaksiBarangKeluar',
+                'barangHutang.hutang',
+            ])
+            ->latest()
+            ->get();
+
+
+        // 3. Transformasi Data Barang Keluar untuk status hutang/lunas (TIDAK BERUBAH)
+        $barangKeluar->transform(function ($keluar) {
+            $keluar->is_hutang = $keluar->barangHutang()->exists();
+            $keluar->status_hutang = 'Tidak Terkait Hutang';
+
+            if ($keluar->is_hutang) {
+                $hutang = optional($keluar->barangHutang)->hutang;
+                if ($hutang) {
+                    $keluar->status_hutang = $hutang->status === 'Lunas' ? 'Lunas' : 'Belum Lunas';
+                } else {
+                    $keluar->status_hutang = 'Belum Lunas (Data Hutang Hilang)';
+                }
+            }
+            return $keluar;
+        });
+
+        // Kirim kedua data ke view
+        return view('kasir.stok_barang.index', compact('stokBarang', 'barangKeluar', 'search'));
     }
 
 

@@ -37,4 +37,10 @@ class BarangKeluar extends Model
     {
         return $this->hasOne(TransaksiBarangKeluar::class, 'id_barang_keluar');
     }
+
+    public function barangHutang()
+    {
+        // return $this->hasMany(BarangHutang::class, 'id_barang_keluar');
+        return $this->hasOne(BarangHutang::class, 'id_barang_keluar');
+    }
 }

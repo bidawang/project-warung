@@ -36,7 +36,7 @@
     <div class="mb-3">
         <label for="harga_jual" class="form-label">Harga Jual</label>
         @if(isset($hargaJualSatuanDasar))
-        <input type="number" name="harga_jual" id="harga_jual" class="form-control" min="{{ $hargaJualSatuanDasar * 2 }}" required>
+        <input type="number" name="harga_jual" id="harga_jual" class="form-control" min="0" required>
         <small class="form-text text-muted">Harga jual satuan dasar: **Rp {{ number_format($hargaJualSatuanDasar, 0, ',', '.') }}**</small>
         @else
         <input type="number" name="harga_jual" id="harga_jual" class="form-control" required>
