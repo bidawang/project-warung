@@ -58,30 +58,46 @@
             </div>
 
             {{-- Tabs barang --}}
-            <div x-data="{ activeTab: 'tersedia' }">
+            <div x-data="{ activeTab: 'tersedia' }"> {{-- Mengubah default tab ke 'semua' --}}
                 <div class="border-b border-gray-200">
                     <nav class="-mb-px flex space-x-8">
+
+                        {{-- Tab yang sudah ada --}}
                         <button @click="activeTab = 'tersedia'"
                             :class="{'border-blue-500 text-blue-600': activeTab === 'tersedia'}"
                             class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                             Barang Tersedia
                         </button>
-                        <button @click="activeTab = 'kosong'"
+<button @click="activeTab = 'kosong'"
                             :class="{'border-blue-500 text-blue-600': activeTab === 'kosong'}"
                             class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                             Barang Kosong
+                        </button>                        <button @click="activeTab = 'semua'"
+                            :class="{'border-blue-500 text-blue-600': activeTab === 'semua'}"
+                            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                            Semua Barang
                         </button>
+
                     </nav>
                 </div>
 
                 <div class="mt-6">
                     @php
+                        // Catatan: Koleksi $barangWithStok sudah terurut berdasarkan persentase laba terkecil (dari Controller)
+                        $semua    = $barangWithStok; // Semua barang
                         $tersedia = $barangWithStok->filter(fn($barang) => ($barang->stok_saat_ini ?? 0) > 0);
                         $kosong   = $barangWithStok->filter(fn($barang) => ($barang->stok_saat_ini ?? 0) <= 0);
+
+                        // Definisikan daftar tab dan data yang sesuai
+                        $tabs = [
+                            'semua'     => ['list' => $semua, 'label' => 'yang tercatat'],
+                            'tersedia'  => ['list' => $tersedia, 'label' => 'tersedia'],
+                            'kosong'    => ['list' => $kosong, 'label' => 'kosong'],
+                        ];
                     @endphp
 
                     {{-- Loop tabel, fungsi render ulang --}}
-                    @foreach (['tersedia' => $tersedia, 'kosong' => $kosong] as $status => $listBarang)
+                    @foreach ($tabs as $status => $tabData)
                         <div x-show="activeTab === '{{ $status }}'" x-cloak>
                             <div class="bg-white shadow overflow-hidden sm:rounded-lg">
                                 <div class="overflow-x-auto">
@@ -93,46 +109,93 @@
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stok</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga Beli Awal</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga Modal</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga Jual Awal</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga Jual Akhir</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga Jual</th>
+                                                {{-- KOLOM BARU UNTUK PERSENTASE LABA --}}
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Persentase Laba</th>
+                                                {{-- END KOLOM BARU --}}
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kuantitas</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Keterangan</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kadaluarsa</th>
                                             </tr>
                                         </thead>
                                         <tbody class="bg-white divide-y divide-gray-200">
-                                            @forelse ($listBarang as $barang)
+                                            @forelse ($tabData['list'] as $barang)
                                                 <tr class="hover:bg-gray-50">
                                                     <td class="px-6 py-4 text-sm font-medium">{{ $loop->iteration }}</td>
                                                     <td class="px-6 py-4 text-sm">{{ $barang->nama_barang ?? '-' }}</td>
-                                                    <td class="px-6 py-4 text-sm {{ ($status==='kosong') ? 'font-bold text-red-500' : '' }}">
+                                                    <td class="px-6 py-4 text-sm {{ ($status==='kosong' || ($status==='semua' && ($barang->stok_saat_ini ?? 0) <= 0)) ? 'font-bold text-red-500' : '' }}">
                                                         {{ $barang->stok_saat_ini ?? 0 }}
                                                     </td>
                                                     <td class="px-6 py-4 text-sm">Rp {{ number_format($barang->harga_sebelum_markup ?? 0, 0, ',', '.') }}</td>
                                                     <td class="px-6 py-4 text-sm font-semibold">Rp {{ number_format($barang->harga_satuan ?? 0, 0, ',', '.') }}</td>
-                                                    <td class="px-6 py-4 text-sm">Rp {{ number_format($barang->harga_jual_range_awal ?? 0, 0, ',', '.') }}</td>
-                                                    <td class="px-6 py-4 text-sm font-bold text-green-700">Rp {{ number_format($barang->harga_jual ?? 0, 0, ',', '.') }}</td>
+                                                    <td class="px-6 py-4 text-sm">Rp {{ number_format($barang->harga_jual_range_awal ?? 0, 0, ',', '.') }} - Rp {{ number_format($barang->harga_jual ?? 0, 0, ',', '.') }}</td>
+
+                                                    {{-- DATA PERSENTASE LABA --}}
+                                                    <td class="px-6 py-4 text-sm font-semibold">
+                                                        <span class="{{ str_contains($barang->persentase_laba, '-') ? 'text-red-600' : 'text-blue-600' }}">
+                                                            {{ $barang->persentase_laba ?? '-' }}
+                                                        </span>
+                                                    </td>
+                                                    {{-- END DATA PERSENTASE LABA --}}
+
+                                                    {{-- KOLOM KUANTITAS BARU DENGAN TOMBOL EDIT/HAPUS/TAMBAH --}}
                                                     <td class="px-6 py-4 text-sm">
-                                                        <ul class="list-none space-y-1">
+                                                        <ul class="list-none space-y-2 mb-2">
                                                             @forelse($barang->kuantitas as $kuantitas)
-                                                                <li class="text-xs">
-                                                                    {{ $kuantitas->jumlah }} unit:
-                                                                    <span class="font-semibold">Rp {{ number_format($kuantitas->harga_jual, 0, ',', '.') }}</span>
+                                                                <li class="flex justify-between items-center text-xs p-1 rounded-md bg-gray-50 hover:bg-gray-100 transition">
+                                                                    {{-- Informasi Kuantitas --}}
+                                                                    <span class="truncate pr-2">
+                                                                        {{ $kuantitas->jumlah }} unit:
+                                                                        <span class="font-semibold text-gray-700">Rp {{ number_format($kuantitas->harga_jual, 0, ',', '.') }}</span>
+                                                                    </span>
+
+                                                                    {{-- Tombol Aksi (Edit & Hapus) --}}
+                                                                    <span class="flex space-x-1 ml-auto">
+                                                                        {{-- Tombol Edit --}}
+                                                                        <a href="#" {{-- Placeholder for route('kuantitas.edit', $kuantitas->id) --}}
+                                                                            class="text-blue-500 hover:text-blue-700 p-0.5 rounded-full hover:bg-blue-100 transition-colors"
+                                                                            title="Edit Kuantitas">
+                                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                                                        </a>
+
+                                                                        {{-- Tombol Hapus (menggunakan form) --}}
+                                                                        <form action="#" method="POST" {{-- Placeholder for route('kuantitas.destroy', $kuantitas->id) --}} class="inline-block" onsubmit="return confirm('Apakah Anda yakin ingin menghapus kuantitas ini?')">
+                                                                            {{-- @csrf @method('DELETE') --}}
+                                                                            <button type="submit"
+                                                                                class="text-red-500 hover:text-red-700 p-0.5 rounded-full hover:bg-red-100 transition-colors"
+                                                                                title="Hapus Kuantitas">
+                                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                                            </button>
+                                                                        </form>
+                                                                    </span>
                                                                 </li>
                                                             @empty
                                                                 <li class="text-xs italic">-</li>
                                                             @endforelse
                                                         </ul>
+
+                                                        {{-- Button Tambah Kuantitas (hanya jika stok > 0) --}}
+                                                        @if($barang->stok_saat_ini > 0)
+                                                            <form action="{{ route('admin.kuantitas.create', ['id_stok_warung' => $barang->id_stok_warung]) }}" method="GET" class="mt-2">
+                                                                @csrf
+                                                                <input type="hidden" name="id_stok_warung" value="{{ $barang->id_stok_warung }}">
+                                                                <button type="submit"
+                                                                    class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 transition-colors"
+                                                                    @if(!$barang->id_stok_warung) disabled @endif>
+                                                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                                                                    + Tambah Kuantitas
+                                                                </button>
+                                                            </form>
+                                                        @endif
                                                     </td>
-                                                    <td class="px-6 py-4 text-sm">{{ $barang->keterangan ?? '-' }}</td>
                                                     <td class="px-6 py-4 text-sm">
                                                         {{ $barang->tanggal_kadaluarsa ? \Carbon\Carbon::parse($barang->tanggal_kadaluarsa)->format('d-m-Y') : 'Tidak Ada' }}
                                                     </td>
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="10" class="px-6 py-4 text-center text-sm text-gray-500">
-                                                        Tidak ada barang {{ $status }}.
+                                                    {{-- COLSPAN TOTAL ADALAH 11 --}}
+                                                    <td colspan="11" class="px-6 py-4 text-center text-sm text-gray-500">
+                                                        Tidak ada barang {{ $tabData['label'] }} untuk warung ini.
                                                     </td>
                                                 </tr>
                                             @endforelse

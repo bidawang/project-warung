@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Warung;
 use App\Models\User;
-use App\Models\Laba;
+use App\Models\HargaJual;
 use App\Models\Barang;
 // use App\Models\Kuantitas;
 use App\Models\Area;
@@ -80,6 +80,7 @@ class WarungController extends Controller
         if (Auth::user()->role === 'admin') {
             $warung = Warung::with(['user', 'area'])->findOrFail($id);
         } else {
+            // Hanya izinkan pemilik warung untuk mengakses
             $warung = Warung::with(['user', 'area'])
                 ->where('id_user', Auth::id())
                 ->findOrFail($id);
@@ -98,7 +99,7 @@ class WarungController extends Controller
             $stok = $stokByBarangId->get($barang->id);
 
             // cari harga_jual aktif untuk warung ini (periode-aware)
-            $hargaJual = \App\Models\HargaJual::where('id_warung', $warung->id)
+            $hargaJual = HargaJual::where('id_warung', $warung->id)
                 ->where('id_barang', $barang->id)
                 ->where(function ($q) {
                     $q->whereNull('periode_awal')->orWhere('periode_awal', '<=', now());
@@ -109,6 +110,20 @@ class WarungController extends Controller
                 ->latest('id')
                 ->first();
 
+            // === Penambahan Logika Persentase Laba pada objek Barang ===
+            // Ambil persentase laba dari accessor di model HargaJual
+            $barang->persentase_laba = $hargaJual ? $hargaJual->persentase_laba : 'N/A';
+
+            // Kunci numerik untuk sorting, mengambil persentase laba range awal
+            $sortingKey = 999999.0; // Nilai default yang sangat tinggi agar barang tanpa harga muncul di akhir
+            if ($hargaJual && $hargaJual->harga_modal > 0) {
+                // Rumus: ((Harga Jual Awal - Harga Modal) / Harga Modal) * 100
+                $persenAwal = (($hargaJual->harga_jual_range_awal - $hargaJual->harga_modal) / $hargaJual->harga_modal) * 100;
+                $sortingKey = $persenAwal;
+            }
+            $barang->persentase_laba_sort_key = $sortingKey;
+            // =========================================================
+
             if ($stok) {
                 // tanggal kadaluarsa prioritas ke stok, fallback ke transaksi terbaru barang
                 $tanggalKadaluarsa = $stok->tanggal_kadaluarsa
@@ -116,10 +131,6 @@ class WarungController extends Controller
                     ?? null;
 
                 $barang->stok_saat_ini = $stok->jumlah ?? 0;
-                $barang->harga_sebelum_markup = $hargaJual->harga_sebelum_markup ?? 0;
-                $barang->harga_satuan = $hargaJual->harga_modal ?? 0;
-                $barang->harga_jual_range_awal = $hargaJual->harga_jual_range_awal ?? 0;
-                $barang->harga_jual = $hargaJual->harga_jual_range_akhir ?? 0;
                 $barang->kuantitas = $stok->kuantitas ?? collect(); // pastikan koleksi, bukan null
                 $barang->keterangan = $stok->keterangan ?? '-';
                 $barang->tanggal_kadaluarsa = $tanggalKadaluarsa;
@@ -129,18 +140,33 @@ class WarungController extends Controller
                 $tanggalKadaluarsa = optional($barang->transaksiBarang->first())->tanggal_kadaluarsa ?? null;
 
                 $barang->stok_saat_ini = 0;
-                $barang->harga_sebelum_markup = $hargaJual->harga_sebelum_markup ?? 0;
-                $barang->harga_satuan = $hargaJual->harga_modal ?? 0;
-                $barang->harga_jual_range_awal = $hargaJual->harga_jual_range_awal ?? 0;
-                $barang->harga_jual = $hargaJual->harga_jual_range_akhir ?? 0;
                 $barang->kuantitas = collect();
                 $barang->keterangan = '-';
                 $barang->tanggal_kadaluarsa = $tanggalKadaluarsa;
                 $barang->id_stok_warung = null;
             }
 
+            // Atur properti harga jual/modal (jika ada HargaJual)
+            if ($hargaJual) {
+                $barang->harga_sebelum_markup = $hargaJual->harga_sebelum_markup ?? 0;
+                $barang->harga_satuan = $hargaJual->harga_modal ?? 0;
+                $barang->harga_jual_range_awal = $hargaJual->harga_jual_range_awal ?? 0;
+                $barang->harga_jual_range_akhir = $hargaJual->harga_jual_range_akhir ?? 0;
+                $barang->harga_jual = $hargaJual->harga_jual_range_akhir ?? 0;
+            } else {
+                // Pastikan properti harga default diatur jika tidak ada HargaJual
+                $barang->harga_sebelum_markup = 0;
+                $barang->harga_satuan = 0;
+                $barang->harga_jual_range_awal = 0;
+                $barang->harga_jual_range_akhir = 0;
+                $barang->harga_jual = 0;
+            }
+
             return $barang;
         });
+
+        // Lakukan sorting di sini berdasarkan persentase laba terkecil (numerical sorting key)
+        $barangWithStok = $barangWithStok->sortBy('persentase_laba_sort_key')->values();
 
         return view('admin.warung.show', compact('warung', 'barangWithStok', 'stokWarung'));
     }
