@@ -1,174 +1,152 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Detail Warung')
 
 @section('content')
-<div class="container my-4">
-    @if (Auth::check() && Auth::user()->role === 'admin')
-    <h2 class="text-center mb-4">Detail Warung</h2>
-    <div class="card shadow p-4">
-        <div class="row">
-            <div class="col-md-6">
-                <h3 class="card-title">{{ $warung->nama_warung }}</h3>
-                <p class="text-muted">Pemilik: {{ $warung->user->name ?? '-' }}</p>
-                <p class="text-muted">Area: {{ $warung->area->area ?? '-' }}</p>
 
-                <hr>
+<div class="flex-1 flex flex-col overflow-hidden">
+    <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6 md:p-10">
+        <div class="container mx-auto">
 
-                <div class="d-flex align-items-center mb-3">
-                    <h5 class="me-2">Modal:</h5>
-                    <h4 class="text-success">Rp {{ number_format($warung->modal, 0, ',', '.') }}</h4>
+            {{-- Header halaman --}}
+            <div class="mb-6 flex justify-between items-center">
+                <h1 class="text-3xl font-bold text-gray-800">Detail Warung</h1>
+                <a href="{{ route('admin.warung.index') }}"
+                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Kembali ke Daftar Warung
+                </a>
+            </div>
+
+            {{-- Card detail warung --}}
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-gray-900 mb-2">{{ $warung->nama_warung }}</h2>
+                        <p class="text-gray-600 text-sm mb-1">Pemilik:
+                            <span class="font-semibold">{{ $warung->user->name ?? '-' }}</span>
+                        </p>
+                        <p class="text-gray-600 text-sm mb-4">Area:
+                            <span class="font-semibold">{{ $warung->area->area ?? '-' }}</span>
+                        </p>
+
+                        <div class="border-t border-gray-200 pt-4 mb-4">
+                            <div class="flex items-center">
+                                <h5 class="text-lg font-medium text-gray-700 mr-2">Modal:</h5>
+                                <h4 class="text-2xl font-bold text-green-600">
+                                    Rp {{ number_format($warung->modal, 0, ',', '.') }}
+                                </h4>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h5 class="text-lg font-medium text-gray-700 mb-2">Keterangan:</h5>
+                            <p class="text-gray-600 italic">{{ $warung->keterangan ?? 'Tidak ada keterangan.' }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-center">
+                        <svg class="w-24 h-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Tabs barang --}}
+            <div x-data="{ activeTab: 'tersedia' }">
+                <div class="border-b border-gray-200">
+                    <nav class="-mb-px flex space-x-8">
+                        <button @click="activeTab = 'tersedia'"
+                            :class="{'border-blue-500 text-blue-600': activeTab === 'tersedia'}"
+                            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                            Barang Tersedia
+                        </button>
+                        <button @click="activeTab = 'kosong'"
+                            :class="{'border-blue-500 text-blue-600': activeTab === 'kosong'}"
+                            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                            Barang Kosong
+                        </button>
+                    </nav>
                 </div>
 
-                <div class="mb-4">
-                    <h5>Keterangan:</h5>
-                    <p class="card-text">{{ $warung->keterangan ?? '-' }}</p>
+                <div class="mt-6">
+                    @php
+                        $tersedia = $barangWithStok->filter(fn($barang) => ($barang->stok_saat_ini ?? 0) > 0);
+                        $kosong   = $barangWithStok->filter(fn($barang) => ($barang->stok_saat_ini ?? 0) <= 0);
+                    @endphp
+
+                    {{-- Loop tabel, fungsi render ulang --}}
+                    @foreach (['tersedia' => $tersedia, 'kosong' => $kosong] as $status => $listBarang)
+                        <div x-show="activeTab === '{{ $status }}'" x-cloak>
+                            <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Barang</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stok</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga Beli Awal</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga Modal</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga Jual Awal</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga Jual Akhir</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kuantitas</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Keterangan</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kadaluarsa</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white divide-y divide-gray-200">
+                                            @forelse ($listBarang as $barang)
+                                                <tr class="hover:bg-gray-50">
+                                                    <td class="px-6 py-4 text-sm font-medium">{{ $loop->iteration }}</td>
+                                                    <td class="px-6 py-4 text-sm">{{ $barang->nama_barang ?? '-' }}</td>
+                                                    <td class="px-6 py-4 text-sm {{ ($status==='kosong') ? 'font-bold text-red-500' : '' }}">
+                                                        {{ $barang->stok_saat_ini ?? 0 }}
+                                                    </td>
+                                                    <td class="px-6 py-4 text-sm">Rp {{ number_format($barang->harga_sebelum_markup ?? 0, 0, ',', '.') }}</td>
+                                                    <td class="px-6 py-4 text-sm font-semibold">Rp {{ number_format($barang->harga_satuan ?? 0, 0, ',', '.') }}</td>
+                                                    <td class="px-6 py-4 text-sm">Rp {{ number_format($barang->harga_jual_range_awal ?? 0, 0, ',', '.') }}</td>
+                                                    <td class="px-6 py-4 text-sm font-bold text-green-700">Rp {{ number_format($barang->harga_jual ?? 0, 0, ',', '.') }}</td>
+                                                    <td class="px-6 py-4 text-sm">
+                                                        <ul class="list-none space-y-1">
+                                                            @forelse($barang->kuantitas as $kuantitas)
+                                                                <li class="text-xs">
+                                                                    {{ $kuantitas->jumlah }} unit:
+                                                                    <span class="font-semibold">Rp {{ number_format($kuantitas->harga_jual, 0, ',', '.') }}</span>
+                                                                </li>
+                                                            @empty
+                                                                <li class="text-xs italic">-</li>
+                                                            @endforelse
+                                                        </ul>
+                                                    </td>
+                                                    <td class="px-6 py-4 text-sm">{{ $barang->keterangan ?? '-' }}</td>
+                                                    <td class="px-6 py-4 text-sm">
+                                                        {{ $barang->tanggal_kadaluarsa ? \Carbon\Carbon::parse($barang->tanggal_kadaluarsa)->format('d-m-Y') : 'Tidak Ada' }}
+                                                    </td>
+                                                </tr>
+                                            @empty
+                                                <tr>
+                                                    <td colspan="10" class="px-6 py-4 text-center text-sm text-gray-500">
+                                                        Tidak ada barang {{ $status }}.
+                                                    </td>
+                                                </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
             </div>
-            <div class="col-md-6 d-flex align-items-center justify-content-center">
-                <i class="fas fa-store fa-9x text-muted"></i>
-            </div>
+            {{-- End Tabs --}}
         </div>
-    @endif
-    <hr class="my-4">
-
-    {{-- Nav Tabs --}}
-    <ul class="nav nav-tabs mb-3" id="barangTab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="tersedia-tab" data-bs-toggle="tab" data-bs-target="#tersedia"
-                type="button" role="tab" aria-controls="tersedia" aria-selected="true">
-                Barang Tersedia
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="kosong-tab" data-bs-toggle="tab" data-bs-target="#kosong"
-                type="button" role="tab" aria-controls="kosong" aria-selected="false">
-                Barang Kosong
-            </button>
-        </li>
-    </ul>
-
-    <div class="tab-content" id="barangTabContent">
-        @php
-        $tersedia = $barangWithStok->filter(fn($barang) => ($barang->stok_saat_ini ?? 0) > 0);
-        $kosong = $barangWithStok->filter(fn($barang) => ($barang->stok_saat_ini ?? 0) <= 0);
-        @endphp
-
-        {{-- Barang Tersedia --}}
-        <div class="tab-pane fade show active" id="tersedia" role="tabpanel" aria-labelledby="tersedia-tab">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>#</th>
-                            <th>Nama Barang</th>
-                            <th>Stok Tersedia</th>
-                            <th>Harga Satuan</th>
-                            <th>Harga Jual</th>
-                            <th>Kuantitas</th>
-                            <th>Keterangan</th>
-                            <th>Tanggal Kadaluarsa</th> {{-- New column header --}}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($tersedia as $barang)
-                        <tr>
-                            <td>{{ $loop->iteration }}</td>
-                            <td>{{ $barang->nama_barang ?? '-' }}</td>
-                            <td>{{ $barang->stok_saat_ini ?? 0 }}</td>
-                            <td>Rp {{ number_format($barang->harga_satuan, 0, ',', '.') }}</td>
-                            <td>Rp {{ number_format($barang->harga_jual, 0, ',', '.') }}</td>
-                            <td>
-                                <ul class="list-unstyled mb-2">
-                                    @forelse($barang->kuantitas as $kuantitas)
-                                    <li>{{ $kuantitas->jumlah }} unit:
-                                        Rp {{ number_format($kuantitas->harga_jual, 0, ',', '.') }}
-                                    </li>
-                                    @empty
-                                    <li>-</li>
-                                    @endforelse
-                                </ul>
-                                @if($barang->stok_saat_ini > 0)
-                                {{-- <form action="{{ route('kuantitas.create') }}" method="POST" class="d-inline"> --}}
-                                <form action="#" method="POST" class="d-inline">
-                                    @csrf
-                                    <input type="hidden" name="id_stok_warung" value="{{ $barang->id_stok_warung }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-primary"
-                                        @if(!$barang->id_stok_warung) disabled @endif>
-                                        + Tambah Kuantitas
-                                    </button>
-                                </form>
-                                @endif
-                            </td>
-                            <td>{{ $barang->keterangan ?? '-' }}</td>
-                            <td>{{ $barang->tanggal_kadaluarsa ? \Carbon\Carbon::parse($barang->tanggal_kadaluarsa)->format('d-m-Y') : 'Tidak Ada' }}</td> {{-- Display expiration date --}}
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="8" class="text-center">Tidak ada barang tersedia.</td> {{-- Update colspan to 8 --}}
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        {{-- Barang Kosong --}}
-        <div class="tab-pane fade" id="kosong" role="tabpanel" aria-labelledby="kosong-tab">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>#</th>
-                            <th>Nama Barang</th>
-                            <th>Stok Tersedia</th>
-                            <th>Harga Satuan</th>
-                            <th>Harga Jual</th>
-                            <th>Kuantitas</th>
-                            <th>Keterangan</th>
-                            <th>Tanggal Kadaluarsa</th> {{-- New column header --}}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($kosong as $barang)
-                        <tr>
-                            <td>{{ $loop->iteration }}</td>
-                            <td>{{ $barang->nama_barang ?? '-' }}</td>
-                            <td>{{ $barang->stok_saat_ini ?? 0 }}</td>
-                            <td>Rp {{ number_format($barang->harga_satuan, 0, ',', '.') }}</td>
-                            <td>Rp {{ number_format($barang->harga_jual, 0, ',', '.') }}</td>
-                            <td>
-                                <ul class="list-unstyled mb-2">
-                                    @forelse($barang->kuantitas as $kuantitas)
-                                    <li>{{ $kuantitas->jumlah }} unit:
-                                        Rp {{ number_format($kuantitas->harga_jual, 0, ',', '.') }}
-                                    </li>
-                                    @empty
-                                    <li>-</li>
-                                    @endforelse
-                                </ul>
-                            </td>
-                            <td>{{ $barang->keterangan ?? '-' }}</td>
-                            <td>{{ $barang->tanggal_kadaluarsa ? \Carbon\Carbon::parse($barang->tanggal_kadaluarsa)->format('d-m-Y') : 'Tidak Ada' }}</td> {{-- Display expiration date --}}
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="8" class="text-center">Tidak ada barang kosong.</td> {{-- Update colspan to 8 --}}
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    </main>
 </div>
 
-@if (Auth::check() && Auth::user()->role === 'admin')
-<div class="mt-3">
-    <a href="{{ route('admin.warung.index') }}" class="btn btn-secondary">
-        <i class="fas fa-arrow-left me-1"></i> Kembali ke Daftar Warung
-    </a>
-</div>
-@endif
-</div>
 @endsection

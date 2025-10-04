@@ -76,91 +76,67 @@ class WarungController extends Controller
 
     public function show($id)
     {
+        // akses warung sesuai role
         if (Auth::user()->role === 'admin') {
-            // Admin can access all stalls
             $warung = Warung::with(['user', 'area'])->findOrFail($id);
         } else {
-            // Cashier/regular user can only access their own stalls
             $warung = Warung::with(['user', 'area'])
                 ->where('id_user', Auth::id())
                 ->findOrFail($id);
         }
 
-        // Fetch all items, with eager-loaded relations for the latest transaction and its purchasing area
-        $allBarang = Barang::with(['transaksiBarang' => function ($query) {
-            $query->with('areaPembelian')->latest();
+        // ambil barang + transaksi terbaru (jika ada) untuk fallback tanggal kadaluarsa
+        $allBarang = Barang::with(['transaksiBarang' => function ($q) {
+            $q->latest()->with('areaPembelian');
         }])->get();
 
-        // Fetch the stall's stock for this specific stall, with relations for item and quantity
+        // ambil stok warung (relasi stokWarung di model Warung)
         $stokWarung = $warung->stokWarung()->with(['barang', 'kuantitas'])->get();
-        // dd($stokWarung);
-        // Create a collection of stock indexed by item ID for quick access
         $stokByBarangId = $stokWarung->keyBy('id_barang');
 
-        // Merge all items with stall stock if available
-        $barangWithStok = $allBarang->map(function ($barang) use ($stokByBarangId) {
+        $barangWithStok = $allBarang->map(function ($barang) use ($stokByBarangId, $warung) {
             $stok = $stokByBarangId->get($barang->id);
 
+            // cari harga_jual aktif untuk warung ini (periode-aware)
+            $hargaJual = \App\Models\HargaJual::where('id_warung', $warung->id)
+                ->where('id_barang', $barang->id)
+                ->where(function ($q) {
+                    $q->whereNull('periode_awal')->orWhere('periode_awal', '<=', now());
+                })
+                ->where(function ($q) {
+                    $q->whereNull('periode_akhir')->orWhere('periode_akhir', '>=', now());
+                })
+                ->latest('id')
+                ->first();
+
             if ($stok) {
-                // Calculate current stock just as before
-                $stokMasuk = $stok->barangMasuk()
-                    ->where('status', 'terima')
-                    ->whereHas('stokWarung', fn($q) => $q->where('id_warung', $stok->id_warung))
-                    ->sum('jumlah');
+                // tanggal kadaluarsa prioritas ke stok, fallback ke transaksi terbaru barang
+                $tanggalKadaluarsa = $stok->tanggal_kadaluarsa
+                    ?? optional($barang->transaksiBarang->first())->tanggal_kadaluarsa
+                    ?? null;
 
-                $stokKeluar = $stok->barangKeluar()
-                    ->whereHas('stokWarung', fn($q) => $q->where('id_warung', $stok->id_warung))
-                    ->sum('jumlah');
-
-                $mutasiMasuk = $stok->mutasiBarang()
-                    ->where('status', 'terima')
-                    ->whereHas('stokWarung', fn($q) => $q->where('warung_tujuan', $stok->id_warung))
-                    ->sum('jumlah');
-
-                $mutasiKeluar = $stok->mutasiBarang()
-                    ->where('status', 'terima')
-                    ->whereHas('stokWarung', fn($q) => $q->where('warung_asal', $stok->id_warung))
-                    ->sum('jumlah');
-
-                $stok->stok_saat_ini = $stokMasuk + $mutasiMasuk - $mutasiKeluar - $stokKeluar;
-
-                // Get the latest transaction from the eager-loaded relation
-                $transaksi = $barang->transaksiBarang->first();
-
-                if (!$transaksi) {
-                    $hargaSatuan = 0;
-                    $hargaJual = 0;
-                    $tanggalKadaluarsa = null; // Set expiration date to null
-                } else {
-                    $hargaDasar = $transaksi->harga / max($transaksi->jumlah, 1);
-                    $markupPercent = optional($transaksi->areaPembelian)->markup ?? 0;
-                    $hargaSatuan = $hargaDasar + ($hargaDasar * $markupPercent / 100);
-
-                    $laba = Laba::where('input_minimal', '<=', $hargaSatuan)
-                        ->where('input_maksimal', '>=', $hargaSatuan)
-                        ->first();
-                    $hargaJual = $laba ? $laba->harga_jual : 0;
-                    $tanggalKadaluarsa = $transaksi->tanggal_kadaluarsa; // Get the expiration date from the latest transaction
-                }
-
-                // Merge stock data into the item
-                $barang->stok_saat_ini = $stok->stok_saat_ini;
-                $barang->harga_satuan = $hargaSatuan;
-                $barang->harga_jual = $hargaJual;
-                $barang->kuantitas = $stok->kuantitas;
+                $barang->stok_saat_ini = $stok->jumlah ?? 0;
+                $barang->harga_sebelum_markup = $hargaJual->harga_sebelum_markup ?? 0;
+                $barang->harga_satuan = $hargaJual->harga_modal ?? 0;
+                $barang->harga_jual_range_awal = $hargaJual->harga_jual_range_awal ?? 0;
+                $barang->harga_jual = $hargaJual->harga_jual_range_akhir ?? 0;
+                $barang->kuantitas = $stok->kuantitas ?? collect(); // pastikan koleksi, bukan null
                 $barang->keterangan = $stok->keterangan ?? '-';
-                $barang->tanggal_kadaluarsa = $tanggalKadaluarsa; // Add the expiration date
+                $barang->tanggal_kadaluarsa = $tanggalKadaluarsa;
                 $barang->id_stok_warung = $stok->id;
-
-                // dd($barang);
             } else {
-                // Item has no stock in this stall
+                // tidak ada stok di warung ini
+                $tanggalKadaluarsa = optional($barang->transaksiBarang->first())->tanggal_kadaluarsa ?? null;
+
                 $barang->stok_saat_ini = 0;
-                $barang->harga_satuan = 0;
-                $barang->harga_jual = 0;
+                $barang->harga_sebelum_markup = $hargaJual->harga_sebelum_markup ?? 0;
+                $barang->harga_satuan = $hargaJual->harga_modal ?? 0;
+                $barang->harga_jual_range_awal = $hargaJual->harga_jual_range_awal ?? 0;
+                $barang->harga_jual = $hargaJual->harga_jual_range_akhir ?? 0;
                 $barang->kuantitas = collect();
                 $barang->keterangan = '-';
-                $barang->tanggal_kadaluarsa = null; // Set expiration date to null
+                $barang->tanggal_kadaluarsa = $tanggalKadaluarsa;
+                $barang->id_stok_warung = null;
             }
 
             return $barang;
