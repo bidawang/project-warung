@@ -36,6 +36,7 @@ use App\Http\Controllers\Admin\{
     AturanTenggatControllerAdmin,
     LabaControllerAdmin,
     KuantitasControllerAdmin,
+    StokOpnameControllerAdmin,
 };
 
 use App\Http\Controllers\Kasir\{
@@ -96,6 +97,7 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::resource('/area', AreaControllerAdmin::class);
 
     Route::resource('/kuantitas', KuantitasControllerAdmin::class);
+    Route::resource('/stokopname', StokOpnameControllerAdmin::class);
 
     Route::resource('/barang', BarangControllerAdmin::class);
     Route::resource('transaksibarang', TransaksiBarangController::class);

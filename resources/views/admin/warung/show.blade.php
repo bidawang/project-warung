@@ -58,7 +58,7 @@
             </div>
 
             {{-- Tabs barang --}}
-            <div x-data="{ activeTab: 'tersedia' }"> {{-- Mengubah default tab ke 'semua' --}}
+            <div x-data="{ activeTab: 'tersedia' }"> {{-- Mengubah default tab ke 'tersedia' --}}
                 <div class="border-b border-gray-200">
                     <nav class="-mb-px flex space-x-8">
 
@@ -68,11 +68,12 @@
                             class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                             Barang Tersedia
                         </button>
-<button @click="activeTab = 'kosong'"
+                        <button @click="activeTab = 'kosong'"
                             :class="{'border-blue-500 text-blue-600': activeTab === 'kosong'}"
                             class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                             Barang Kosong
-                        </button>                        <button @click="activeTab = 'semua'"
+                        </button>
+                        <button @click="activeTab = 'semua'"
                             :class="{'border-blue-500 text-blue-600': activeTab === 'semua'}"
                             class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                             Semua Barang
@@ -84,7 +85,7 @@
                 <div class="mt-6">
                     @php
                         // Catatan: Koleksi $barangWithStok sudah terurut berdasarkan persentase laba terkecil (dari Controller)
-                        $semua    = $barangWithStok; // Semua barang
+                        $semua      = $barangWithStok; // Semua barang
                         $tersedia = $barangWithStok->filter(fn($barang) => ($barang->stok_saat_ini ?? 0) > 0);
                         $kosong   = $barangWithStok->filter(fn($barang) => ($barang->stok_saat_ini ?? 0) <= 0);
 
@@ -111,7 +112,7 @@
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga Modal</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga Jual</th>
                                                 {{-- KOLOM BARU UNTUK PERSENTASE LABA --}}
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Persentase Laba</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Persentase Laba & Laba</th>
                                                 {{-- END KOLOM BARU --}}
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kuantitas</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kadaluarsa</th>
@@ -129,13 +130,41 @@
                                                     <td class="px-6 py-4 text-sm font-semibold">Rp {{ number_format($barang->harga_satuan ?? 0, 0, ',', '.') }}</td>
                                                     <td class="px-6 py-4 text-sm">Rp {{ number_format($barang->harga_jual_range_awal ?? 0, 0, ',', '.') }} - Rp {{ number_format($barang->harga_jual ?? 0, 0, ',', '.') }}</td>
 
-                                                    {{-- DATA PERSENTASE LABA --}}
+                                                    {{-- DATA PERSENTASE LABA + LABA ABSOLUT (MODIFIKASI DI SINI) --}}
                                                     <td class="px-6 py-4 text-sm font-semibold">
+                                                        {{-- Persentase Laba --}}
                                                         <span class="{{ str_contains($barang->persentase_laba, '-') ? 'text-red-600' : 'text-blue-600' }}">
                                                             {{ $barang->persentase_laba ?? '-' }}
                                                         </span>
+
+                                                        {{-- LOGIKA BARU UNTUK JUMLAH LABA (di bawah persentase) --}}
+                                                        @if (($barang->harga_satuan ?? 0) > 0)
+                                                            @php
+                                                                // Laba Awal = Harga Jual Awal - Harga Modal
+                                                                $labaAwal = ($barang->harga_jual_range_awal ?? 0) - $barang->harga_satuan;
+                                                                // Laba Akhir = Harga Jual Akhir - Harga Modal (Harga Jual di Controller diset dari range akhir)
+                                                                $labaAkhir = ($barang->harga_jual ?? 0) - $barang->harga_satuan;
+                                                            @endphp
+
+                                                            <div class="mt-1 text-xs font-normal text-gray-500 leading-tight">
+                                                                <span class="{{ $labaAwal < 0 ? 'text-red-600' : 'text-green-600' }} font-bold">
+                                                                    Rp {{ number_format($labaAwal, 0, ',', '.') }}
+                                                                </span>
+                                                                @if ($labaAkhir !== $labaAwal)
+                                                                    -
+                                                                    <span class="{{ $labaAkhir < 0 ? 'text-red-600' : 'text-green-600' }} font-bold">
+                                                                        Rp {{ number_format($labaAkhir, 0, ',', '.') }}
+                                                                    </span>
+                                                                @endif
+                                                            </div>
+                                                        @else
+                                                            <div class="mt-1 text-xs font-normal text-gray-400 italic">
+                                                                Harga modal belum diatur
+                                                            </div>
+                                                        @endif
+                                                        {{-- END LOGIKA LABA --}}
                                                     </td>
-                                                    {{-- END DATA PERSENTASE LABA --}}
+                                                    {{-- END DATA PERSENTASE LABA + LABA ABSOLUT --}}
 
                                                     {{-- KOLOM KUANTITAS BARU DENGAN TOMBOL EDIT/HAPUS/TAMBAH --}}
                                                     <td class="px-6 py-4 text-sm">
@@ -146,26 +175,6 @@
                                                                     <span class="truncate pr-2">
                                                                         {{ $kuantitas->jumlah }} unit:
                                                                         <span class="font-semibold text-gray-700">Rp {{ number_format($kuantitas->harga_jual, 0, ',', '.') }}</span>
-                                                                    </span>
-
-                                                                    {{-- Tombol Aksi (Edit & Hapus) --}}
-                                                                    <span class="flex space-x-1 ml-auto">
-                                                                        {{-- Tombol Edit --}}
-                                                                        <a href="#" {{-- Placeholder for route('kuantitas.edit', $kuantitas->id) --}}
-                                                                            class="text-blue-500 hover:text-blue-700 p-0.5 rounded-full hover:bg-blue-100 transition-colors"
-                                                                            title="Edit Kuantitas">
-                                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                                                        </a>
-
-                                                                        {{-- Tombol Hapus (menggunakan form) --}}
-                                                                        <form action="#" method="POST" {{-- Placeholder for route('kuantitas.destroy', $kuantitas->id) --}} class="inline-block" onsubmit="return confirm('Apakah Anda yakin ingin menghapus kuantitas ini?')">
-                                                                            {{-- @csrf @method('DELETE') --}}
-                                                                            <button type="submit"
-                                                                                class="text-red-500 hover:text-red-700 p-0.5 rounded-full hover:bg-red-100 transition-colors"
-                                                                                title="Hapus Kuantitas">
-                                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                                                            </button>
-                                                                        </form>
                                                                     </span>
                                                                 </li>
                                                             @empty
@@ -181,8 +190,7 @@
                                                                 <button type="submit"
                                                                     class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 transition-colors"
                                                                     @if(!$barang->id_stok_warung) disabled @endif>
-                                                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-                                                                    + Tambah Kuantitas
+                                                                    Atur Kuantitas
                                                                 </button>
                                                             </form>
                                                         @endif
@@ -193,8 +201,8 @@
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    {{-- COLSPAN TOTAL ADALAH 11 --}}
-                                                    <td colspan="11" class="px-6 py-4 text-center text-sm text-gray-500">
+                                                    {{-- COLSPAN TOTAL ADALAH 11 (dihitung ulang) --}}
+                                                    <td colspan="9" class="px-6 py-4 text-center text-sm text-gray-500">
                                                         Tidak ada barang {{ $tabData['label'] }} untuk warung ini.
                                                     </td>
                                                 </tr>

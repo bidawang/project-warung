@@ -47,4 +47,9 @@ class StokWarung extends Model
     {
         return $this->hasMany(Kuantitas::class, 'id_stok_warung');
     }
+
+    public function stokOpname()
+    {
+        return $this->hasMany(StokOpname::class, 'id_stok_warung');
+    }
 }

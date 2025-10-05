@@ -13,12 +13,12 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Membuat User Admin
+        // 1. Membuat User Admin (ID 1)
         User::create([
             'name' => 'Admin User',
             'role' => 'admin',
             'email' => 'admin@example.com',
-            'google_id' => 'google-admin-001', // contoh isi wajib unik
+            'google_id' => 'google-admin-001',
             'nomor_hp' => '081234567890',
             'password' => Hash::make('password123'),
             'email_verified_at' => now(),
@@ -26,20 +26,7 @@ class UserSeeder extends Seeder
             'keterangan' => 'Akun administrator utama',
         ]);
 
-        // 2. Membuat User Kasir (jika role masih dipakai, tapi tidak ada tabel kasir)
-        User::create([
-            'name' => 'Kasir User',
-            'role' => 'kasir',
-            'email' => 'kasir@example.com',
-            'google_id' => 'google-kasir-001',
-            'nomor_hp' => '081298765432',
-            'password' => Hash::make('password123'),
-            'email_verified_at' => now(),
-            'status' => 'aktif',
-            'keterangan' => 'Akun kasir untuk transaksi',
-        ]);
-
-        // 3. Membuat User Member
+        // 2. Membuat User Member (ID 2)
         User::create([
             'name' => 'Member User',
             'role' => 'member',
@@ -51,6 +38,23 @@ class UserSeeder extends Seeder
             'status' => 'aktif',
             'keterangan' => 'Akun member terdaftar',
         ]);
+
+        // 3. Membuat 5 User Kasir Khusus (ID 3, 4, 5, 6, 7)
+        $kasirUsers = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $kasirUsers[] = [
+                'name' => "Kasir Warung {$i}",
+                'role' => 'kasir',
+                'email' => "kasir{$i}@example.com",
+                'google_id' => "google-kasir-00{$i}",
+                'nomor_hp' => '0877777777' . str_pad($i, 2, '0', STR_PAD_LEFT),
+                'password' => Hash::make('password123'), // Semua kasir menggunakan password123
+                'email_verified_at' => now(),
+                'status' => 'aktif',
+                'keterangan' => "Akun kasir untuk Warung {$i}",
+            ];
+        }
+        User::insert($kasirUsers);
 
         // 4. Membuat beberapa user dummy
         User::factory()->count(10)->create();

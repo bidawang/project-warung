@@ -5,145 +5,164 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Kuantitas;
 use App\Models\StokWarung;
-use App\Models\Laba;
+use App\Models\HargaJual; // Meskipun tidak dipakai di fungsi yang tersisa, ini tetap dipertahankan
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule; // 👈 Import Rule untuk Unique Validation
+use Illuminate\Support\Facades\DB;
 
 class KuantitasControllerAdmin extends Controller
 {
+    /**
+     * Menampilkan view untuk membuat (create) kuantitas baru.
+     * View ini juga menampilkan daftar dan menyediakan modal untuk edit.
+     */
     public function create(Request $request)
     {
+        $idStokWarung = $request->query('id_stok_warung');
+        $stokWarung = StokWarung::with(['barang', 'warung'])->get();
         $selectedStokWarung = null;
         $hargaJualSatuanDasar = 0;
-        $idStokWarung = $request->input('id_stok_warung');
-        $barangId = null;
+        $groupedKuantitas = collect();
 
-        // --- 1. Ambil data StokWarung yang dipilih & Hitung Harga Dasar ---
-        if (!empty($idStokWarung)) {
-            $selectedStokWarung = StokWarung::with(['barang.transaksiBarang' => function ($query) {
-                $query->with('areaPembelian')->latest();
-            }, 'warung'])
-                ->find($idStokWarung);
+        if ($idStokWarung) {
+            $selectedStokWarung = StokWarung::with(['barang', 'warung'])->find($idStokWarung);
 
             if ($selectedStokWarung) {
-                $barangId = $selectedStokWarung->id_barang;
+                // Ambil harga jual dasar (asumsi harga satuan)
+                $hargaDasar = HargaJual::where('id_barang', $selectedStokWarung->id_barang)
+                    ->where('id_warung', $selectedStokWarung->id_warung)
+                    ->latest('periode_awal')
+                    ->first();
 
-                if ($selectedStokWarung->barang) {
-                    $transaksi = $selectedStokWarung->barang->transaksiBarang->first();
+                $hargaJualSatuanDasar = $hargaDasar?->harga_jual_range_akhir ?? 0;
 
-                    if ($transaksi) {
-                        $hargaDasarPerSatuan = ($transaksi->harga ?? 0) / max($transaksi->jumlah, 1);
-                        $markupPercent = optional(optional($transaksi)->areaPembelian)->markup ?? 0;
-                        $hargaSetelahMarkup = $hargaDasarPerSatuan * (1 + $markupPercent / 100);
-
-                        $laba = Laba::where('input_minimal', '<=', $hargaSetelahMarkup)
-                            ->where('input_maksimal', '>=', $hargaSetelahMarkup)
-                            ->first();
-
-                        $hargaJualSatuanDasar = $laba ? $laba->harga_jual : 0;
-                    }
-                }
+                // 🔹 Ambil semua kuantitas yang terkait dengan Stok Warung ini
+                $groupedKuantitas = Kuantitas::with(['stokWarung.barang', 'stokWarung.warung'])
+                    ->where('id_stok_warung', $selectedStokWarung->id)
+                    ->get()
+                    ->groupBy(fn($k) => $k->stokWarung->barang->id ?? 'tanpa_barang');
             }
         }
 
-        // --- 2. Ambil & Kelompokkan Data Kuantitas (Kolom Kiri) ---
-        // Jika ada barang yang dipilih, ambil SEMUA kuantitas yang terkait dengan ID BARANG tersebut.
-        if ($barangId) {
-            $listKuantitas = Kuantitas::whereHas('stokWarung', function ($query) use ($barangId) {
-                $query->where('id_barang', $barangId);
-            })
-                ->with('stokWarung.barang', 'stokWarung.warung')
-                ->latest()
-                ->get();
-        } else {
-            // Jika tidak ada stok warung yang dipilih, kosongkan list kuantitas
-            $listKuantitas = collect([]);
-        }
-
-        // Kelompokkan list kuantitas berdasarkan ID Barang (Walaupun sudah difilter, ini untuk memastikan struktur yang benar)
-        $groupedKuantitas = $listKuantitas->groupBy('stokWarung.barang_id');
-
-        // --- 3. Ambil data Stok Warung untuk dropdown ---
-        $stokWarung = StokWarung::with('barang', 'warung')->get();
-
-        return view('admin.kuantitas.create', compact('stokWarung', 'selectedStokWarung', 'hargaJualSatuanDasar', 'groupedKuantitas'));
+        return view('admin.kuantitas.create', compact(
+            'stokWarung',
+            'selectedStokWarung',
+            'hargaJualSatuanDasar',
+            'groupedKuantitas'
+        ));
     }
+
 
     /**
      * Menyimpan kuantitas baru ke database.
      */
     public function store(Request $request)
     {
+        $idStokWarung = $request->input('id_stok_warung');
+
         $request->validate([
             'id_stok_warung' => 'required|exists:stok_warung,id',
-            'jumlah' => 'required|integer|min:1',
-            'harga_jual' => 'required|numeric|min:0',
+            'jumlah' => [
+                'required',
+                'integer',
+                'min:1',
+                Rule::unique('kuantitas')->where(fn($q) => $q->where('id_stok_warung', $idStokWarung)),
+            ],
+            'harga_jual' => [
+                'required',
+                'numeric',
+                'min:0',
+                Rule::unique('kuantitas')->where(fn($q) => $q->where('id_stok_warung', $idStokWarung)),
+            ],
         ]);
 
         Kuantitas::create($request->all());
 
-        return redirect()->route('admin.stokbarang.index')->with('success', 'Kuantitas berhasil ditambahkan.');
+        // 🔹 Recalculate harga_jual_range_awal
+        $this->updateHargaRangeAwal($idStokWarung);
+
+        return redirect()->route('admin.kuantitas.create', ['id_stok_warung' => $idStokWarung])
+            ->with('success', 'Varian Kuantitas berhasil ditambahkan.');
     }
 
-    /**
-     * Menampilkan form untuk mengedit kuantitas yang ada.
-     */
-    public function edit($id)
-    {
-        $kuantitas = Kuantitas::with(['stokWarung.barang.transaksiBarang.areaPembelian'])->findOrFail($id);
-        $hargaJualSatuanDasar = null;
 
-        $stok = $kuantitas->stokWarung;
-
-        if ($stok && $stok->barang) {
-            // Ambil transaksi barang terbaru untuk menghitung harga satuan dasar
-            $transaksi = $stok->barang->transaksiBarang()->latest()->first();
-
-            if ($transaksi) {
-                // 1. Hitung harga beli satuan setelah markup
-                $hargaDasarPerSatuan = ($transaksi->harga ?? 0) / max($transaksi->jumlah, 1);
-                $markupPercent = optional($transaksi->areaPembelian)->markup ?? 0;
-                $hargaSetelahMarkup = $hargaDasarPerSatuan * (1 + $markupPercent / 100);
-
-                // 2. Ambil harga jual dasar dari tabel Laba
-                $laba = Laba::where('input_minimal', '<=', $hargaSetelahMarkup)
-                    ->where('input_maksimal', '>=', $hargaSetelahMarkup)
-                    ->first();
-
-                $hargaJualSatuanDasar = $laba ? $laba->harga_jual : 0;
-            }
-        }
-
-        return view('admin.kuantitas.edit', compact('kuantitas', 'hargaJualSatuanDasar'));
-    }
-
-    /**
-     * Memperbarui kuantitas yang ada di database.
-     */
     public function update(Request $request, $id)
     {
+        $kuantitas = Kuantitas::findOrFail($id);
+        $idStokWarung = $request->input('id_stok_warung');
+
         $data = $request->validate([
             'id_stok_warung' => 'required|exists:stok_warung,id',
-            'jumlah' => 'required|integer|min:1',
-            'harga_jual' => 'required|numeric|min:0',
+            'jumlah' => [
+                'required',
+                'integer',
+                'min:1',
+                Rule::unique('kuantitas')->where(fn($q) => $q->where('id_stok_warung', $idStokWarung))->ignore($id),
+            ],
+            'harga_jual' => [
+                'required',
+                'numeric',
+                'min:0',
+                Rule::unique('kuantitas')->where(fn($q) => $q->where('id_stok_warung', $idStokWarung))->ignore($id),
+            ],
         ]);
 
-        $kuantitas = Kuantitas::findOrFail($id);
         $kuantitas->update($data);
 
-        return redirect()->route('admin.stokbarang.index')
-            ->with('success', 'Kuantitas berhasil diperbarui.');
+        // 🔹 Recalculate harga_jual_range_awal
+        $this->updateHargaRangeAwal($idStokWarung);
+
+        return redirect()->route('admin.kuantitas.create', ['id_stok_warung' => $idStokWarung])
+            ->with('success', 'Varian Kuantitas berhasil diperbarui.');
     }
 
 
-    /**
-     * Menghapus kuantitas dari database.
-     */
     public function destroy($id)
     {
-        $kuantitas = Kuantitas::findOrFail($id);
-        $kuantitas->delete();
+        try {
+            $kuantitas = Kuantitas::findOrFail($id);
+            $idStokWarung = $kuantitas->id_stok_warung;
 
-        return redirect()->back()->with('success', 'Kuantitas berhasil dihapus.');
+            $kuantitas->delete();
+
+            // 🔹 Recalculate harga_jual_range_awal
+            $this->updateHargaRangeAwal($idStokWarung);
+
+            return redirect()->route('admin.kuantitas.create', ['id_stok_warung' => $idStokWarung])
+                ->with('success', 'Varian Kuantitas berhasil dihapus.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus kuantitas. Data mungkin sudah tidak tersedia.');
+        }
+    }
+    private function updateHargaRangeAwal($idStokWarung)
+    {
+        $stok = StokWarung::with('warung', 'barang')->find($idStokWarung);
+        // dd($stok);
+        if (!$stok) return;
+
+        $idWarung = $stok->id_warung;
+        $idBarang = $stok->id_barang;
+
+        // Ambil semua kuantitas dari stok warung ini
+        $kuantitasList = $stok->kuantitas()->get();
+        if ($kuantitasList->isEmpty()) {
+            // Jika tidak ada kuantitas, reset harga range awal jadi sama dengan akhir
+            HargaJual::where('id_warung', $idWarung)
+                ->where('id_barang', $idBarang)
+                ->update(['harga_jual_range_awal' => DB::raw('harga_jual_range_akhir')]);
+            return;
+        }
+
+        // Hitung harga per item = harga_jual / jumlah
+        $hargaPerItemTerkecil = $kuantitasList
+            ->map(fn($k) => $k->harga_jual / max($k->jumlah, 1))
+            ->min();
+// dd($hargaPerItemTerkecil, $idWarung, $idBarang);
+
+        // Update ke model HargaJual
+        HargaJual::where('id_warung', $idWarung)
+            ->where('id_barang', $idBarang)
+            ->update(['harga_jual_range_awal' => $hargaPerItemTerkecil]);
     }
 }
