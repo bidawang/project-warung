@@ -199,6 +199,13 @@
                         <span>Hutang Barang Masuk</span>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a href="{{ url('/kasir/riwayattransaksi') }}"
+                        class="nav-link @if (Request::is('kasir/hutang*')) active @endif">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span>Riwayat Transaksi</span>
+                    </a>
+                </li>
                 {{-- <li class="nav-item">
                     <a href="{{ route('transaksikas.index', 1) }}"
                 class="nav-link @if (Request::is('transaksikas*')) active @endif">

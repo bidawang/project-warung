@@ -54,7 +54,8 @@ use App\Http\Controllers\Kasir\{
     ProfilControllerKasir,
     StokBarangControllerAdmin,
     StokBarangControllerKasir,
-    MemberControllerKasir
+    MemberControllerKasir,
+    RiwayatTransaksiControllerKasir
 };
 
 use Illuminate\Support\Facades\{Route, Password};
@@ -126,6 +127,7 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::put('kuantitas/{id}/update', [KuantitasController::class, 'update'])->name('kuantitas.update');
     Route::delete('kuantitas/{id}', [KuantitasController::class, 'destroy'])->name('kuantitas.destroy');
 
+    Route::resource('riwayattransaksi', RiwayatTransaksiControllerKasir::class);
 
     Route::get('/stok-barang', [StokBarangControllerKasir::class, 'index'])->name('stokbarang.index');
     Route::get('/stok-barang/barang-masuk', [StokBarangControllerKasir::class, 'barangMasuk'])->name('stokbarang.barangmasuk');
