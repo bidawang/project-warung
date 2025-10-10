@@ -55,6 +55,7 @@ use App\Http\Controllers\Kasir\{
     StokBarangControllerAdmin,
     StokBarangControllerKasir,
     MemberControllerKasir,
+    PulsaControllerKasir,
     RiwayatTransaksiControllerKasir
 };
 
@@ -163,6 +164,13 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::get('/member/edit/{id}', [MemberControllerKasir::class, 'edit'])->name('member.edit');
     Route::put('/member/update/{id}', [MemberControllerKasir::class, 'update'])->name('member.update');
     Route::delete('/member/delete/{id}', [MemberControllerKasir::class, 'destroy'])->name('member.destroy');
+
+    Route::resource('pulsa', PulsaControllerKasir::class);
+    Route::get('pulsa/harga-pulsa/create', [PulsaControllerKasir::class, 'createHargaPulsa'])->name('pulsa.harga-pulsa.create');
+    Route::post('pulsa/harga-pulsa/store', [PulsaControllerKasir::class, 'storeHargaPulsa'])->name('pulsa.harga-pulsa.store');
+    Route::post('pulsa/harga-pulsa/edit', [PulsaControllerKasir::class, 'editHargaPulsa'])->name('pulsa.harga-pulsa.edit');
+
+
 
     Route::get('/profil', [ProfilControllerKasir::class, 'index'])->name('profil.index');
 });

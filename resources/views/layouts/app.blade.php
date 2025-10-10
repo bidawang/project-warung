@@ -156,8 +156,8 @@
                     @endguest --}}
                 </li>
                 <li>
-                    <a href="{{ url('pulsa') }}" class="nav-link @if (Request::is('pulsa')) active @endif">
-                        <i class="fas fa-cash-register"></i>
+                    <a href="{{ url('kasir/pulsa') }}" class="nav-link @if (Request::is('kasir/pulsa*')) active @endif">
+                        <i class="fas fa-mobile-alt"></i>
                         <span>Pulsa</span>
                     </a>
                 </li>
