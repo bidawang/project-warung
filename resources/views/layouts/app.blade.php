@@ -87,12 +87,22 @@
                     <!-- Master Data -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-database"></i> Master Data
+                            <i class="fas fa-database"></i> Manajemen Data
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li>
                                 <a class="dropdown-item" href="{{ url('/kasir/member') }}">
                                     <i class="fas fa-users"></i> Member
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ route('kasir.rencanabelanja.index') }}">
+                                    <i class="fas fa-file-invoice-dollar"></i> Rencana Belanja
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url('/kasir/stok-barang') }}">
+                                    <i class="fas fa-boxes"></i></i> Stok Barang
                                 </a>
                             </li>
 
@@ -137,6 +147,7 @@
                     </a>
 
 
+
                     {{-- @guest
                         <a href="{{ route('home') }}" class="nav-link @if (Request::is('/')) active @endif">
                             <i class="fas fa-home"></i>
@@ -144,14 +155,13 @@
                         </a>
                     @endguest --}}
                 </li>
-
-                <li class="nav-item">
-                    <a href="{{ url('/kasir/stok-barang') }}"
-                        class="nav-link @if (Request::is('kasir/stok-barang*')) active @endif">
-                        <i class="fas fa-boxes"></i>
-                        <span>Stok Barang</span>
+                <li>
+                    <a href="{{ url('pulsa') }}" class="nav-link @if (Request::is('pulsa')) active @endif">
+                        <i class="fas fa-cash-register"></i>
+                        <span>Pulsa</span>
                     </a>
                 </li>
+
 
                 {{-- <li class="nav-item">
                     <a href="{{ route('barangmasuk.index') }}"
@@ -185,13 +195,7 @@
                         <span>Hutang</span>
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a href="{{ route('kasir.rencanabelanja.index') }}"
-                        class="nav-link @if (Request::is('kasir/rencanabelanja*')) active @endif">
-                        <i class="fas fa-file-invoice-dollar"></i>
-                        <span>Rencana Belanja</span>
-                    </a>
-                </li>
+
                 <li class="nav-item">
                     <a href="{{ url('/kasir/hutangBarangamMasuk') }}"
                         class="nav-link @if (Request::is('kasir/hutang*')) active @endif">
@@ -200,8 +204,8 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ url('/kasir/riwayattransaksi') }}"
-                        class="nav-link @if (Request::is('kasir/hutang*')) active @endif">
+                    <a href="{{ url('/kasir/riwayat-transaksi') }}"
+                        class="nav-link @if (Request::is('kasir/riwayat-transaksi*')) active @endif">
                         <i class="fas fa-file-invoice-dollar"></i>
                         <span>Riwayat Transaksi</span>
                     </a>

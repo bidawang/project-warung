@@ -62,13 +62,14 @@ use Illuminate\Support\Facades\{Route, Password};
 use Illuminate\Http\Request;
 
 
-Route::get('/', function () {
-    return view('welcome');
-})->name('home');
+// Route::get('/', function () {
+//     return view('welcome');
+// })->name('home');
 Route::get('/testailwind', function () {
     return view('testailwind');
 });
 
+Route::get('/', [AuthController::class, 'showLogin']);
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
@@ -127,7 +128,7 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::put('kuantitas/{id}/update', [KuantitasController::class, 'update'])->name('kuantitas.update');
     Route::delete('kuantitas/{id}', [KuantitasController::class, 'destroy'])->name('kuantitas.destroy');
 
-    Route::resource('riwayattransaksi', RiwayatTransaksiControllerKasir::class);
+    Route::resource('riwayat-transaksi', RiwayatTransaksiControllerKasir::class);
 
     Route::get('/stok-barang', [StokBarangControllerKasir::class, 'index'])->name('stokbarang.index');
     Route::get('/stok-barang/barang-masuk', [StokBarangControllerKasir::class, 'barangMasuk'])->name('stokbarang.barangmasuk');

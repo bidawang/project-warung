@@ -35,8 +35,7 @@ class RiwayatTransaksiControllerKasir extends Controller
         $transaksiKasQuery = TransaksiKas::with([
             'transaksiBarangKeluar.barangKeluar.stokWarung.barang',
             'hutang',
-        ])
-            ->whereIn('id_kas_warung', $kasWarungIds);
+        ])->whereIn('id_kas_warung', $kasWarungIds);
 
         // Filter pencarian TransaksiKas
         if ($search) {
