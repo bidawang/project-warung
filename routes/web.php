@@ -165,10 +165,14 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::put('/member/update/{id}', [MemberControllerKasir::class, 'update'])->name('member.update');
     Route::delete('/member/delete/{id}', [MemberControllerKasir::class, 'destroy'])->name('member.destroy');
 
-    Route::resource('pulsa', PulsaControllerKasir::class);
+
+    Route::get('pulsa', [PulsaControllerKasir::class, 'index'])->name('pulsa.index');
+    Route::get('pulsa/create', [PulsaControllerKasir::class, 'index'])->name('pulsa.create');
     Route::get('pulsa/harga-pulsa/create', [PulsaControllerKasir::class, 'createHargaPulsa'])->name('pulsa.harga-pulsa.create');
     Route::post('pulsa/harga-pulsa/store', [PulsaControllerKasir::class, 'storeHargaPulsa'])->name('pulsa.harga-pulsa.store');
-    Route::post('pulsa/harga-pulsa/edit', [PulsaControllerKasir::class, 'editHargaPulsa'])->name('pulsa.harga-pulsa.edit');
+    Route::get('pulsa/harga-pulsa/edit/{id}', [PulsaControllerKasir::class, 'editHargaPulsa'])->name('pulsa.harga-pulsa.edit');
+    Route::put('pulsa/harga-pulsa/update/{id}', [PulsaControllerKasir::class, 'updateHargaPulsa'])->name('pulsa.harga-pulsa.update');
+    Route::delete('pulsa/harga-pulsa/delete/{id}', [PulsaControllerKasir::class, 'destroyHargaPulsa'])->name('pulsa.harga-pulsa.destroy');
 
 
 

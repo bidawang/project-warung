@@ -48,7 +48,7 @@ class UserSeeder extends Seeder
                 'email' => "kasir{$i}@example.com",
                 'google_id' => "google-kasir-00{$i}",
                 'nomor_hp' => '0877777777' . str_pad($i, 2, '0', STR_PAD_LEFT),
-                'password' => Hash::make('password123'), // Semua kasir menggunakan password123
+                'password' => Hash::make('password123'),
                 'email_verified_at' => now(),
                 'status' => 'aktif',
                 'keterangan' => "Akun kasir untuk Warung {$i}",

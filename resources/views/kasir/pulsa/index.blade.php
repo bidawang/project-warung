@@ -19,7 +19,7 @@
                 <div class="card shadow-lg border-0 h-100">
                     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-list me-2"></i>Daftar Harga Jual Pulsa</h5>
-                        <a href="{{ url('kasir.pulsa.harga-pulsa.create') }}" class="btn btn-sm btn-light text-primary fw-bold">
+                        <a href="{{ route('kasir.pulsa.harga-pulsa.create') }}" class="btn btn-sm btn-light text-primary fw-bold">
                             <i class="fas fa-plus me-1"></i> Atur Harga Baru
                         </a>
                     </div>
@@ -55,7 +55,7 @@
                                             <span class="badge bg-secondary">{{ strtoupper($harga->operator ?? 'UMUM') }}</span>
                                         </td>
                                         <td class="text-center">
-                                            <a href="{{ url('kasir.pulsa.harga-pulsa.edit', $harga->id) }}" class="btn btn-sm btn-warning p-1" title="Edit Harga">
+                                            <a href="{{ route('kasir.pulsa.harga-pulsa.edit', $harga->id) }}" class="btn btn-sm btn-warning p-1" title="Edit Harga">
                                                 <i class="fas fa-pencil-alt"></i>
                                             </a>
                                             {{-- Tombol Hapus (Opsional, pastikan ada url destroy) --}}
@@ -108,7 +108,7 @@
                         </a>
 
                         {{-- 2. Tombol TAMBAH SALDO PULSA (Modal Action) --}}
-                        <a href="{{ url('kasir.saldo.create') }}" class="btn btn-success flex-fill d-flex align-items-center justify-content-center fw-bold p-2">
+                        <a href="{{ route('kasir.pulsa.create') }}" class="btn btn-success flex-fill d-flex align-items-center justify-content-center fw-bold p-2">
                             <i class="fas fa-money-check-alt me-1"></i> Tambah Saldo
                         </a>
                     </div>
