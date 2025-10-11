@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Pulsa;
 use App\Models\HargaPulsa;
+use Illuminate\Support\Facades\Log;
 
 class PulsaControllerKasir extends Controller
 {
@@ -145,5 +146,76 @@ class PulsaControllerKasir extends Controller
 
         // 5. Redirect dengan Pesan Sukses
         return redirect()->route('kasir.pulsa.index')->with('success', 'Saldo Pulsa Warung berhasil ditambahkan sebesar Rp ' . number_format($request->nominal, 0, ',', '.'));
+    }
+
+    public function createJualPulsa()
+    {
+        // Ambil daftar harga pulsa yang tersedia untuk dipilih
+        $harga_pulsas = HargaPulsa::orderBy('jumlah_pulsa', 'asc')->get();
+
+        return view('kasir.pulsa.jual_pulsa', compact('harga_pulsas'));
+    }
+
+    public function storeJualPulsa(Request $request)
+    {
+        $idWarung = session('id_warung');
+        if (! $idWarung) {
+            return redirect()->route('dashboard')->with('error', 'ID warung tidak ditemukan di sesi.');
+        }
+
+        // 1. Validasi Input
+        $request->validate([
+            'nomor_hp' => 'required|string|min:10|max:15',
+            'harga_pulsa_id' => 'required|exists:harga_pulsa,id',
+            'bayar' => 'required|numeric|min:0',
+        ]);
+
+        $hargaPulsa = HargaPulsa::findOrFail($request->harga_pulsa_id);
+        $hargaJual = $hargaPulsa->harga;
+        $nominalPulsa = $hargaPulsa->jumlah_pulsa; // Nominal ini diasumsikan sebagai Modal/Stok yang berkurang
+
+        // Cek pembayaran kurang
+        if ($request->bayar < $hargaJual) {
+            return back()->withInput()->withErrors(['bayar' => 'Jumlah bayar kurang dari harga jual pulsa (Rp ' . number_format($hargaJual, 0, ',', '.') . ')']);
+        }
+
+        // 2. Cek Saldo Pulsa Warung
+        $pulsaWarung = Pulsa::firstOrCreate(
+            ['id_warung' => $idWarung],
+            ['saldo' => 0] // Saldo awal jika baru dibuat
+        );
+
+        // ASUMSI: Saldo Pulsa dikurangi sebesar nominal pulsa yang dijual (modal/stok)
+        if ($pulsaWarung->saldo < $nominalPulsa) {
+             return back()->withInput()->with('error', 'Transaksi Gagal: Saldo Pulsa Warung tidak mencukupi untuk nominal Rp ' . number_format($nominalPulsa, 0, ',', '.'));
+        }
+
+        try {
+            // 3. Kurangi Saldo Pulsa Warung (Stok)
+            $pulsaWarung->decrement('saldo', $nominalPulsa);
+
+            // 4. Hitung Profit dan Kembalian
+            $profit = $hargaJual - $nominalPulsa;
+            $kembalian = $request->bayar - $hargaJual;
+
+            // TODO: Di sini adalah tempat untuk menambahkan hasil penjualan ($hargaJual) ke Saldo Kas Warung.
+
+            // 5. Simpan Transaksi (Simulasi)
+            // Dalam aplikasi nyata, Anda akan menyimpan detail transaksi di tabel TransaksiPulsa.
+
+            // 6. Redirect dengan Pesan Sukses
+            $message = "Penjualan Pulsa ke " . $request->nomor_hp . " berhasil diproses. Nominal: Rp " . number_format($nominalPulsa, 0, ',', '.') .
+                       ", Harga Jual: Rp " . number_format($hargaJual, 0, ',', '.') .
+                       ". Bayar: Rp " . number_format($request->bayar, 0, ',', '.') .
+                       ". Kembalian: Rp " . number_format($kembalian, 0, ',', '.') .
+                       ". Profit: Rp " . number_format($profit, 0, ',', '.');
+
+            return redirect()->route('kasir.pulsa.index')->with('success', $message);
+
+        } catch (\Exception $e) {
+            // Log error
+            Log::error("Gagal melakukan transaksi pulsa: " . $e->getMessage());
+            return back()->withInput()->with('error', 'Terjadi kesalahan saat memproses transaksi. Silakan coba lagi.');
+        }
     }
 }

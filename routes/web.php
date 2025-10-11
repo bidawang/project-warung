@@ -174,6 +174,8 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::get('pulsa/harga-pulsa/edit/{id}', [PulsaControllerKasir::class, 'editHargaPulsa'])->name('pulsa.harga-pulsa.edit');
     Route::put('pulsa/harga-pulsa/update/{id}', [PulsaControllerKasir::class, 'updateHargaPulsa'])->name('pulsa.harga-pulsa.update');
     Route::delete('pulsa/harga-pulsa/delete/{id}', [PulsaControllerKasir::class, 'destroyHargaPulsa'])->name('pulsa.harga-pulsa.destroy');
+    Route::get('pulsa/jual/create', [PulsaControllerKasir::class, 'createJualPulsa'])->name('pulsa.jual.create');
+    Route::post('pulsa/jual/store', [PulsaControllerKasir::class, 'storeJualPulsa'])->name('pulsa.jual.store');
 
 
 

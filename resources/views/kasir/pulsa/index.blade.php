@@ -103,7 +103,7 @@
                     </div>
                     <div class="card-body d-flex gap-2 p-3">
                         {{-- 1. Tombol JUAL PULSA (Primary Action) --}}
-                        <a href="{{ url('kasir.pulsa.create') }}" class="btn btn-primary flex-fill d-flex align-items-center justify-content-center fw-bold p-2">
+                        <a href="{{ route('kasir.pulsa.jual.create') }}" class="btn btn-primary flex-fill d-flex align-items-center justify-content-center fw-bold p-2">
                             <i class="fas fa-mobile-alt me-1"></i> Jual Pulsa
                         </a>
 
