@@ -167,7 +167,8 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
 
 
     Route::get('pulsa', [PulsaControllerKasir::class, 'index'])->name('pulsa.index');
-    Route::get('pulsa/create', [PulsaControllerKasir::class, 'index'])->name('pulsa.create');
+    Route::get('pulsa/create', [PulsaControllerKasir::class, 'createSaldoPulsa'])->name('pulsa.create');
+    Route::post('pulsa/store', [PulsaControllerKasir::class, 'storeSaldoPulsa'])->name('pulsa.saldo.store');
     Route::get('pulsa/harga-pulsa/create', [PulsaControllerKasir::class, 'createHargaPulsa'])->name('pulsa.harga-pulsa.create');
     Route::post('pulsa/harga-pulsa/store', [PulsaControllerKasir::class, 'storeHargaPulsa'])->name('pulsa.harga-pulsa.store');
     Route::get('pulsa/harga-pulsa/edit/{id}', [PulsaControllerKasir::class, 'editHargaPulsa'])->name('pulsa.harga-pulsa.edit');
