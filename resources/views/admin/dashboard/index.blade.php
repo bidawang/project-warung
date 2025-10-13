@@ -48,9 +48,6 @@
                 <a href="{{ route('admin.warung.show', $warung->id) }}" class="block group">
                     <div
                         class="bg-white rounded-lg shadow-md overflow-hidden transform group-hover:-translate-y-1 group-hover:shadow-xl transition-all duration-300">
-                        <img class="h-48 w-full object-cover"
-                            src="https://via.placeholder.com/400x300.png/0077be?text={{ urlencode($warung->nama_warung) }}"
-                            alt="Gambar {{ $warung->nama_warung }}">
 
                         <div class="p-5">
                             <h3

@@ -200,7 +200,7 @@ class TransaksiBarangController extends Controller
                             'harga'               => $harga,
                             'tanggal_kadaluarsa'  => $tanggalKadaluarsa, // Menambahkan kolom baru
                             'jenis'               => 'masuk',
-                            'status'              => 'pending',
+                            // 'status'              => 'pending',
                         ]);
 
                         $grandTotal += ($jumlah * $harga);
@@ -411,7 +411,8 @@ class TransaksiBarangController extends Controller
 
                     $hargaBeliPerUnit = $transaksiBarang->harga / $transaksiBarang->jumlah ?? 0;
                     $markupPercent = optional($transaksiBarang->areaPembelian)->markup ?? 0;
-                    $hargaModalWarung = $hargaBeliPerUnit * (1 + ($markupPercent / 100)); // Ini adalah 'harga modal' untuk Warung
+                    $hargaModalWarung = $hargaBeliPerUnit * (1 + ($markupPercent / 100));
+                    $hargaModalWarung = ceil($hargaModalWarung / 500) * 500;
 
                     // 1. Cari atau buat Stok Warung
                     $stokWarung = StokWarung::firstOrCreate(

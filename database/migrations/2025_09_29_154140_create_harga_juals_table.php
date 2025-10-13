@@ -37,7 +37,7 @@ return new class extends Migration
             $table->date('periode_awal');
 
             // Tanggal akhir periode penetapan harga ini
-            $table->date('periode_akhir');
+            $table->date('periode_akhir')->nullable();
 
             // Opsional: Menjaga kombinasi ini unik
             // $table->unique(['id_warung', 'id_barang', 'periode_awal']);

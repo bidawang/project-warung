@@ -15,6 +15,7 @@ return new class extends Migration
             $table->foreignId('id_area_pembelian')->constrained('area_pembelian');
             $table->foreignId('id_transaksi_awal')->constrained('transaksi_awal');
             $table->integer('jumlah');
+            $table->enum('status', ['pending', 'selesai', 'dikirim', 'terima', 'tolak'])->default('pending');
             $table->decimal('harga', 15, 2);
             $table->enum('jenis', ['keluar', 'masuk']);
             $table->date('tanggal_kadaluarsa')->nullable(); // Menambahkan kolom baru
