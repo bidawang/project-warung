@@ -51,10 +51,9 @@
     <div class="card shadow-sm">
         <div class="card-header d-flex justify-content-between align-items-center bg-info text-white">
             <h5 class="mb-0">Riwayat Transaksi</h5>
-            <a href="#" class="btn btn-light">
-                <i class="fas fa-plus-circle me-2"></i> Tambah Transaksi
-            </a>
-        </div>
+<a href="{{ route('kasir.kas.create') }}" class="btn btn-light">
+    <i class="fas fa-plus-circle me-2"></i> Tambah Transaksi
+</a>        </div>
         <div class="card-body">
             <div class="input-group mb-4">
                 <input type="text" class="form-control" placeholder="Cari transaksi...">

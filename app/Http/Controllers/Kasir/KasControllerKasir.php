@@ -4,53 +4,119 @@ namespace App\Http\Controllers\Kasir;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\TransaksiKas; // Tambahkan model TransaksiKas
-use App\Models\KasWarung; // Tambahkan model KasWarung
+use Illuminate\Support\Facades\Validator;
+use App\Models\TransaksiKas;
+use App\Models\KasWarung;
 
 class KasControllerKasir extends Controller
 {
+    /**
+     * Menampilkan ringkasan kas warung dan riwayat transaksi.
+     */
     public function index()
-{
-    $idWarung = session('id_warung');
+    {
+        $idWarung = session('id_warung');
 
-    if (!$idWarung) {
-        return redirect()->route('dashboard')->with('error', 'ID warung tidak ditemukan di sesi.');
+        if (!$idWarung) {
+            return redirect()->route('dashboard')->with('error', 'ID warung tidak ditemukan di sesi.');
+        }
+
+        // Ambil kas warung 'cash'
+        $kasWarung = KasWarung::where('id_warung', $idWarung)
+            ->where('jenis_kas', 'cash')
+            ->first();
+
+        if (!$kasWarung) {
+            return redirect()->route('dashboard')->with('error', 'Kas warung cash tidak ditemukan.');
+        }
+
+        $idKasWarung = $kasWarung->id;
+
+        // Hitung Total Pendapatan (Kas Masuk)
+        $totalPendapatan = TransaksiKas::where('id_kas_warung', $idKasWarung)
+            ->whereIn('jenis', ['penjualan', 'masuk']) // 'masuk' untuk kas manual
+            ->sum('total');
+
+        // Hitung Total Pengeluaran (Kas Keluar)
+        $totalPengeluaran = TransaksiKas::where('id_kas_warung', $idKasWarung)
+            ->whereIn('jenis', ['pengeluaran', 'hutang']) // 'pengeluaran' untuk kas manual
+            ->sum('total');
+
+        // Hitung Saldo Bersih
+        $saldoBersih = $totalPendapatan - $totalPengeluaran;
+
+        // Ambil riwayat transaksi
+        $riwayatTransaksi = TransaksiKas::where('id_kas_warung', $idKasWarung)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('kasir.kas.index', compact(
+            'totalPendapatan',
+            'totalPengeluaran',
+            'saldoBersih',
+            'riwayatTransaksi'
+        ));
     }
 
-    // ✅ Ambil kas warung dulu
-$kasWarung = \App\Models\KasWarung::where('id_warung', $idWarung)
-        ->where('jenis_kas', 'cash')
-        ->first();
-    if (!$kasWarung) {
-        return redirect()->route('dashboard')->with('error', 'Kas warung tidak ditemukan.');
+    /**
+     * Menampilkan formulir untuk membuat transaksi kas manual baru (Masuk atau Keluar).
+     */
+    public function create()
+    {
+        $idWarung = session('id_warung');
+
+        if (!$idWarung) {
+            return redirect()->route('kasir.kas.index')->with('error', 'ID warung tidak ditemukan di sesi.');
+        }
+
+        // Pastikan KasWarung 'cash' ada untuk mendapatkan id_kas_warung
+        $kasWarung = KasWarung::where('id_warung', $idWarung)
+            ->where('jenis_kas', 'cash')
+            ->first();
+
+        if (!$kasWarung) {
+            return redirect()->route('kasir.kas.index')->with('error', 'Kas warung cash tidak ditemukan. Transaksi manual tidak dapat ditambahkan.');
+        }
+
+        $idKasWarung = $kasWarung->id;
+
+        return view('kasir.kas.create', compact('idKasWarung'));
     }
 
-    $idKasWarung = $kasWarung->id;
+    /**
+     * Menyimpan transaksi kas manual baru ke database.
+     */
+    public function store(Request $request)
+    {
+        // 1. Validasi Input
+        $validator = Validator::make($request->all(), [
+            'jenis' => 'required|in:masuk,keluar', // 'masuk' = Pemasukan, 'pengeluaran' = Pengeluaran
+            'total' => 'required|numeric|min:1',
+            'keterangan' => 'required|string|max:255',
+            'id_kas_warung' => 'required|exists:kas_warung,id', // Harus ada dan valid
+        ]);
 
-    // ✅ Hitung Total Pendapatan
-    $totalPendapatan = \App\Models\TransaksiKas::where('id_kas_warung', $idKasWarung)
-        ->where('jenis', 'penjualan')
-        ->sum('total');
-// dd($totalPendapatan);
-    // ✅ Hitung Total Pengeluaran
-    $totalPengeluaran = \App\Models\TransaksiKas::where('id_kas_warung', $idKasWarung)
-        ->where('jenis', 'pengeluaran')
-        ->sum('total');
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
 
-    // ✅ Hitung Saldo Bersih
-    $saldoBersih = $totalPendapatan - $totalPengeluaran;
+        try {
+            // 2. Buat Transaksi Kas
+            TransaksiKas::create([
+                'id_kas_warung' => $request->id_kas_warung,
+                'total' => $request->total,
+                // Metode pembayaran diset 'cash' karena ini adalah kas manual di kas warung 'cash'
+                'metode_pembayaran' => 'cash',
+                // Jenis transaksi: 'masuk' (untuk kas masuk manual) atau 'pengeluaran' (untuk kas keluar manual)
+                'jenis' => $request->jenis,
+                'keterangan' => $request->keterangan,
+            ]);
 
-    // ✅ Ambil riwayat transaksi
-    $riwayatTransaksi = \App\Models\TransaksiKas::where('id_kas_warung', $idKasWarung)
-        ->orderBy('created_at', 'desc')
-        ->get();
-
-    return view('kasir.kas.index', compact(
-        'totalPendapatan',
-        'totalPengeluaran',
-        'saldoBersih',
-        'riwayatTransaksi'
-    ));
-}
-
+            return redirect()->route('kasir.kas.index')->with('success', 'Transaksi kas manual berhasil ditambahkan!');
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            \Log::error('Gagal menyimpan Transaksi Kas manual: ' . $e->getMessage());
+            return back()->with('error', 'Gagal menyimpan transaksi kas. Silakan coba lagi.')->withInput();
+        }
+    }
 }

@@ -135,6 +135,8 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::get('/stok-barang/barang-masuk', [StokBarangControllerKasir::class, 'barangMasuk'])->name('stokbarang.barangmasuk');
 
     Route::get('/kas', [KasControllerKasir::class, 'index'])->name('kas.index');
+    Route::get('/create', [KasControllerKasir::class, 'create'])->name('kas.create');
+    Route::post('/', [KasControllerKasir::class, 'store'])->name('kas.store');
 
     Route::get('/hutang', [HutangControllerKasir::class, 'index'])->name('hutang.index');
     Route::get('/hutang/detail/{id}', [HutangControllerKasir::class, 'detail'])->name('hutang.detail');

@@ -63,7 +63,7 @@
                                             bg-success
                                         @elseif(str_contains($transaksi->jenis_transaksi, 'Keluar'))
                                             bg-danger
-                                        @elseif(str_contains($transaksi->jenis_transaksi, 'hutang'))
+                                        @elseif(str_contains($transaksi->jenis_transaksi, 'Hutang'))
                                             bg-warning text-dark
                                         @else
                                             bg-secondary
@@ -76,7 +76,7 @@
                                 <td class="text-end fw-bold">
                                     {{ number_format($transaksi->total, 0, ',', '.') }}
                                 </td>
-                                <td>{{ $transaksi->metode_pembayaran }}</td>
+                                <td>{{ $transaksi->metode_pembayaran ?? 'Hutang' }}</td>
                                 <td>
                                     <span class="badge bg-info text-dark">{{ $transaksi->tipe_sumber }}</span>
                                 </td>

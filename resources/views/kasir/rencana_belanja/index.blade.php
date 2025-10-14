@@ -4,8 +4,8 @@
 
 @section('content')
 
-<div class="">
-<div class="card shadow-sm">
+<div class="container py-4">
+<div class="card shadow-lg border-0 rounded-4">
 <div class="card-header bg-warning text-dark">
 <h5 class="mb-0">Rencana Belanja (Menunggu Pembelian)</h5>
 </div>

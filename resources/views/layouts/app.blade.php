@@ -156,9 +156,21 @@
                     @endguest --}}
                 </li>
                 <li>
+                    <a href="{{ url('kasir/stok-barang') }}" class="nav-link @if (Request::is('kasir/pulsa*')) active @endif">
+                        <i class="fas fa-mobile-alt"></i>
+                        <span>Stok Barang</span>
+                    </a>
+                </li>
+                <li>
                     <a href="{{ url('kasir/pulsa') }}" class="nav-link @if (Request::is('kasir/pulsa*')) active @endif">
                         <i class="fas fa-mobile-alt"></i>
                         <span>Pulsa</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('kasir/member') }}" class="nav-link @if (Request::is('kasir/pulsa*')) active @endif">
+                        <i class="fas fa-mobile-alt"></i>
+                        <span>Member</span>
                     </a>
                 </li>
 
@@ -201,6 +213,13 @@
                         class="nav-link @if (Request::is('kasir/hutang*')) active @endif">
                         <i class="fas fa-file-invoice-dollar"></i>
                         <span>Hutang Barang Masuk</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url('/kasir/rencana-belanja') }}"
+                        class="nav-link @if (Request::is('kasir/hutang*')) active @endif">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span>Rencana Belanja</span>
                     </a>
                 </li>
                 <li class="nav-item">

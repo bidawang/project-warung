@@ -158,7 +158,7 @@ class TransaksiBarangController extends Controller
                     return $item->jumlah_awal - $item->jumlah_dibeli;
                 });
             });
-
+// dd($areas);
         return view('admin.transaksibarang.create', compact(
             'transaksis',
             'barangs',
@@ -203,7 +203,7 @@ class TransaksiBarangController extends Controller
                             // 'status'              => 'pending',
                         ]);
 
-                        $grandTotal += ($jumlah * $harga);
+                        $grandTotal += $harga;
                     }
                 }
             }
