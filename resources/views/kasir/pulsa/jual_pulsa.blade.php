@@ -12,18 +12,17 @@
                 </div>
 
                 <div class="card-body">
-                    {{-- Tampilkan pesan error jika ada --}}
+                    {{-- Tampilkan pesan error dari server jika ada --}}
                     @if (session('error'))
                         <div class="alert alert-danger" role="alert">
                             {{ session('error') }}
                         </div>
                     @endif
 
-                    {{-- Form akan POST data ke route kasir.pulsa.jual.store --}}
-                    <form action="{{ route('kasir.pulsa.jual.store') }}" method="POST">
+                    <form id="formJualPulsa" action="{{ route('kasir.pulsa.jual.store') }}" method="POST">
                         @csrf
 
-                        {{-- Field Nomor HP Pelanggan --}}
+                        {{-- Nomor HP --}}
                         <div class="mb-3">
                             <label for="nomor_hp" class="form-label">Nomor HP Pelanggan</label>
                             <input type="text"
@@ -39,7 +38,7 @@
                             <small class="form-text text-muted">Pastikan nomor HP yang dimasukkan sudah benar.</small>
                         </div>
 
-                        {{-- Field Pilihan Nominal Pulsa (Dropdown) --}}
+                        {{-- Pilihan Nominal Pulsa --}}
                         <div class="mb-3">
                             <label for="harga_pulsa_id" class="form-label">Pilih Nominal Pulsa</label>
                             <select
@@ -65,17 +64,13 @@
                             <small class="form-text text-muted">Pilih nominal pulsa yang ingin dibeli pelanggan.</small>
                         </div>
 
-                        {{-- Field Harga Jual (Otomatis terisi) --}}
+                        {{-- Harga Jual --}}
                         <div class="mb-3">
                             <label for="harga_jual_display" class="form-label">Harga Jual (Dibayar Pelanggan)</label>
-                            <input type="text"
-                                class="form-control"
-                                id="harga_jual_display"
-                                value="Rp 0"
-                                readonly>
+                            <input type="text" class="form-control" id="harga_jual_display" value="Rp 0" readonly>
                         </div>
 
-                        {{-- Field Uang Bayar (Tunai) --}}
+                        {{-- Uang Bayar --}}
                         <div class="mb-3">
                             <label for="bayar" class="form-label">Uang Bayar (Tunai)</label>
                             <input type="number"
@@ -91,14 +86,10 @@
                             <small class="form-text text-muted">Jumlah uang yang dibayarkan oleh pelanggan.</small>
                         </div>
 
-                        {{-- Field Kembalian (Otomatis terisi) --}}
+                        {{-- Kembalian --}}
                         <div class="mb-3">
                             <label for="kembalian_display" class="form-label">Kembalian</label>
-                            <input type="text"
-                                class="form-control"
-                                id="kembalian_display"
-                                value="Rp 0"
-                                readonly>
+                            <input type="text" class="form-control" id="kembalian_display" value="Rp 0" readonly>
                         </div>
 
                         <button type="submit" class="btn btn-primary">Proses Penjualan</button>
@@ -111,46 +102,67 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const selectNominal = document.getElementById('harga_pulsa_id');
-        const inputBayar = document.getElementById('bayar');
-        const displayHargaJual = document.getElementById('harga_jual_display');
-        const displayKembalian = document.getElementById('kembalian_display');
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('formJualPulsa');
+    const selectNominal = document.getElementById('harga_pulsa_id');
+    const inputBayar = document.getElementById('bayar');
+    const inputHP = document.getElementById('nomor_hp');
+    const displayHargaJual = document.getElementById('harga_jual_display');
+    const displayKembalian = document.getElementById('kembalian_display');
 
-        function formatRupiah(number) {
-            // Fungsi untuk memformat angka menjadi format Rupiah (tanpa desimal)
-            return 'Rp ' + (number ? number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : '0');
+    function formatRupiah(number) {
+        return 'Rp ' + (number ? number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : '0');
+    }
+
+    function calculateKembalian() {
+        const selectedOption = selectNominal.options[selectNominal.selectedIndex];
+        const hargaJual = parseInt(selectedOption.getAttribute('data-harga')) || 0;
+        const uangBayar = parseInt(inputBayar.value) || 0;
+        displayHargaJual.value = formatRupiah(hargaJual);
+        const kembalian = uangBayar - hargaJual;
+        displayKembalian.value = formatRupiah(kembalian);
+
+        if (kembalian < 0) {
+            displayKembalian.classList.remove('text-success');
+            displayKembalian.classList.add('text-danger');
+        } else {
+            displayKembalian.classList.remove('text-danger');
+            displayKembalian.classList.add('text-success');
+        }
+    }
+
+    selectNominal.addEventListener('change', calculateKembalian);
+    inputBayar.addEventListener('input', calculateKembalian);
+    calculateKembalian();
+
+    // VALIDASI SEBELUM SUBMIT
+    form.addEventListener('submit', function(event) {
+        const nomorHP = inputHP.value.trim();
+        const selectedOption = selectNominal.options[selectNominal.selectedIndex];
+        const hargaJual = parseInt(selectedOption.getAttribute('data-harga')) || 0;
+        const uangBayar = parseInt(inputBayar.value) || 0;
+
+        // Cek nomor HP valid (angka dan minimal 10 digit)
+        if (!/^\d{10,13}$/.test(nomorHP)) {
+            alert('Nomor HP tidak valid! Masukkan hanya angka dengan panjang 10-13 digit.');
+            event.preventDefault();
+            return;
         }
 
-        function calculateKembalian() {
-            // Ambil data harga jual dari attribute 'data-harga' di option yang dipilih
-            const selectedOption = selectNominal.options[selectNominal.selectedIndex];
-            const hargaJual = parseInt(selectedOption.getAttribute('data-harga')) || 0;
-            const uangBayar = parseInt(inputBayar.value) || 0;
-
-            // Tampilkan Harga Jual
-            displayHargaJual.value = formatRupiah(hargaJual);
-
-            // Hitung dan Tampilkan Kembalian
-            const kembalian = uangBayar - hargaJual;
-            displayKembalian.value = formatRupiah(kembalian);
-
-            // Opsional: Beri warna merah pada kembalian jika pembayaran kurang
-            if (kembalian < 0) {
-                displayKembalian.classList.remove('text-success');
-                displayKembalian.classList.add('text-danger');
-            } else {
-                displayKembalian.classList.remove('text-danger');
-                displayKembalian.classList.add('text-success'); // Tambahkan warna hijau untuk kembalian positif/nol
-            }
+        // Cek apakah nominal pulsa sudah dipilih
+        if (selectNominal.value === '') {
+            alert('Silakan pilih nominal pulsa terlebih dahulu.');
+            event.preventDefault();
+            return;
         }
 
-        // Event Listeners
-        selectNominal.addEventListener('change', calculateKembalian);
-        inputBayar.addEventListener('input', calculateKembalian);
-
-        // Panggil saat halaman dimuat untuk mengisi nilai awal jika ada old input
-        calculateKembalian();
+        // Cek apakah uang bayar cukup
+        if (uangBayar < hargaJual) {
+            alert('Uang bayar kurang dari harga pulsa! Mohon periksa kembali.');
+            event.preventDefault();
+            return;
+        }
     });
+});
 </script>
 @endsection

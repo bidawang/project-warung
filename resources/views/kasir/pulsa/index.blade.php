@@ -19,9 +19,9 @@
                 <div class="card shadow-lg border-0 h-100">
                     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-list me-2"></i>Daftar Harga Jual Pulsa</h5>
-                        <a href="{{ route('kasir.pulsa.harga-pulsa.create') }}" class="btn btn-sm btn-light text-primary fw-bold">
+                        {{-- <a href="{{ route('kasir.pulsa.harga-pulsa.create') }}" class="btn btn-sm btn-light text-primary fw-bold">
                             <i class="fas fa-plus me-1"></i> Atur Harga Baru
-                        </a>
+                        </a> --}}
                     </div>
                     <div class="card-body p-3">
                         {{-- Search & Filter --}}
@@ -108,9 +108,9 @@
                         </a>
 
                         {{-- 2. Tombol TAMBAH SALDO PULSA (Modal Action) --}}
-                        <a href="{{ route('kasir.pulsa.create') }}" class="btn btn-success flex-fill d-flex align-items-center justify-content-center fw-bold p-2">
+                        {{-- <a href="{{ route('kasir.pulsa.create') }}" class="btn btn-success flex-fill d-flex align-items-center justify-content-center fw-bold p-2">
                             <i class="fas fa-money-check-alt me-1"></i> Tambah Saldo
-                        </a>
+                        </a> --}}
                     </div>
                 </div>
 
@@ -119,30 +119,28 @@
                     <div class="card-header bg-dark text-white">
                         <h6 class="mb-0 fw-bold"><i class="fas fa-history me-2"></i>Riwayat Transaksi Terakhir</h6>
                     </div>
-                    {{-- <div class="card-body p-3">
+                    <div class="card-body p-3">
                         <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                             <table class="table table-sm table-striped small mb-0">
                                 <thead>
                                     <tr>
-                                        <th>Nominal</th>
+                                        <th>Jumlah Pulsa</th>
                                         <th>Bayar</th>
-                                        <th>Status</th>
+                                        <th>Tipe</th>
                                         <th>Waktu</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @forelse ($pulsas as $pulsa)
+                                    @forelse ($transaksi_pulsa as $pulsa)
                                     <tr>
                                         <td class="fw-bold">
-                                            Pulsa {{ number_format($pulsa->nominal, 0, ',', '.') }}
+                                            Pulsa {{ number_format($pulsa->jumlah, 0, ',', '.') }}
                                         </td>
                                         <td class="text-danger">
-                                            Rp. {{ number_format($pulsa->harga_jual, 0, ',', '.') }}
+                                            Rp. {{ number_format($pulsa->total, 0, ',', '.') }}
                                         </td>
-                                        <td>
-                                            <span class="badge bg-{{ $pulsa->status == 'Sukses' ? 'success' : 'danger' }}">
-                                                {{ $pulsa->status }}
-                                            </span>
+                                        <td class="text-danger">
+                                            {{ ucfirst(str_replace('_', ' ', $pulsa->tipe)) }}
                                         </td>
                                         <td>{{ $pulsa->created_at->diffForHumans() }}</td>
                                     </tr>
@@ -154,7 +152,7 @@
                                 </tbody>
                             </table>
                         </div>
-                    </div> --}}
+                    </div>
                 </div>
             </div>
         </div>

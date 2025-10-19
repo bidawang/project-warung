@@ -37,6 +37,8 @@ use App\Http\Controllers\Admin\{
     LabaControllerAdmin,
     KuantitasControllerAdmin,
     StokOpnameControllerAdmin,
+    HargaPulsaControllerAdmin,
+    SaldoPulsaControllerAdmin
 };
 
 use App\Http\Controllers\Kasir\{
@@ -115,6 +117,11 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::resource('aturanTenggat', AturanTenggatControllerAdmin::class);
     Route::resource('laba', LabaControllerAdmin::class);
     Route::get('/mutasibarang', [MutasiBarangController::class, 'index'])->name('mutasibarang.index');
+
+    Route::resource('harga-pulsa', HargaPulsaControllerAdmin::class);
+    Route::resource('saldo-pulsa', SaldoPulsaControllerAdmin::class);
+
+
 });
 
 

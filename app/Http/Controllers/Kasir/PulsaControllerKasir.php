@@ -21,21 +21,19 @@ class PulsaControllerKasir extends Controller
 
         // 1. Ambil Data Transaksi Pulsa (Transaksi yang sudah terjadi)
         // Disarankan menggunakan pagination jika data banyak:
-       $pulsa = Pulsa::where('id_warung', $idWarung)->first();
+        $pulsa = Pulsa::where('id_warung', $idWarung)->first();
 
         // 2. Ambil Daftar Harga Pulsa (Master data)
         $harga_pulsas = HargaPulsa::orderBy('jumlah_pulsa', 'asc')->get();
-
-        // 3. Ambil Saldo Kas Warung (Asumsi ini diambil dari tabel Warung atau Kas)
-        // **CONTOH SIMPLIFIKASI:** Anda harus menyesuaikan ini dengan cara Anda menyimpan saldo.
-        // Misalnya, ambil saldo dari tabel Warung yang sedang login.
-        // $saldo_kas = Warung::find(auth()->user()->id_warung)->saldo;
+        $transaksi_pulsa = TransaksiPulsa::whereHas('pulsa', function ($query) use ($idWarung) {
+            $query->where('id_warung', $idWarung);
+        })->orderBy('created_at', 'desc')->get();
 
         // Untuk contoh ini, kita set nilai dummy atau 0 jika tidak ada
         $saldo_kas = 500000; // Contoh saldo 500.000
 
         // Kirim semua data ke view 'pulsa.index'
-        return view('kasir.pulsa.index', compact('pulsa', 'harga_pulsas', 'saldo_kas'));
+        return view('kasir.pulsa.index', compact('pulsa', 'harga_pulsas', 'saldo_kas', 'transaksi_pulsa'));
     }
 
     public function createHargaPulsa()
@@ -158,75 +156,72 @@ class PulsaControllerKasir extends Controller
     }
 
     public function storeJualPulsa(Request $request)
-{
-    $idWarung = session('id_warung');
-    if (! $idWarung) {
-        return redirect()->route('dashboard')->with('error', 'ID warung tidak ditemukan di sesi.');
-    }
-
-    // 1. Validasi Input
-    $request->validate([
-        'nomor_hp' => 'required|string|min:10|max:15',
-        'harga_pulsa_id' => 'required|exists:harga_pulsa,id',
-        'bayar' => 'required|numeric|min:0',
-        'jenis_pembayaran' => 'required|in:tunai,non_tunai', // tambahan validasi jenis pembayaran
-    ]);
-
-    $hargaPulsa = HargaPulsa::findOrFail($request->harga_pulsa_id);
-    $hargaJual = $hargaPulsa->harga;
-    $nominalPulsa = $hargaPulsa->jumlah_pulsa;
-
-    // Cek pembayaran kurang
-    if ($request->bayar < $hargaJual) {
-        return back()->withInput()->withErrors(['bayar' => 'Jumlah bayar kurang dari harga jual pulsa (Rp ' . number_format($hargaJual, 0, ',', '.') . ')']);
-    }
-
-    // 2. Cek Saldo Pulsa Warung
-    $pulsaWarung = Pulsa::firstOrCreate(
-        ['id_warung' => $idWarung],
-        ['saldo' => 0]
-    );
-
-    if ($pulsaWarung->saldo < $nominalPulsa) {
-        return back()->withInput()->with('error', 'Transaksi Gagal: Saldo Pulsa Warung tidak mencukupi untuk nominal Rp ' . number_format($nominalPulsa, 0, ',', '.'));
-    }
-
-    try {
-        // 3. Kurangi Saldo Pulsa Warung
-        $pulsaWarung->decrement('saldo', $nominalPulsa);
-
-        // 4. Hitung Profit dan Kembalian
-        $profit = $hargaJual - $nominalPulsa;
-        $kembalian = $request->bayar - $hargaJual;
-
-        // TODO: Tambahkan hasil penjualan ke kas warung di sini jika sudah ada tabel kas_warung
-
-        // Ambil id_kas_warung (contoh sementara, sesuaikan dengan implementasi aslimu)
-        $idKasWarung = 1; // ganti dengan id kas warung aktif
-
-        // 5. Simpan ke tabel transaksi_pulsa
-        TransaksiPulsa::create([
-            'id_pulsa' => $pulsaWarung->id,         // id dari tabel pulsa
-            'id_kas_warung' => $idKasWarung,       // id dari kas warung
-            'jumlah' => $nominalPulsa,             // nominal pulsa yang dijual
-            'total' => $hargaJual,                 // total harga jual
-            'jenis_pembayaran' => $request->jenis_pembayaran, // tunai / non_tunai
-            'jenis' => 'keluar',                   // karena stok pulsa keluar
-            'tipe' => 'penjualan_pulsa',           // tipe transaksi
+    {
+        $idWarung = session('id_warung');
+        if (! $idWarung) {
+            return redirect()->route('dashboard')->with('error', 'ID warung tidak ditemukan di sesi.');
+        }
+        // 1. Validasi Input
+        $request->validate([
+            'nomor_hp' => 'required|string|min:10|max:15',
+            'harga_pulsa_id' => 'required|exists:harga_pulsa,id',
+            'bayar' => 'required|numeric|min:0',
         ]);
 
-        // 6. Redirect dengan Pesan Sukses
-        $message = "Penjualan Pulsa ke " . $request->nomor_hp . " berhasil diproses. Nominal: Rp " . number_format($nominalPulsa, 0, ',', '.') .
-                   ", Harga Jual: Rp " . number_format($hargaJual, 0, ',', '.') .
-                   ". Bayar: Rp " . number_format($request->bayar, 0, ',', '.') .
-                   ". Kembalian: Rp " . number_format($kembalian, 0, ',', '.') .
-                   ". Profit: Rp " . number_format($profit, 0, ',', '.');
+        $hargaPulsa = HargaPulsa::findOrFail($request->harga_pulsa_id);
+        $hargaJual = $hargaPulsa->harga;
+        $nominalPulsa = $hargaPulsa->jumlah_pulsa;
 
-        return redirect()->route('kasir.pulsa.index')->with('success', $message);
+        // Cek pembayaran kurang
+        if ($request->bayar < $hargaJual) {
+            return back()->withInput()->withErrors(['bayar' => 'Jumlah bayar kurang dari harga jual pulsa (Rp ' . number_format($hargaJual, 0, ',', '.') . ')']);
+        }
 
-    } catch (\Exception $e) {
-        Log::error("Gagal melakukan transaksi pulsa: " . $e->getMessage());
-        return back()->withInput()->with('error', 'Terjadi kesalahan saat memproses transaksi. Silakan coba lagi.');
+        // 2. Cek Saldo Pulsa Warung
+        $pulsaWarung = Pulsa::firstOrCreate(
+            ['id_warung' => $idWarung],
+            ['saldo' => 0]
+        );
+
+        if ($pulsaWarung->saldo < $nominalPulsa) {
+            return back()->withInput()->with('error', 'Transaksi Gagal: Saldo Pulsa Warung tidak mencukupi untuk nominal Rp ' . number_format($nominalPulsa, 0, ',', '.'));
+        }
+
+        try {
+            // 3. Kurangi Saldo Pulsa Warung
+            $pulsaWarung->decrement('saldo', $nominalPulsa);
+
+            // 4. Hitung Profit dan Kembalian
+            $profit = $hargaJual - $nominalPulsa;
+            $kembalian = $request->bayar - $hargaJual;
+
+            // TODO: Tambahkan hasil penjualan ke kas warung di sini jika sudah ada tabel kas_warung
+
+            // Ambil id_kas_warung (contoh sementara, sesuaikan dengan implementasi aslimu)
+            $idKasWarung = 1; // ganti dengan id kas warung aktif
+
+            // 5. Simpan ke tabel transaksi_pulsa
+            TransaksiPulsa::create([
+                'id_pulsa' => $pulsaWarung->id,         // id dari tabel pulsa
+                'id_kas_warung' => $idKasWarung,       // id dari kas warung
+                'jumlah' => $nominalPulsa,             // nominal pulsa yang dijual
+                'total' => $hargaJual,                 // total harga jual
+                'jenis_pembayaran' => $request->jenis_pembayaran, // tunai / non_tunai
+                'jenis' => 'keluar',                   // karena stok pulsa keluar
+                'tipe' => 'penjualan_pulsa',           // tipe transaksi
+            ]);
+
+            // 6. Redirect dengan Pesan Sukses
+            $message = "Penjualan Pulsa ke " . $request->nomor_hp . " berhasil diproses. Nominal: Rp " . number_format($nominalPulsa, 0, ',', '.') .
+                ", Harga Jual: Rp " . number_format($hargaJual, 0, ',', '.') .
+                ". Bayar: Rp " . number_format($request->bayar, 0, ',', '.') .
+                ". Kembalian: Rp " . number_format($kembalian, 0, ',', '.') .
+                ". Profit: Rp " . number_format($profit, 0, ',', '.');
+
+            return redirect()->route('kasir.pulsa.index')->with('success', $message);
+        } catch (\Exception $e) {
+            Log::error("Gagal melakukan transaksi pulsa: " . $e->getMessage());
+            return back()->withInput()->with('error', 'Terjadi kesalahan saat memproses transaksi. Silakan coba lagi.');
+        }
     }
-}
 }
