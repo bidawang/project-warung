@@ -129,7 +129,7 @@ class KasirControllerKasir extends Controller
     public function store(Request $request)
     {
         // Anda harus menambahkan validasi request yang ketat di sini!
-
+// dd($request->all());
         $idWarung = session('id_warung');
         $items = $request->input('items');
         $totalBayar = $request->input('total_bayar');
@@ -148,7 +148,7 @@ class KasirControllerKasir extends Controller
             // Contoh sederhana, Anda perlu mengimplementasikan model TransaksiKas
             // $transaksiKas = TransaksiKas::create([...]);
             // $idTransaksiKas = $transaksiKas->id;
-            $idTransaksiKas = 1; // ID sementara
+            // $idTransaksiKas = 1; // ID sementara
 
             foreach ($items as $item) {
                 $stokWarung = StokWarung::findOrFail($item['stok_warung_id']);

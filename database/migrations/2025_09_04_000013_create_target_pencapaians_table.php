@@ -14,6 +14,7 @@ return new class extends Migration
             $table->foreignId('id_warung')->constrained('warung');
             $table->date('periode_awal');
             $table->date('periode_akhir');
+            $table->decimal('tercapai', 15, 2);
             $table->decimal('target_pencapaian', 15, 2);
             $table->string('status_pencapaian', 50);
             $table->text('keterangan')->nullable();

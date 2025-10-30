@@ -7,6 +7,11 @@ use App\Models\BarangKeluar;
 use App\Models\StokWarung;
 use App\Models\Laba;
 use App\Models\User;
+use App\Models\KasWarung;
+use App\Models\TransaksiKas;
+use App\Models\Hutang;
+use App\Models\TransaksiBarangKeluar;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
 class BarangKeluarController extends Controller
@@ -102,14 +107,13 @@ class BarangKeluarController extends Controller
      */
     public function store(Request $request)
     {
-        // dd($request->all());
-        // validasi
+        // Validasi data input
         $validated = $request->validate([
             'items' => 'required|array|min:1',
             'items.*.id_stok_warung' => 'required|exists:stok_warung,id',
             'items.*.jumlah' => 'required|integer|min:1',
             'items.*.harga' => 'required|numeric|min:0',
-            'jenis' => 'required|in:penjualan,hutang',
+            'jenis' => 'required|in:penjualan barang,hutang barang',
             'id_user_member' => 'nullable|exists:users,id',
             'bayar' => 'nullable|numeric|min:0',
             'total_harga' => 'required|numeric|min:0',
@@ -122,72 +126,107 @@ class BarangKeluarController extends Controller
             return redirect()->route('kasir.kasir')->with('error', 'ID warung tidak ditemukan di sesi.');
         }
 
-        try {
-            // mulai DB transaction
-            \Illuminate\Support\Facades\DB::beginTransaction();
+        // --- LOGIKA GENERASI KETERANGAN OTOMATIS DIMULAI DI SINI ---
 
-            // ambil kas warung jenis cash
-            $kasWarung = \App\Models\KasWarung::where('id_warung', $idWarung)
+        // 1. Ambil ID Stok Warung yang terlibat
+        $stokWarungIds = collect($validated['items'])->pluck('id_stok_warung')->all();
+
+        // 2. Ambil detail barang dari StokWarung (termasuk nama barang)
+        // ASUMSI: StokWarung memiliki relasi 'barang' ke model Barang yang memiliki kolom 'nama'.
+        $stokDetails = StokWarung::whereIn('id', $stokWarungIds)
+            ->with('barang') // Memuat relasi Barang
+            ->get();
+
+        // 3. Buat string deskripsi barang
+        $itemDescriptions = $stokDetails->map(function ($stok) use ($validated) {
+            // Cari jumlah barang yang terjual/dihutang dari array items
+            $itemData = collect($validated['items'])->firstWhere('id_stok_warung', $stok->id);
+            $jumlah = $itemData['jumlah'];
+
+            // Ambil nama barang (menggunakan fallback jika relasi barang tidak ada atau nama kosong)
+            $namaBarang = optional($stok->barang)->nama_barang ?? 'Barang ID: ' . $stok->id;
+
+            return "{$namaBarang} ({$jumlah} Pcs)";
+        })->implode(', ');
+// dd($itemDescriptions);
+        // 4. Tentukan Keterangan Otomatis
+        $jenisTransaksi = $validated['jenis'];
+        $tipe = $jenisTransaksi === 'penjualan barang' ? 'penjualan barang' : 'hutang barang';
+        $defaultKeterangan = "{$tipe} Barang: {$itemDescriptions}";
+
+        // 5. Tentukan Keterangan Final: Gunakan input user, jika kosong gunakan yang otomatis.
+        $finalKeterangan = $validated['keterangan'] ?? $defaultKeterangan;
+
+        // --- LOGIKA GENERASI KETERANGAN OTOMATIS SELESAI DI SINI ---
+
+        try {
+            // Mulai DB transaction
+            DB::beginTransaction();
+
+            // Ambil kas warung jenis cash
+            $kasWarung = KasWarung::where('id_warung', $idWarung)
                 ->where('jenis_kas', 'cash')
                 ->firstOrFail();
-            // dd($kasWarung);
-            // buat transaksi kas (total ambil dari input)
-            $transaksiKas = \App\Models\TransaksiKas::create([
+
+            // Buat transaksi kas
+            $transaksiKas = TransaksiKas::create([
                 'id_kas_warung'     => $kasWarung->id,
                 'total'             => $validated['total_harga'],
-                'metode_pembayaran' => $request->jenis === 'penjualan' ? 'cash' : null,
+                // Hanya set metode_pembayaran jika jenisnya penjualan (bukan hutang)
+                'metode_pembayaran' => $validated['jenis'] === 'penjualan barang' ? 'cash' : null,
                 'jenis'             => $validated['jenis'],
-                'keterangan'        => $validated['keterangan'] ?? null,
+                // Keterangan menggunakan hasil otomatis/manual
+                'keterangan'        => $finalKeterangan,
             ]);
 
-            // jika hutang, buat record hutang dulu (untuk di-link ke barang)
+            // Jika hutang, buat record Hutang.
             $hutang = null;
-            if ($validated['jenis'] === 'hutang' && ! empty($validated['id_user_member'])) {
-                $hutang = \App\Models\Hutang::create([
-                    'id_warung'    => $idWarung,
-                    'id_user'      => $validated['id_user_member'],
+            if ($validated['jenis'] === 'hutang barang' && ! empty($validated['id_user_member'])) {
+                $hutang = Hutang::create([
+                    'id_warung'      => $idWarung,
+                    'id_user'        => $validated['id_user_member'],
                     'jumlah_hutang_awal' => $validated['total_harga'],
                     'jumlah_sisa_hutang'   => $validated['total_harga'],
-                    'tenggat'      => $validated['tenggat'] ?? now()->addDays(7),
-                    'status'       => 'belum lunas',
-                    'keterangan'   => $validated['keterangan'] ?? null,
+                    'tenggat'        => $validated['tenggat'] ?? now()->addDays(7),
+                    'status'         => 'belum lunas',
+                    // Keterangan Hutang menggunakan hasil otomatis/manual
+                    'keterangan'     => $finalKeterangan,
                 ]);
             }
 
-            // loop simpan barang keluar + transaksi barang keluar
-            // loop simpan barang keluar + transaksi barang keluar
+            // Loop untuk menyimpan barang keluar + transaksi barang keluar
             foreach ($validated['items'] as $item) {
-                $barangKeluar = \App\Models\BarangKeluar::create([
+                $barangKeluar = BarangKeluar::create([
                     'id_stok_warung' => $item['id_stok_warung'],
                     'jumlah'         => $item['jumlah'],
                     'jenis'          => $validated['jenis'],
-                    'keterangan'     => $validated['keterangan'] ?? null,
+                    'keterangan'     => $validated['keterangan'] ?? null, // Keterangan di BarangKeluar tetap menggunakan input user asli (bisa null) atau disamakan dengan finalKeterangan
                 ]);
 
-                $transaksiBarangKeluar = \App\Models\TransaksiBarangKeluar::create([
+                TransaksiBarangKeluar::create([
                     'id_transaksi_kas' => $transaksiKas->id,
                     'id_barang_keluar' => $barangKeluar->id,
                     'jumlah'           => $item['jumlah'],
                 ]);
 
-                // kurangi stok di tabel stok_warung
-                \App\Models\StokWarung::where('id', $item['id_stok_warung'])
+                // Kurangi stok di tabel stok_warung
+                StokWarung::where('id', $item['id_stok_warung'])
                     ->where('id_warung', $idWarung)
                     ->decrement('jumlah', $item['jumlah']);
 
-                // jika hutang, buat relasi ke barang_hutang
+                // Jika hutang, buat relasi ke barang_hutang
                 if ($hutang) {
                     \App\Models\BarangHutang::create([
-                        'id_hutang'        => $hutang->id,
-                        'id_barang_keluar' => $barangKeluar->id,
+                        'id_hutang'          => $hutang->id,
+                        'id_barang_keluar'   => $barangKeluar->id,
                     ]);
                 }
             }
-            \Illuminate\Support\Facades\DB::commit();
+            DB::commit();
 
             return redirect()->route('kasir.kasir')->with('success', 'Transaksi berhasil disimpan!');
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\DB::rollBack();
+            DB::rollBack();
             \Log::error('Error menyimpan transaksi kasir: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
                 'request' => $request->all()

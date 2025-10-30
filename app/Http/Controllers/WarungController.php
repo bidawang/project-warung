@@ -76,6 +76,7 @@ class WarungController extends Controller
 
     public function show($id)
     {
+        // dd('Fungsi show warung belum diimplementasi.');
         // akses warung sesuai role
         if (Auth::user()->role === 'admin') {
             $warung = Warung::with(['user', 'area'])->findOrFail($id);

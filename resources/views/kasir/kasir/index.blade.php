@@ -127,8 +127,8 @@
                             <div class="form-group mb-3">
                                 <label for="transactionType" class="form-label fw-bold">Jenis Transaksi:</label>
                                 <select class="form-select form-select-lg" id="transactionType" name="jenis">
-                                    <option value="penjualan">Penjualan (Bayar Tunai)</option>
-                                    <option value="hutang">Hutang (Member)</option>
+                                    <option value="penjualan barang">Penjualan (Bayar Tunai)</option>
+                                    <option value="hutang barang">Hutang (Member)</option>
                                 </select>
                             </div>
 
@@ -363,7 +363,7 @@
                 const change = payment - total;
 
                 // Perbarui warna tombol checkout berdasarkan status pembayaran
-                if (transactionTypeSelect.value === 'penjualan') {
+                if (transactionTypeSelect.value === 'penjualan barang') {
                     if (payment >= total && total > 0) {
                         checkoutBtn.classList.remove('btn-danger', 'btn-warning');
                         checkoutBtn.classList.add('btn-success');
@@ -383,7 +383,7 @@
                     changeInput.value = formatRupiah(change >= 0 ? change : change * -1); // Tampilkan selisih
                     changeInput.classList.toggle('text-danger', change < 0);
                     changeInput.classList.toggle('text-primary', change >= 0);
-                } else if (transactionTypeSelect.value === 'hutang') {
+                } else if (transactionTypeSelect.value === 'hutang barang') {
                     // Untuk hutang, kembalian selalu Rp 0 dan tombol hijau jika ada member terpilih
                     changeInput.value = formatRupiah(0);
                     checkoutBtn.classList.remove('btn-danger', 'btn-warning');
@@ -469,7 +469,7 @@
 
             // Event listener untuk perubahan jenis transaksi
             transactionTypeSelect.addEventListener('change', function() {
-                if (this.value === 'hutang') {
+                if (this.value === 'hutang barang') {
                     memberSelectSection.style.display = 'block';
                     paymentSection.style.display = 'none';
                     paymentInput.value = '0'; // Reset pembayaran
@@ -527,11 +527,11 @@
                     return;
                 }
 
-                if (transactionType === 'penjualan' && payment < total) {
+                if (transactionType === 'penjualan barang' && payment < total) {
                     e.preventDefault();
                     alert('Jumlah pembayaran kurang dari total harga. Mohon periksa kembali.');
                     return;
-                } else if (transactionType === 'hutang' && !memberId) {
+                } else if (transactionType === 'hutang barang' && !memberId) {
                     e.preventDefault();
                     alert('Harap pilih member untuk transaksi hutang.');
                     return;

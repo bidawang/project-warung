@@ -15,6 +15,7 @@ class TargetPencapaian extends Model
         'id_warung',
         'periode_awal',
         'periode_akhir',
+        'tercapai',
         'target_pencapaian',
         'status_pencapaian',
         'keterangan'
