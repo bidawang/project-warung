@@ -16,6 +16,7 @@ class HutangBarangMasuk extends Model
         'id_warung',
         'id_barang_masuk',
         'total',
+        'status',
     ];
 
     public function warung()

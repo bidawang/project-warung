@@ -52,4 +52,11 @@ class StokWarung extends Model
     {
         return $this->hasMany(StokOpname::class, 'id_stok_warung');
     }
+
+    public function hargaJual()
+    {
+        // Hapus klausa where sementara
+        return $this->hasOne(HargaJual::class, 'id_barang', 'id_barang')
+            ->latest('created_at');
+    }
 }

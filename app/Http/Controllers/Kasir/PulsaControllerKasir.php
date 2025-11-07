@@ -179,10 +179,9 @@ class PulsaControllerKasir extends Controller
         $rules = [
             'nomor_hp' => 'required|string|min:10|max:15',
             'harga_pulsa_id' => 'required|exists:harga_pulsa,id',
-            'jenis_pembayaran' => 'required|in:penjualan pulsa,hutang pulsa', // OK, asumsikan ENUM di DB sudah diubah
+            'jenis_pembayaran' => 'required|in:penjualan pulsa,hutang pulsa',
             'bayar' => 'required_if:jenis_pembayaran,penjualan pulsa|numeric|min:0',
-            // Asumsi 'pelanggan_id' adalah 'id_user' dari tabel 'users'
-            'pelanggan_id' => 'required_if:jenis_pembayaran,hutang|nullable|exists:users,id',
+            'pelanggan_id' => 'required_if:jenis_pembayaran,hutang pulsa|nullable|exists:users,id',
         ];
 
         $request->validate($rules, [
@@ -195,12 +194,14 @@ class PulsaControllerKasir extends Controller
         $nominalPulsa = $hargaPulsa->jumlah_pulsa;
         $jenisPembayaran = $request->jenis_pembayaran;
 
-        // Cek pembayaran kurang HANYA jika tunai
-        if ($jenisPembayaran == 'penjualan pulsa' && $request->bayar < $hargaJual) {
-            return back()->withInput()->withErrors(['bayar' => 'Jumlah bayar kurang dari harga jual pulsa (Rp ' . number_format($hargaJual, 0, ',', '.') . ')']);
+        // 2. Validasi pembayaran tunai
+        if ($jenisPembayaran === 'penjualan pulsa' && $request->bayar < $hargaJual) {
+            return back()->withInput()->withErrors([
+                'bayar' => 'Jumlah bayar kurang dari harga jual pulsa (Rp ' . number_format($hargaJual, 0, ',', '.') . ')'
+            ]);
         }
 
-        // 2. Cek Saldo Pulsa Warung (Stok)
+        // 3. Cek saldo pulsa warung
         $pulsaWarung = Pulsa::firstOrCreate(
             ['id_warung' => $idWarung],
             ['saldo' => 0]
@@ -211,15 +212,14 @@ class PulsaControllerKasir extends Controller
         }
 
         try {
-            // Mulai DB transaction
             DB::beginTransaction();
 
-            // Ambil kas warung jenis cash
+            // 4. Ambil kas warung jenis cash
             $kasWarung = KasWarung::where('id_warung', $idWarung)
                 ->where('jenis_kas', 'cash')
                 ->firstOrFail();
 
-            // 3. Catat Hutang (Piutang Warung) jika jenis pembayaran adalah 'hutang'
+            // 5. Catat hutang jika jenis pembayaran hutang pulsa
             $hutang = null;
             if ($jenisPembayaran === 'hutang pulsa') {
                 $hutang = Hutang::create([
@@ -233,53 +233,54 @@ class PulsaControllerKasir extends Controller
                 ]);
             }
 
-            // 4. Buat Transaksi Kas
+            // 6. Catat transaksi kas
             $transaksiKas = TransaksiKas::create([
                 'id_kas_warung'     => $kasWarung->id,
                 'total'             => $hargaJual,
-                'metode_pembayaran' => $jenisPembayaran === 'tunai' ? 'cash' : 'piutang',
-                'jenis'             => $jenisPembayaran === 'tunai' ? 'penjualan pulsa' : 'hutang pulsa', // Sesuai ENUM transaksi_kas
+                'metode_pembayaran' => $jenisPembayaran === 'penjualan pulsa' ? 'cash' : 'piutang',
+                'jenis'             => $jenisPembayaran,
                 'keterangan'        => 'Penjualan pulsa ' . number_format($nominalPulsa, 0, ',', '.') . ' ke ' . $request->nomor_hp . ' (' . ucfirst($jenisPembayaran) . ')',
             ]);
 
-            // 5. Kurangi Saldo Pulsa Warung (Stok Keluar)
+            // 7. Kurangi saldo pulsa warung
             $pulsaWarung->decrement('saldo', $nominalPulsa);
 
-            // 6. Hitung Profit dan Kembalian
+            // 8. Hitung profit dan kembalian
             $profit = $hargaJual - $nominalPulsa;
-            $uangBayar = $jenisPembayaran == 'tunai' ? $request->bayar : 0;
-            $kembalian = $jenisPembayaran == 'tunai' ? ($uangBayar - $hargaJual) : 0;
+            $uangBayar = $jenisPembayaran === 'penjualan pulsa' ? $request->bayar : 0;
+            $kembalian = $jenisPembayaran === 'penjualan pulsa' ? ($uangBayar - $hargaJual) : 0;
 
-            // 7. Simpan ke tabel transaksi_pulsa
-            // 🚨 PERBAIKAN ERROR: id_kas_warung dan id_transaksi_kas diisi
+            // 9. Simpan ke tabel transaksi_pulsa
             $tipeTransaksiPulsa = $jenisPembayaran === 'hutang pulsa' ? 'hutang_pulsa' : 'penjualan_pulsa';
-            $transaksiPulsa = TransaksiPulsa::create([
+            TransaksiPulsa::create([
                 'id_pulsa' => $pulsaWarung->id,
                 'id_kas_warung' => $kasWarung->id,
                 'id_transaksi_kas' => $transaksiKas->id,
                 'jumlah' => $nominalPulsa,
                 'total' => $hargaJual,
-                'jenis_pembayaran' => $jenisPembayaran, // Akan menjadi 'tunai' atau 'hutang'
+                'jenis_pembayaran' => $jenisPembayaran,
                 'jenis' => 'keluar',
-                'tipe' => $tipeTransaksiPulsa, // <-- PERUBAHAN DI SINI
+                'tipe' => $tipeTransaksiPulsa,
                 'id_hutang' => $hutang ? $hutang->id : null,
             ]);
 
-            // 8. UPDATE SALDO KAS (Hanya jika Tunai)
-            if ($jenisPembayaran === 'tunai') {
+            // 10. Tambah saldo kas hanya jika tunai
+            if ($jenisPembayaran === 'penjualan pulsa') {
                 $kasWarung->increment('saldo', $hargaJual);
             }
 
-            // Commit transaksi
             DB::commit();
 
-            // 9. Redirect dengan Pesan Sukses
-            $message = "Penjualan Pulsa ke " . $request->nomor_hp . " berhasil diproses. Nominal: Rp " . number_format($nominalPulsa, 0, ',', '.') .
-                ", Harga Jual: Rp " . number_format($hargaJual, 0, ',', '.') .
-                ". Jenis Pembayaran: **" . ucfirst($jenisPembayaran) . "**" .
-                ($jenisPembayaran == 'tunai' ? ". Bayar: Rp " . number_format($uangBayar, 0, ',', '.') .
-                    ". Kembalian: Rp " . number_format($kembalian, 0, ',', '.') : '') .
-                ". Profit: Rp " . number_format($profit, 0, ',', '.');
+            // 11. Pesan sukses
+            $message = "Penjualan Pulsa ke " . $request->nomor_hp . " berhasil diproses. "
+                . "Nominal: Rp " . number_format($nominalPulsa, 0, ',', '.')
+                . ", Harga Jual: Rp " . number_format($hargaJual, 0, ',', '.')
+                . ". Jenis Pembayaran: " . ucfirst($jenisPembayaran)
+                . ($jenisPembayaran === 'penjualan pulsa'
+                    ? ". Bayar: Rp " . number_format($uangBayar, 0, ',', '.')
+                    . ". Kembalian: Rp " . number_format($kembalian, 0, ',', '.')
+                    : '')
+                . ". Profit: Rp " . number_format($profit, 0, ',', '.');
 
             return redirect()->route('kasir.pulsa.index')->with('success', $message);
         } catch (\Throwable $e) {

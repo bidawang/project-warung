@@ -19,29 +19,34 @@ class KuantitasControllerAdmin extends Controller
      */
     public function create(Request $request)
     {
-        $idStokWarung = $request->query('id_stok_warung');
+        // 1. Mengambil semua stok warung (untuk dropdown/pilihan)
         $stokWarung = StokWarung::with(['barang', 'warung'])->get();
+
+        $idStokWarung = $request->query('id_stok_warung');
         $selectedStokWarung = null;
         $hargaJualSatuanDasar = 0;
-        $groupedKuantitas = collect();
+        $kuantitasRecords = collect(); // Inisialisasi collection kosong
 
         if ($idStokWarung) {
             $selectedStokWarung = StokWarung::with(['barang', 'warung'])->find($idStokWarung);
 
             if ($selectedStokWarung) {
-                // Ambil harga jual dasar (asumsi harga satuan)
+                // Ambil harga jual dasar terbaru (harga satuan)
                 $hargaDasar = HargaJual::where('id_barang', $selectedStokWarung->id_barang)
                     ->where('id_warung', $selectedStokWarung->id_warung)
                     ->latest('periode_awal')
                     ->first();
 
+                // Mengambil nilai, default 0 jika tidak ada harga dasar
                 $hargaJualSatuanDasar = $hargaDasar?->harga_jual_range_akhir ?? 0;
 
-                // 🔹 Ambil semua kuantitas yang terkait dengan Stok Warung ini
-                $groupedKuantitas = Kuantitas::with(['stokWarung.barang', 'stokWarung.warung'])
-                    ->where('id_stok_warung', $selectedStokWarung->id)
-                    ->get()
-                    ->groupBy(fn($k) => $k->stokWarung->barang->id ?? 'tanpa_barang');
+                // 2. 🟢 PERBAIKAN: Ambil semua kuantitas yang terkait dengan Stok Warung ini.
+                // Eager loading stokWarung dan warung di dalamnya untuk performa
+                $kuantitasRecords = Kuantitas::where('id_stok_warung', $selectedStokWarung->id)
+                    ->with(['stokWarung.warung']) // 👈 Eager Load
+                    ->get();
+            } else {
+                Log::warning("StokWarung dengan ID '{$idStokWarung}' tidak ditemukan.");
             }
         }
 
@@ -49,7 +54,7 @@ class KuantitasControllerAdmin extends Controller
             'stokWarung',
             'selectedStokWarung',
             'hargaJualSatuanDasar',
-            'groupedKuantitas'
+            'kuantitasRecords' // Variabel yang akan digunakan di view
         ));
     }
 
@@ -158,7 +163,7 @@ class KuantitasControllerAdmin extends Controller
         $hargaPerItemTerkecil = $kuantitasList
             ->map(fn($k) => $k->harga_jual / max($k->jumlah, 1))
             ->min();
-// dd($hargaPerItemTerkecil, $idWarung, $idBarang);
+        // dd($hargaPerItemTerkecil, $idWarung, $idBarang);
 
         // Update ke model HargaJual
         HargaJual::where('id_warung', $idWarung)

@@ -43,4 +43,6 @@ class BarangKeluar extends Model
         // return $this->hasMany(BarangHutang::class, 'id_barang_keluar');
         return $this->hasOne(BarangHutang::class, 'id_barang_keluar');
     }
+
+
 }

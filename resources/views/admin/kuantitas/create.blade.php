@@ -12,8 +12,8 @@
     {{-- Notifikasi & Errors --}}
     <div class="px-6 pt-3">
         @if ($errors->any())
-            <div class="bg-red-100 border border-red-400 text-red-700 p-4 mb-4 rounded-lg shadow-md">
-                <p class="font-bold mb-1">Terjadi Kesalahan Validasi:</p>
+            <div class="bg-red-100 border border-red-400 text-red-700 p-4 mb-4 rounded-xl shadow-md">
+                <p class="font-bold mb-1">Terjadi Kesalahan Validasi di Server:</p>
                 <ul class="list-disc list-inside text-sm">
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
@@ -22,12 +22,12 @@
             </div>
         @endif
         @if(session('success'))
-            <div class="bg-green-100 border border-green-300 text-green-700 p-4 mb-4 rounded-lg shadow-md">
+            <div class="bg-green-100 border border-green-300 text-green-700 p-4 mb-4 rounded-xl shadow-md">
                 {{ session('success') }}
             </div>
         @endif
-        {{-- Tempat pesan error JS akan muncul --}}
-        <div id="js-error-message" class="hidden bg-red-100 border border-red-400 text-red-700 p-4 mb-4 rounded-lg shadow-md"></div>
+        {{-- Tempat pesan error JS akan muncul untuk FORM CREATE --}}
+        <div id="js-error-message" class="hidden bg-red-100 border border-red-400 text-red-700 p-4 mb-4 rounded-xl shadow-md"></div>
     </div>
 
     {{-- Main Content - Split View --}}
@@ -43,15 +43,19 @@
 
                     {{-- Form Pilihan Stok Warung (Selalu Ada) --}}
                     <div class="mb-6">
-                        <label for="id_stok_warung" class="block text-sm font-bold text-gray-700 mb-2">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
                             1. Stok Warung & Harga Dasar
                         </label>
                         @if(isset($selectedStokWarung))
-                            {{-- Info Stok Warung Terpilih --}}
+                            @php
+                                // Ambil hanya data jumlah (unique key) dan harga_jual (value) untuk validasi create
+                                // Menggunakan $kuantitasRecords yang sudah difilter
+                                $kuantitasMapForCreate = $kuantitasRecords->pluck('harga_jual', 'jumlah');
+                            @endphp
+                            {{-- Info Stok Warung Terpilih (Data Attribute di sini lebih rapi) --}}
                             <div id="stok-info-box"
                                 data-base-price="{{ $hargaJualSatuanDasar }}"
-                                data-existing-jumlahs="{{ implode(',', $groupedKuantitas->flatten()->where('id_stok_warung', $selectedStokWarung->id)->pluck('jumlah')->toArray()) }}"
-                                data-existing-hargas="{{ implode(',', $groupedKuantitas->flatten()->where('id_stok_warung', $selectedStokWarung->id)->pluck('harga_jual')->toArray()) }}"
+                                data-existing-jumlah-map="{{ json_encode($kuantitasMapForCreate->toArray()) }}"
                                 class="p-4 border border-indigo-400 rounded-lg bg-indigo-50 text-indigo-800 text-sm shadow-inner">
                                 <span class="block text-base font-semibold">📦 {{ $selectedStokWarung->barang->nama_barang }}</span>
                                 <span class="block mt-1 text-xs">@ {{ $selectedStokWarung->warung->nama_warung }}</span>
@@ -104,79 +108,64 @@
                 </div>
             </div>
 
-            {{-- Kolom Kiri: Riwayat Kuantitas (2/3) - LIST --}}
+            {{-- Kolom Kiri: Riwayat Kuantitas (2/3) - LIST (BAGIAN PERBAIKAN UTAMA) --}}
             <div class="lg:col-span-2">
                 <h2 class="text-xl font-bold text-gray-800 mb-4">Daftar Varian Kuantitas Terdaftar</h2>
 
                 <div class="space-y-6">
-                    @forelse($groupedKuantitas as $barangId => $kuantitasCollection)
+                    @if(isset($selectedStokWarung) && $kuantitasRecords->isNotEmpty())
                         @php
-                            $stokWarungItem = $kuantitasCollection->first()->stokWarung ?? null;
-                            $barang = $stokWarungItem->barang ?? null;
-                            $barangName = $barang->nama_barang ?? 'Barang Tidak Ditemukan';
+                            $barangName = $selectedStokWarung->barang->nama_barang ?? 'Barang Tidak Ditemukan';
+                            $kuantitasBasePrice = $hargaJualSatuanDasar;
 
-                            // Cek duplikasi untuk tampilan manajemen
-                            $jumlahCounts = $kuantitasCollection->pluck('jumlah')->countBy();
-                            $hargaCounts = $kuantitasCollection->pluck('harga_jual')->countBy();
-
-                            $hasDuplicateJumlah = $jumlahCounts->filter(fn($count) => $count > 1)->isNotEmpty();
-                            $hasDuplicateHarga = $hargaCounts->filter(fn($count) => $count > 1)->isNotEmpty();
+                            // Collect all existing (id, jumlah, harga_jual) pairs for client-side EDIT validation
+                            $existingKuantitasJson = json_encode(
+                                $kuantitasRecords->mapWithKeys(function ($kuantitas) {
+                                    return [$kuantitas->id => ['jumlah' => $kuantitas->jumlah, 'harga_jual' => $kuantitas->harga_jual]];
+                                })->toArray()
+                            );
                         @endphp
 
                         <div class="border border-gray-300 rounded-xl p-5 bg-white shadow-lg">
                             <h3 class="font-bold text-xl text-indigo-700 mb-3 border-b pb-2 flex justify-between items-center">
                                 <span>{{ $barangName }}</span>
-                                <span class="text-sm font-medium text-gray-500">{{ $kuantitasCollection->count() }} Varian</span>
+                                <span class="text-sm font-medium text-gray-500">{{ $kuantitasRecords->count() }} Varian</span>
                             </h3>
-
-                            {{-- Peringatan Duplikasi (Manajemen) --}}
-                            @if ($hasDuplicateJumlah)
-                                <div class="mb-3 p-3 bg-red-100 text-red-700 text-xs rounded border border-red-300 font-semibold">
-                                    ⚠️ Peringatan: Ada duplikasi nilai **Jumlah** untuk barang ini!
-                                </div>
-                            @endif
-                            @if ($hasDuplicateHarga)
-                                <div class="mb-3 p-3 bg-orange-100 text-orange-700 text-xs rounded border border-orange-300 font-semibold">
-                                    ⚠️ Peringatan: Ada duplikasi nilai **Harga Jual** untuk barang ini!
-                                </div>
-                            @endif
 
                             {{-- LIST Varian Kuantitas --}}
                             <div class="mt-4 border-t border-gray-100">
-                                @foreach($kuantitasCollection->sortByDesc('created_at') as $kuantitas)
+                                @foreach($kuantitasRecords->sortByDesc('created_at') as $kuantitas)
                                     @php
                                         $kuantitasId = $kuantitas->id;
                                         $hargaSatuanHitung = $kuantitas->harga_jual / max($kuantitas->jumlah, 1);
-                                        $isFromSelectedWarung = isset($selectedStokWarung) && $kuantitas->stokWarung->id === $selectedStokWarung->id;
-                                        // Ambil harga dasar dari stok warung
-                                        $kuantitasBasePrice = $kuantitas->stokWarung->harga_jual_satuan_dasar ?? 0;
+                                        // Karena kita hanya menampilkan yang dipilih, ini selalu true (untuk styling)
+                                        $isFromSelectedWarung = true;
+                                        $isDiscounted = $kuantitasBasePrice * $kuantitas->jumlah > $kuantitas->harga_jual;
                                     @endphp
 
                                     <div class="flex items-center justify-between p-3 border-b border-gray-100 text-sm {{ $isFromSelectedWarung ? 'bg-green-50/70 font-semibold' : 'hover:bg-gray-50' }}"
                                         data-kuantitas-id="{{ $kuantitasId }}"
                                         data-stok-warung-id="{{ $kuantitas->id_stok_warung }}"
-                                        data-jumlah="{{ $kuantitas->jumlah }}"
-                                        data-harga-jual="{{ $kuantitas->harga_jual }}"
                                         data-barang-name="{{ $barangName }}"
                                         data-base-price="{{ $kuantitasBasePrice }}">
 
                                         {{-- Data Varian --}}
-                                        <div class="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-4 gap-2">
+                                        <div class="flex-1 min-w-0 grid grid-cols-2 md:grid-cols-4 gap-2">
 
                                             {{-- Jumlah --}}
                                             <div class="font-bold text-gray-800 flex items-center">
-                                                <span class="inline-block w-4 h-4 mr-2 text-indigo-500">#</span>
+                                                <svg class="inline-block w-4 h-4 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                                                 {{ number_format($kuantitas->jumlah) }} pcs
                                             </div>
 
                                             {{-- Harga Total --}}
-                                            <div class="text-blue-700 font-extrabold flex items-center">
+                                            <div class="font-extrabold flex items-center {{ $isDiscounted ? 'text-red-600' : 'text-blue-700' }}">
                                                 Rp {{ number_format($kuantitas->harga_jual, 0, ',', '.') }}
                                             </div>
 
                                             {{-- Harga Satuan Efektif --}}
                                             <div class="text-gray-600 text-xs md:text-sm flex items-center">
-                                                <span class="text-xs italic mr-1 hidden md:inline">Satuan:</span> Rp {{ number_format($hargaSatuanHitung, 0, ',', '.') }}
+                                                <span class="text-xs italic mr-1 hidden md:inline">Satuan Eff:</span> Rp {{ number_format($hargaSatuanHitung, 0, ',', '.') }}
                                             </div>
 
                                             {{-- Warung --}}
@@ -188,37 +177,37 @@
 
                                         {{-- Tombol Aksi --}}
                                         <div class="flex space-x-2 ml-4 flex-shrink-0">
-                                            {{-- Tombol Edit: Menggunakan target ID modal unik --}}
+                                            {{-- Tombol Edit: Menggunakan target ID modal unik. Data JSON untuk Edit dipanggil di JS --}}
                                             <button type="button"
-                                                onclick="toggleModal('editModal-{{ $kuantitasId }}')"
-                                                class="text-xs text-blue-500 hover:text-blue-700 font-medium">
+                                                onclick="setupEditModal('editModal-{{ $kuantitasId }}', {{ $kuantitasId }}, {{ $kuantitasBasePrice }}, '{{ $existingKuantitasJson }}')"
+                                                class="text-xs text-blue-500 hover:text-blue-700 font-medium p-1 rounded-md hover:bg-blue-50">
                                                 Edit
                                             </button>
 
-                                            {{-- Form Delete --}}
-                                            <form id="delete-form-{{ $kuantitasId }}" action="{{ route('admin.kuantitas.destroy', $kuantitasId) }}" method="POST" class="inline-block" onsubmit="return confirmDelete(event, {{ $kuantitasId }})">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="text-xs text-red-500 hover:text-red-700 font-medium">Hapus</button>
-                                            </form>
+                                            {{-- Tombol Delete (trigger custom modal) --}}
+                                            <button type="button"
+                                                onclick="setDeleteTarget('{{ route('admin.kuantitas.destroy', $kuantitasId) }}', '{{ $kuantitas->jumlah }} pcs')"
+                                                class="text-xs text-red-500 hover:text-red-700 font-medium p-1 rounded-md hover:bg-red-50">
+                                                Hapus
+                                            </button>
                                         </div>
                                     </div>
 
-                                    {{-- MODAL EDIT KUANTITAS (Dipindahkan ke dalam perulangan) --}}
-                                    <div id="editModal-{{ $kuantitasId }}" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden items-center justify-center z-50 transition-opacity duration-300">
-                                        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6 transform transition-transform duration-300 scale-95 opacity-0">
+                                    {{-- MODAL EDIT KUANTITAS (Dibiarkan di dalam perulangan) --}}
+                                    <div id="editModal-{{ $kuantitasId }}" class="modal-template fixed inset-0 bg-gray-600 bg-opacity-75 hidden items-center justify-center z-50 opacity-0 transition-opacity duration-300">
+                                        <div class="modal-content bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6 transform transition-transform duration-300 scale-95">
                                             <h3 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Edit Varian Kuantitas</h3>
 
-                                            <div id="modal-js-error-{{ $kuantitasId }}" class="hidden bg-red-100 border border-red-400 text-red-700 p-3 mb-3 rounded text-sm"></div>
+                                            <div id="modal-js-error-{{ $kuantitasId }}" class="hidden bg-red-100 border border-red-400 text-red-700 p-3 mb-3 rounded-lg text-sm"></div>
 
-                                            {{-- Form action sudah terikat ke ID kuantitas spesifik --}}
-                                            <form id="editKuantitasForm-{{ $kuantitasId }}" action="{{ route('admin.kuantitas.update', $kuantitasId) }}" method="POST" onsubmit="return validateEditForm(event, {{ $kuantitasId }}, {{ $kuantitasBasePrice }}, {{ $kuantitas->id_stok_warung }})">
+                                            <form id="editKuantitasForm-{{ $kuantitasId }}" action="{{ route('admin.kuantitas.update', $kuantitasId) }}" method="POST" onsubmit="return validateEditForm(event, {{ $kuantitasId }})">
                                                 @csrf
                                                 @method('PUT')
 
-                                                <input type="hidden" name="original_jumlah" value="{{ $kuantitas->jumlah }}">
-                                                <input type="hidden" name="original_harga_jual" value="{{ $kuantitas->harga_jual }}">
+                                                {{-- Hidden fields untuk membawa data ke JS validation --}}
                                                 <input type="hidden" name="id_stok_warung" value="{{ $kuantitas->id_stok_warung }}">
+                                                <input type="hidden" id="edit_base_price_{{ $kuantitasId }}" value="{{ $kuantitasBasePrice }}">
+                                                <input type="hidden" id="edit_existing_data_{{ $kuantitasId }}" value="{{ $existingKuantitasJson }}">
 
                                                 <p class="text-sm text-gray-600 mb-4">Barang: <span class="font-semibold text-indigo-700">{{ $barangName }}</span></p>
 
@@ -230,6 +219,7 @@
                                                 <div class="mb-6">
                                                     <label for="modal_harga_jual_{{ $kuantitasId }}" class="block text-sm font-medium text-gray-700 mb-1">Harga Jual Kuantitas (Rp)</label>
                                                     <input type="number" name="harga_jual" id="modal_harga_jual_{{ $kuantitasId }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 font-semibold" min="0" required value="{{ $kuantitas->harga_jual }}">
+                                                    <small class="text-xs text-gray-500 mt-1 block">Harga ini bisa lebih rendah dari harga standar ({{ number_format($kuantitasBasePrice) }} x {{ $kuantitas->jumlah }} = {{ number_format($kuantitasBasePrice * $kuantitas->jumlah) }}) untuk diskon.</small>
                                                 </div>
 
                                                 <div class="flex justify-end space-x-3">
@@ -243,16 +233,40 @@
                                 @endforeach
                             </div>
                         </div>
-                    @empty
+                    {{-- KONDISI JIKA SELECTED TAPI KOSONG --}}
+                    @elseif(isset($selectedStokWarung) && $kuantitasRecords->isEmpty())
                         <div class="p-5 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 rounded-lg shadow-md">
                             <p class="text-base font-semibold">⚠️ Belum Ada Varian Kuantitas Terdaftar</p>
-                            <p class="text-sm mt-1">Pilih Stok Warung di sebelah kanan untuk mulai menambahkan varian harga.</p>
+                            <p class="text-sm mt-1">Gunakan formulir di sebelah kanan untuk menambahkan varian harga untuk **{{ $selectedStokWarung->barang->nama_barang ?? 'Barang' }}** di **{{ $selectedStokWarung->warung->nama_warung ?? 'Warung' }}**.</p>
                         </div>
-                    @endforelse
+                    {{-- KONDISI DEFAULT (TIDAK ADA YANG DIPILIH) --}}
+                    @else
+                        <div class="p-5 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 rounded-lg shadow-md">
+                            <p class="text-base font-semibold">⚠️ Belum Ada Stok Warung Dipilih</p>
+                            <p class="text-sm mt-1">Pilih Stok Warung (Barang dan Warung) untuk mulai menambahkan varian harga.</p>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
     </main>
+</div>
+
+{{-- MODAL KONFIRMASI PENGHAPUSAN (Global) --}}
+<div id="deleteConfirmModal" class="modal-template fixed inset-0 bg-gray-600 bg-opacity-75 hidden items-center justify-center z-50 opacity-0 transition-opacity duration-300">
+    <div class="modal-content bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 p-6 transform transition-transform duration-300 scale-95">
+        <h3 class="text-xl font-bold text-red-700 mb-4 border-b pb-2">Konfirmasi Penghapusan</h3>
+        <p class="text-gray-700 mb-6">Apakah Anda yakin ingin menghapus varian <strong id="delete-item-name"></strong> ini?</p>
+        <p class="text-sm text-gray-500 mb-6">Aksi ini tidak dapat dibatalkan.</p>
+        <div class="flex justify-end space-x-3">
+            <button type="button" onclick="toggleModal('deleteConfirmModal')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium">Batal</button>
+            <form id="global-delete-form" method="POST" class="inline-block">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold">Ya, Hapus Permanen</button>
+            </form>
+        </div>
+    </div>
 </div>
 @include('admin.kuantitas.script')
 @endsection

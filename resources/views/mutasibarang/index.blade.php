@@ -45,7 +45,7 @@
                                     </td>
                                     <td>
                                         @if($row->status === 'pending')
-                                        <a href="{{ route('mutasibarang.konfirmasi', $row->id) }}" class="btn btn-sm btn-primary">Konfirmasi</a>
+                                        {{-- <a href="{{ route('mutasibarang.konfirmasi', $row->id) }}" class="btn btn-sm btn-primary">Konfirmasi</a> --}}
                                         @else
                                         <button class="btn btn-sm btn-secondary disabled" disabled>Konfirmasi</button>
                                         @endif

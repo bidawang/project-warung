@@ -44,23 +44,24 @@ class HutangControllerKasir extends Controller
         $idWarung = session('id_warung');
 
         if (!$idWarung) {
-            // Redirect jika ID warung tidak ditemukan
             return redirect()->route('dashboard')->with('error', 'ID warung tidak ditemukan di sesi.');
         }
 
-        // Mengambil data hutang dengan EAGER LOAD relasi 'user', dan rantai item yang dihutangkan.
+        // Mengambil data hutang dengan EAGER LOAD relasi yang Diperbarui
+        // Tambahkan 'stokWarung.hargaJual'
         $hutang = Hutang::with([
-            'user', // Relasi ke pelanggan/user
-            'barangHutang.barangKeluar.stokWarung.barang' // Relasi mendalam untuk detail barang
+            'user',
+            'barangHutang.barangKeluar.stokWarung.barang',
+            'barangHutang.barangKeluar.stokWarung.hargaJual', // <--- Tambahkan ini
         ])
             ->where('id_warung', $idWarung)
-            ->findOrFail($id); // Mencari hutang berdasarkan ID dan ID Warung
+            ->findOrFail($id);
 
+            // dd($hutang->barangHutang->first()->barangKeluar->stokWarung->hargaJual);
         // Mengambil riwayat pembayaran, diurutkan dari yang terbaru
         $logPembayaran = LogPembayaranHutang::where('id_hutang', $hutang->id)
             ->orderBy('created_at', 'desc')
             ->get();
-
         // Mengembalikan view detail dengan data hutang dan log pembayaran
         return view('kasir.hutang.detail', compact('hutang', 'logPembayaran'));
     }

@@ -34,6 +34,7 @@ use App\Http\Controllers\Admin\{
     AreaPembelianController,
     TransaksiBarangController,
     AturanTenggatControllerAdmin,
+    HargaJualControllerAdmin,
     LabaControllerAdmin,
     KuantitasControllerAdmin,
     StokOpnameControllerAdmin,
@@ -121,7 +122,10 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::resource('harga-pulsa', HargaPulsaControllerAdmin::class);
     Route::resource('saldo-pulsa', SaldoPulsaControllerAdmin::class);
 
-
+    Route::get('barang/prices/monitor', [HargaJualControllerAdmin::class, 'indexAllBarangPrices'])->name('harga_jual.monitor_all_prices');
+    // Rute detail per barang (Jika Anda ingin mempertahankan kemampuan drill-down)
+    Route::get('barang/{id}/prices', [HargaJualControllerAdmin::class, 'showWarungPrices'])->name('harga_jual.show_warung_prices');
+    Route::put('update', [HargaJualControllerAdmin::class, 'updateHargaJual'])->name('harga_jual.update');
 });
 
 
@@ -148,11 +152,10 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::get('/hutang', [HutangControllerKasir::class, 'index'])->name('hutang.index');
     Route::get('/hutang/detail/{id}', [HutangControllerKasir::class, 'detail'])->name('hutang.detail');
     Route::post('/hutang/bayar/{id}', [HutangControllerKasir::class, 'bayar'])->name('hutang.bayar');
-
     // Hutang Barang Masuk
     Route::get('/hutangBarangamMasuk', [HutangBarangMasukControllerKasir::class, 'index'])->name('hutang.barangmasuk.index');
-    Route::get('/hutangBarangamMasuk/detail/{id}', [HutangBarangMasukControllerKasir::class, 'detail'])->name('hutang.barangmasuk.detail');
-    Route::post('/hutangBarangamMasuk/bayar/{id}', [HutangBarangMasukControllerKasir::class, 'bayar'])->name('hutang.barangmasuk.bayar');
+    Route::get('/{id}/bayar', [HutangBarangMasukControllerKasir::class, 'showDetailPembayaran'])->name('bayar.detail');
+    Route::post('/{id}/proses-bayar', [HutangBarangMasukControllerKasir::class, 'processPembayaranHutang'])->name('bayar.process');
 
     Route::get('/rencana-belanja', [RencanaBelanjaControllerKasir::class, 'rencanaBelanja'])->name('rencanabelanja.index');
     Route::get('/rencana-belanja-list', [RencanaBelanjaControllerKasir::class, 'rencanaBelanja'])->name('rencanabelanja.list');

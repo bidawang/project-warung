@@ -95,14 +95,18 @@
                                     // Mengakses data melalui rantai relasi
                                     $barangKeluar = $barangHutangItem->barangKeluar;
 
-                                    // Ambil data yang diperlukan
-                                    $namaBarang = $barangKeluar->stokWarung->barang->nama_barang ?? 'Barang Tidak Ditemukan';
-                                    $jumlah = $barangKeluar->jumlah;
-                                    $hargaSatuan = $barangKeluar->harga_satuan ?? 0;
-                                    $keteranganKeluar = $barangKeluar->keterangan ?? ''; // Keterangan dari BarangKeluar
-                                    $subtotal = $jumlah * $hargaSatuan;
+                                    // **HARGA SATUAN BARU DARI HARGA JUAL TERBARU**
+    $hargaJualTerbaru = $barangKeluar->stokWarung->hargaJual->harga_jual_range_akhir ?? $barangKeluar->harga_satuan;
 
-                                    $totalBarang += $subtotal;
+    // Ambil data yang diperlukan
+    $namaBarang = $barangKeluar->stokWarung->barang->nama_barang ?? 'Barang Tidak Ditemukan';
+    $jumlah = $barangKeluar->jumlah;
+    // Gunakan harga jual terbaru jika ada, jika tidak, gunakan harga transaksi
+    $hargaSatuan = $hargaJualTerbaru; // Ganti $barangKeluar->harga_satuan dengan $hargaJualTerbaru
+    $keteranganKeluar = $barangKeluar->keterangan ?? ''; // Keterangan dari BarangKeluar
+    $subtotal = $jumlah * $hargaSatuan; // Gunakan HARGA BARU untuk subtotal
+
+    $totalBarang += $subtotal;
                                 @endphp
                                 <tr>
                                     <td>
