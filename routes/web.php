@@ -39,7 +39,8 @@ use App\Http\Controllers\Admin\{
     KuantitasControllerAdmin,
     StokOpnameControllerAdmin,
     HargaPulsaControllerAdmin,
-    SaldoPulsaControllerAdmin
+    SaldoPulsaControllerAdmin,
+    RiwayatTransaksiControllerAdmin
 };
 
 use App\Http\Controllers\Kasir\{
@@ -126,6 +127,8 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     // Rute detail per barang (Jika Anda ingin mempertahankan kemampuan drill-down)
     Route::get('barang/{id}/prices', [HargaJualControllerAdmin::class, 'showWarungPrices'])->name('harga_jual.show_warung_prices');
     Route::put('update', [HargaJualControllerAdmin::class, 'updateHargaJual'])->name('harga_jual.update');
+
+    Route::get('/riwayat-transaksi', [RiwayatTransaksiControllerAdmin::class, 'index'])->name('riwayat_transaksi.index');
 });
 
 
@@ -188,9 +191,6 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::delete('pulsa/harga-pulsa/delete/{id}', [PulsaControllerKasir::class, 'destroyHargaPulsa'])->name('pulsa.harga-pulsa.destroy');
     Route::get('pulsa/jual/create', [PulsaControllerKasir::class, 'createJualPulsa'])->name('pulsa.jual.create');
     Route::post('pulsa/jual/store', [PulsaControllerKasir::class, 'storeJualPulsa'])->name('pulsa.jual.store');
-
-
-
     Route::get('/profil', [ProfilControllerKasir::class, 'index'])->name('profil.index');
 });
 

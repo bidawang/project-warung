@@ -33,4 +33,9 @@ class Warung extends Model
     {
         return $this->hasMany(StokWarung::class, 'id_warung');
     }
+
+    public function kasWarung()
+    {
+        return $this->hasMany(KasWarung::class, 'id_warung');
+    }
 }

@@ -13,7 +13,8 @@ class StokOpname extends Model
 
     protected $fillable = [
         'id_stok_warung',
-        'jumlah',
+        'jumlah_sebelum',
+        'jumlah_sesudah',
     ];
 
     public function stokWarung()

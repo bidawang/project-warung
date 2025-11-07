@@ -90,6 +90,15 @@
                     </svg>
                     <span class="ml-4">Barang</span>
                 </a>
+                <a href="/admin/barang/prices/monitor"
+                    class="flex items-center px-6 py-3 mt-2 transition duration-200 ease-in-out {{ request()->is('admin/barang*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7l8 4"></path>
+                    </svg>
+                    <span class="ml-4">Harga Barang</span>
+                </a>
                 <a href="/admin/transaksibarang"
                     class="flex items-center px-6 py-3 mt-2 transition duration-200 ease-in-out {{ request()->is('admin/transaksibarang*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -98,6 +107,15 @@
                             d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7l8 4"></path>
                     </svg>
                     <span class="ml-4">Rencana Belanja</span>
+                </a>
+                <a href="/admin/riwayat-transaksi"
+                    class="flex items-center px-6 py-3 mt-2 transition duration-200 ease-in-out {{ request()->is('admin/riwayat-transaksi*') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7l8 4"></path>
+                    </svg>
+                    <span class="ml-4">Riwayat Transaksi</span>
                 </a>
 
                 <a href="/admin/area"

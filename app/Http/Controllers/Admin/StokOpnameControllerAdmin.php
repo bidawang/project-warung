@@ -9,11 +9,15 @@ use App\Models\Warung;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use App\Models\KasWarung;
+use App\Models\TransaksiKas;
 
 class StokOpnameControllerAdmin extends Controller
 {
     public function index(Request $request)
     {
+        // dd($request->all());
         $listWarung = Warung::all();
         $activeWarungId = $request->get('warung_id');
         $activeWarung = null;
@@ -41,7 +45,7 @@ class StokOpnameControllerAdmin extends Controller
 
         // Jika tidak ada warung aktif (misal Admin harus memilih dulu atau tidak ada warung terdaftar)
         if (!$activeWarungId) {
-             return view('admin.stok_opname.index', [
+            return view('admin.stok_opname.index', [
                 'stokSekarang' => collect(),
                 'riwayatTanggal' => collect(),
                 'tanggalFilter' => null,
@@ -61,8 +65,8 @@ class StokOpnameControllerAdmin extends Controller
 
         // Batasan Input 2 Hari (difilter per warung)
         $lastOpname = StokOpname::whereHas('stokWarung', function ($query) use ($activeWarungId) {
-                $query->where('id_warung', $activeWarungId);
-            })
+            $query->where('id_warung', $activeWarungId);
+        })
             ->latest('created_at')
             ->first();
 
@@ -89,7 +93,7 @@ class StokOpnameControllerAdmin extends Controller
             ->groupBy('tanggal')
             ->orderByDesc('tanggal')
             ->get();
-// dd($riwayatTanggal);
+        // dd($riwayatTanggal);
         // Ambil stok warung hanya untuk warung yang aktif
         $stokWarung = StokWarung::with(['barang'])
             ->where('id_warung', $activeWarungId)
@@ -153,54 +157,120 @@ class StokOpnameControllerAdmin extends Controller
 
     public function store(Request $request)
     {
-        // 1. Ambil ID Warung dari salah satu id_stok_warung
-        $firstStokWarungId = $request->id_stok_warung[0] ?? null;
+        // dd($request->all()); // Hapus dd() ini setelah pengujian
 
-        if (!$firstStokWarungId) {
-             return back()->with('error', 'Tidak ada barang yang dipilih untuk diopname.')->withInput();
-        }
+        $validated = $request->validate([
+            'id_warung'      => 'required|integer|exists:warung,id',
+            'id_stok_warung' => 'required|array|min:1',
+            'jumlah'         => 'required|array|min:1',
+            'jumlah.*'       => 'nullable|integer|min:0',
+        ]);
 
-        $stokWarungSample = StokWarung::find($firstStokWarungId);
-        $activeWarungId = $stokWarungSample->id_warung ?? null;
+        $idWarung = $validated['id_warung'];
 
-        // Pengecekan Batasan 2 Hari saat proses penyimpanan (Penting!)
-        $lastOpname = StokOpname::whereHas('stokWarung', function ($query) use ($activeWarungId) {
-                $query->where('id_warung', $activeWarungId);
-            })
-            ->latest('created_at')
-            ->first();
-
-        $canInputToday = true;
-
-        if ($lastOpname) {
-            $lastOpnameDate = Carbon::parse($lastOpname->created_at)->startOfDay();
-            if (Carbon::now()->startOfDay()->lessThanOrEqualTo($lastOpnameDate->addDays(1))) {
-                $canInputToday = false;
+        $hasAnyInput = false;
+        foreach ($validated['jumlah'] as $jumlah) {
+            if ($jumlah !== null && $jumlah !== '') {
+                $hasAnyInput = true;
+                break;
             }
         }
+        // dd($hasAnyInput);
 
-        if (!$canInputToday) {
-            return redirect()->route('admin.stokopname.index', ['warung_id' => $activeWarungId])
-                             ->with('error', 'Stok opname hanya dapat dilakukan minimal 2 hari sekali setelah opname terakhir.');
+        if (!$hasAnyInput) {
+            return redirect()->route('admin.stokopname.index', ['warung_id' => $idWarung])
+                ->with('error', 'Silakan masukkan jumlah fisik untuk setidaknya satu barang.');
         }
 
-        $inputData = [];
-        foreach ($request->id_stok_warung as $id) {
-            if (isset($request->jumlah[$id]) && is_numeric($request->jumlah[$id])) {
-                $inputData[] = [
-                    'id_stok_warung' => $id,
-                    'jumlah' => (int)$request->jumlah[$id],
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
+        try {
+            DB::beginTransaction();
+
+            $kasWarung = KasWarung::where('id_warung', $idWarung)
+                ->where('jenis_kas', 'cash')
+                ->firstOrFail();
+
+            // Ambil ID dari input yang diisi (filter input kosong/null)
+            $inputJumlah = array_filter($validated['jumlah'], fn($value) => $value !== null && $value !== '');
+            $stokIds = array_keys($inputJumlah);
+
+            // Ambil stok warung yang diinput
+            $stokDetails = StokWarung::whereIn('id', $stokIds)
+                ->where('id_warung', $idWarung)
+                ->with('barang', 'hargaJual')
+                ->get()->keyBy('id');
+
+            $isOpnamePerformed = false;
+            $totalItemsChanged = 0; // Menghitung item yang memiliki selisih (akan memicu TransaksiKas)
+
+            // Loop melalui input yang DIIISI saja
+            foreach ($inputJumlah as $stokId => $stokFisikInput) {
+
+                $stok = $stokDetails->get($stokId);
+                if (!$stok) {
+                    continue;
+                }
+
+                $stokFisik = (int)$stokFisikInput;
+                $stokSistemSaatIni = (int)$stok->jumlah; // Jumlah sebelum update = jumlah_sebelum
+                $selisih = $stokFisik - $stokSistemSaatIni;
+
+                // --- 1. SELALU REKAM DI STOKOPNAME (RIWAYAT) ---
+                StokOpname::create([
+                    'id_stok_warung' => $stok->id,
+                    'jumlah_sebelum' => $stokSistemSaatIni,
+                    'jumlah_sesudah' => $stokFisik,
+                    'selisih'        => $selisih,
+                    'harga'          => optional($stok->hargaJual)->harga_jual_range_akhir ?? 0,
+                    'keterangan'     => $selisih > 0 ? 'Kelebihan Stok' : ($selisih < 0 ? 'Kekurangan Stok' : 'Stok Sesuai'),
+                    'dibuat_oleh'    => Auth::id(),
+                ]);
+                $isOpnamePerformed = true;
+
+                // --- 2. HANYA PROSES JIKA SELISIH TIDAK NOL ---
+                if ($selisih !== 0) {
+                    $totalItemsChanged++;
+
+                    // a. Update stok ke jumlah fisik
+                    $stok->update(['jumlah' => $stokFisik]);
+
+                    // b. Buat Transaksi Kas
+                    $harga = optional($stok->hargaJual)->harga_jual_range_akhir ?? 0;
+                    $nominalSelisihItem = abs($selisih * $harga);
+
+                    // Tentukan arah transaksi
+                    $nominalPenyesuaianKas = $selisih > 0 ? $nominalSelisihItem : -$nominalSelisihItem;
+                    $jenisTransaksi = $nominalPenyesuaianKas > 0 ? 'opname +' : 'opname -';
+                    $namaBarang = optional($stok->barang)->nama_barang ?? 'Barang ID: ' . $stok->id;
+
+                    $keterangan = "Penyesuaian Kas Opname: {$namaBarang} ({$selisih} Pcs)";
+
+                    TransaksiKas::create([
+                        'id_kas_warung' => $kasWarung->id,
+                        'total'         => $nominalPenyesuaianKas,
+                        'jenis'         => $jenisTransaksi,
+                        'keterangan'    => $keterangan,
+                    ]);
+                }
             }
-        }
 
-        if (!empty($inputData)) {
-            StokOpname::insert($inputData);
-            return redirect()->route('admin.stokopname.index', ['warung_id' => $activeWarungId])->with('success', 'Stok opname berhasil disimpan.');
-        }
+            // Jika tidak ada stok yang di-opname (semua input kosong), batalkan proses.
+            if (!$isOpnamePerformed) {
+                DB::rollBack();
+                return redirect()->route('admin.stokopname.index', ['warung_id' => $idWarung])
+                    ->with('warning', 'Tidak ada stok yang diinput. Opname tidak disimpan.');
+            }
 
-        return redirect()->route('admin.stokopname.index', ['warung_id' => $activeWarungId])->with('warning', 'Tidak ada data stok fisik yang diisi.');
+            DB::commit();
+            $message = "Hasil opname berhasil disimpan dan stok disesuaikan. Ditemukan **{$totalItemsChanged} item** yang selisihnya memerlukan penyesuaian kas.";
+            return redirect()->route('admin.stokopname.index', ['warung_id' => $idWarung])
+                ->with('success', $message);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            \Log::error('Error menyimpan opname: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all(),
+            ]);
+            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
     }
 }

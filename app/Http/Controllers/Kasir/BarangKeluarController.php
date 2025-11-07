@@ -107,6 +107,7 @@ class BarangKeluarController extends Controller
      */
     public function store(Request $request)
     {
+        // dd('masuk sini');
         // Validasi data input
         $validated = $request->validate([
             'items' => 'required|array|min:1',
