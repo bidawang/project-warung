@@ -21,6 +21,10 @@ class Hutang extends Model
         'jumlah_sisa_hutang',
     ];
 
+    protected $casts = [
+        'tenggat' => 'date', // FIX: Casting string tanggal menjadi objek Carbon
+    ];
+
     public function warung()
     {
         return $this->belongsTo(Warung::class, 'id_warung');

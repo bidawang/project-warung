@@ -40,7 +40,8 @@ use App\Http\Controllers\Admin\{
     StokOpnameControllerAdmin,
     HargaPulsaControllerAdmin,
     SaldoPulsaControllerAdmin,
-    RiwayatTransaksiControllerAdmin
+    RiwayatTransaksiControllerAdmin,
+    HutangControllerAdmin
 };
 
 use App\Http\Controllers\Kasir\{
@@ -129,6 +130,9 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::put('update', [HargaJualControllerAdmin::class, 'updateHargaJual'])->name('harga_jual.update');
 
     Route::get('/riwayat-transaksi', [RiwayatTransaksiControllerAdmin::class, 'index'])->name('riwayat_transaksi.index');
+
+    Route::get('/hutang', [HutangControllerAdmin::class, 'index'])->name('hutang.index');
+    Route::get('/hutang/{hutang}/detail', [HutangControllerAdmin::class, 'detailAllWarung'])->name('hutang.detail');
 });
 
 
