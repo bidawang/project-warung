@@ -36,43 +36,6 @@
                 @endif
             </div>
 
-            {{-- Accordion: Aturan Tenggat --}}
-            <div>
-                <button type="button" class="accordion w-full text-left px-4 py-2 bg-gray-200 rounded-lg focus:outline-none">
-                    Aturan Tenggat
-                </button>
-                <div class="panel max-h-0 overflow-hidden transition-all duration-300">
-                    @if($area->aturanTenggat->count())
-                        <table class="min-w-full border border-gray-200 rounded-lg overflow-hidden mt-2">
-                            <thead class="bg-gray-100">
-                                <tr>
-                                    <th class="px-4 py-2 border-b">Tanggal Awal</th>
-                                    <th class="px-4 py-2 border-b">Tanggal Akhir</th>
-                                    <th class="px-4 py-2 border-b">Jatuh Tempo Hari</th>
-                                    <th class="px-4 py-2 border-b">Jatuh Tempo Bulan</th>
-                                    <th class="px-4 py-2 border-b">Bunga</th>
-                                    <th class="px-4 py-2 border-b">Keterangan</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($area->aturanTenggat as $tenggat)
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-4 py-2 border-b">{{ $tenggat->tanggal_awal }}</td>
-                                    <td class="px-4 py-2 border-b">{{ $tenggat->tanggal_akhir }}</td>
-                                    <td class="px-4 py-2 border-b">{{ $tenggat->jatuh_tempo_hari }}</td>
-                                    <td class="px-4 py-2 border-b">{{ $tenggat->jatuh_tempo_bulan }}</td>
-                                    <td class="px-4 py-2 border-b">{{ $tenggat->bunga }}%</td>
-                                    <td class="px-4 py-2 border-b">{{ $tenggat->keterangan ?? '-' }}</td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    @else
-                        <p class="text-gray-500 mt-2">Belum ada aturan tenggat.</p>
-                    @endif
-                </div>
-            </div>
-
             {{-- Accordion: Laba --}}
             <div>
                 <button type="button" class="accordion w-full text-left px-4 py-2 bg-gray-200 rounded-lg focus:outline-none mt-2">

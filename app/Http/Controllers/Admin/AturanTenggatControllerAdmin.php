@@ -5,94 +5,101 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\AturanTenggat;
-use App\Models\Area;
-use Illuminate\Validation\ValidationException;
+
 
 class AturanTenggatControllerAdmin extends Controller
 {
     /**
      * Menampilkan daftar aturan tenggat berdasarkan area.
      */
-    public function index(Request $request)
-    {
-        $id_area = $request->query('id_area');
-        $area = Area::findOrFail($id_area);
-        // dd($area);
-        $aturanTenggat = AturanTenggat::where('id_area', $id_area)->get();
 
-        return view('admin.area.aturanTenggat.index', compact('area', 'aturanTenggat'));
-    }
+// CREATE
+    // public function store(Request $request)
+    // {
+    //     $request->validate([
+    //         'id_warung' => 'required',
+    //         'tanggal_awal' => 'required|numeric',
+    //         'tanggal_akhir' => 'required|numeric',
+    //         'jatuh_tempo_hari' => 'required|numeric|min:1',
+    //         'bunga' => 'required|numeric|min:0',
+    //     ]);
+
+    //     AturanTenggat::create($request->all());
+
+    //     return back()->with('success', 'Aturan tenggat berhasil ditambahkan.');
+    // }
+
+    // // UPDATE
+    // public function update(Request $request, $id)
+    // {
+    //     $request->validate([
+    //         'id_warung' => 'required',
+    //         'tanggal_awal' => 'required|numeric',
+    //         'tanggal_akhir' => 'required|numeric',
+    //         'jatuh_tempo_hari' => 'required|numeric|min:1',
+    //         'bunga' => 'required|numeric|min:0',
+    //     ]);
+
+    //     AturanTenggat::findOrFail($id)->update($request->all());
+
+    //     return back()->with('success', 'Aturan tenggat berhasil diperbarui.');
+    // }
+
+    // // DELETE
+    // public function destroy($id)
+    // {
+    //     AturanTenggat::findOrFail($id)->delete();
+
+    //     return back()->with('success', 'Aturan tenggat berhasil dihapus.');
+    // }
+
+    // --- FUNGSI BARU UNTUK MANAJEMEN ATURAN TENGGAT ---
 
     /**
-     * Menampilkan form untuk membuat aturan tenggat baru.
-     */
-    public function create(Request $request)
-    {
-        $id_area = $request->query('id_area');
-        $area = Area::findOrFail($id_area);
-
-        return view('admin.area.aturanTenggat.create', compact('area'));
-    }
-
-    /**
-     * Menyimpan aturan tenggat baru ke database.
+     * Menyimpan aturan tenggat baru dengan validasi bentrok tanggal.
      */
     public function store(Request $request)
     {
-        // dd($request->all());
-        try {
-            $validatedData = $request->validate([
-                'id_area' => 'required|exists:area,id',
-                'tanggal_awal' => 'required|integer|min:1|max:31',
-                'tanggal_akhir' => 'required|integer|min:1|max:31',
-                'jatuh_tempo_hari' => 'required|integer|min:0',
-                'bunga' => 'required|numeric|min:0',
-                'keterangan' => 'nullable|string',
-            ]);
-            // dd($validatedData);
-            AturanTenggat::create($validatedData);
+        $data = $request->validate([
+            'id_warung' => 'required|exists:warung,id',
+            'tanggal_awal' => 'required|date',
+            'tanggal_akhir' => 'required|date|after_or_equal:tanggal_awal',
+            'jatuh_tempo_hari' => 'required|integer|min:1',
+            'bunga' => 'required|numeric|min:0',
+            'keterangan' => 'nullable|string|max:255',
+        ]);
 
-            return redirect()->route('admin.aturanTenggat.index', ['id_area' => $validatedData['id_area']])
-                ->with('success', 'Aturan tenggat berhasil ditambahkan!');
-        } catch (ValidationException $e) {
-            return redirect()->back()->withErrors($e->errors())->withInput();
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Gagal menambahkan aturan tenggat.')->withInput();
-        }
+        // Pengecekan Bentrok Tanggal (Overlap Validation)
+        $this->validateDateOverlap($request, null);
+
+        // Simpan data
+        AturanTenggat::create($data);
+
+        return back()->with('success', 'Aturan tenggat baru berhasil ditambahkan.');
     }
 
     /**
-     * Menampilkan form edit aturan tenggat.
-     */
-    public function edit(AturanTenggat $aturanTenggat)
-    {
-        $area = $aturanTenggat->area;
-        return view('admin.area.aturanTenggat.edit', compact('area', 'aturanTenggat'));
-    }
-
-    /**
-     * Memperbarui aturan tenggat.
+     * Memperbarui aturan tenggat dengan validasi bentrok tanggal.
      */
     public function update(Request $request, AturanTenggat $aturanTenggat)
     {
-        try {
-            $validatedData = $request->validate([
-                'tanggal_awal' => 'required|integer|min:1|max:31',
-                'tanggal_akhir' => 'required|integer|min:1|max:31',
-                'jatuh_tempo_hari' => 'required|integer|min:0',
-                'bunga' => 'required|numeric|min:0',
-                'keterangan' => 'nullable|string',
-            ]);
+        $data = $request->validate([
+            'id_warung' => 'required|exists:warung,id',
+            'tanggal_awal' => 'required|date',
+            'tanggal_akhir' => 'required|date|after_or_equal:tanggal_awal',
+            'jatuh_tempo_hari' => 'required|integer|min:1',
+            'bunga' => 'required|numeric|min:0',
+            'keterangan' => 'nullable|string|max:255',
+        ]);
 
-            $aturanTenggat->update($validatedData);
+        // Pengecekan Bentrok Tanggal (Overlap Validation)
+        // Lewatkan ID aturan yang sedang diedit agar validasi mengabaikan dirinya sendiri
+        $this->validateDateOverlap($request, $aturanTenggat->id);
 
-            return redirect()->route('admin.aturanTenggat.index', ['id_area' => $aturanTenggat->id_area])
-                ->with('success', 'Aturan tenggat berhasil diperbarui!');
-        } catch (ValidationException $e) {
-            return redirect()->back()->withErrors($e->errors())->withInput();
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Gagal memperbarui aturan tenggat.')->withInput();
-        }
+        // Update data
+        $aturanTenggat->update($data);
+
+        return back()->with('success', 'Aturan tenggat berhasil diperbarui.');
     }
 
     /**
@@ -100,13 +107,44 @@ class AturanTenggatControllerAdmin extends Controller
      */
     public function destroy(AturanTenggat $aturanTenggat)
     {
-        try {
-            $id_area = $aturanTenggat->id_area;
-            $aturanTenggat->delete();
-            return redirect()->route('admin.aturanTenggat.index', ['id_area' => $id_area])
-                ->with('success', 'Aturan tenggat berhasil dihapus!');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Gagal menghapus aturan tenggat.');
+        $aturanTenggat->delete();
+        return back()->with('success', 'Aturan tenggat berhasil dihapus.');
+    }
+
+
+    /**
+     * Fungsi untuk validasi Bentrok Tanggal.
+     * Tidak boleh ada rentang tanggal yang saling bertindihan (overlap) untuk warung yang sama.
+     */
+    protected function validateDateOverlap(Request $request, $ignoreId = null)
+    {
+        $idWarung = $request->id_warung;
+        $tglAwal = $request->tanggal_awal;
+        $tglAkhir = $request->tanggal_akhir;
+
+        // Query untuk mencari aturan tenggat yang berbenturan
+        $query = AturanTenggat::where('id_warung', $idWarung)
+            ->where(function ($q) use ($tglAwal, $tglAkhir) {
+                // Bentrok terjadi jika:
+                $q->where(function ($q2) use ($tglAwal, $tglAkhir) {
+                    // 1. Rentang baru berada di antara rentang lama:
+                    //    Tgl Awal Baru <= Tgl Akhir Lama AND Tgl Akhir Baru >= Tgl Awal Lama
+                    $q2->whereDate('tanggal_awal', '<=', $tglAkhir)
+                        ->whereDate('tanggal_akhir', '>=', $tglAwal);
+                });
+            });
+
+        // Abaikan aturan yang sedang diedit (jika mode update)
+        if ($ignoreId) {
+            $query->where('id', '!=', $ignoreId);
+        }
+
+        if ($query->exists()) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'tanggal_awal' => 'Rentang tanggal yang Anda masukkan berbenturan dengan aturan tenggat yang sudah ada untuk warung ini.',
+                'tanggal_akhir' => 'Rentang tanggal yang Anda masukkan berbenturan dengan aturan tenggat yang sudah ada untuk warung ini.'
+            ]);
         }
     }
+
 }

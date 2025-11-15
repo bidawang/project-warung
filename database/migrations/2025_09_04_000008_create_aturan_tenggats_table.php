@@ -11,7 +11,7 @@ return new class extends Migration
     {
         Schema::create('aturan_tenggat', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('id_area')->constrained('area');
+            $table->foreignId('id_warung')->constrained('warung');
             $table->integer('tanggal_awal');
             $table->integer('tanggal_akhir');
             $table->integer('jatuh_tempo_hari');

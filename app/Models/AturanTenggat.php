@@ -12,7 +12,7 @@ class AturanTenggat extends Model
     protected $table = 'aturan_tenggat';
 
     protected $fillable = [
-        'id_area',
+        'id_warung',
         'tanggal_awal',
         'tanggal_akhir',
         'jatuh_tempo_hari',
@@ -20,8 +20,8 @@ class AturanTenggat extends Model
         'keterangan'
     ];
 
-    public function area()
+    public function warung()
     {
-        return $this->belongsTo(Area::class, 'id_area');
+        return $this->belongsTo(Warung::class, 'id_warung');
     }
 }

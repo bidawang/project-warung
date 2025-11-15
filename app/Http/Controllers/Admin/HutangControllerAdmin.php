@@ -5,37 +5,48 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Hutang;
+use App\Models\Warung;
+use App\Models\AturanTenggat;
 use App\Models\LogPembayaranHutang;
 
 class HutangControllerAdmin extends Controller
 {
     public function index(Request $request)
     {
-        // Query dasar: Ambil semua Hutang, eager load relasi user dan warung
         $query = Hutang::with(['user', 'warung']);
 
-        // Filter berdasarkan status hutang ('belum lunas', 'lunas', atau null)
         $status = $request->get('status');
         if ($status) {
             $query->where('status', $status);
         }
 
-        // Pencarian berdasarkan nama user
+        if ($request->filled('expired')) {
+            $query->where('status', 'belum_lunas')
+                ->whereDate('tenggat', '<', now());
+        }
+
         if ($request->filled('q')) {
             $query->whereHas('user', function ($q) use ($request) {
-                // Mencari nama user yang mengandung string pencarian
                 $q->where('name', 'like', '%' . $request->q . '%');
             });
         }
 
-        // Urutkan berdasarkan tenggat terdekat dan lakukan paginasi
-        $hutangList = $query->orderBy('tenggat', 'asc')->paginate(10);
+        // --- Perubahan Utama: Prioritaskan status 'belum_lunas' ---
+        // 1. Urutkan berdasarkan status, 'belum_lunas' (0) akan muncul sebelum 'lunas' (1).
+        // 2. Kemudian, urutkan berdasarkan tanggal tenggat terdekat (ASC).
+        $hutangList = $query
+            ->orderByRaw("status = 'lunas' ASC") // ASC = 0 (belum_lunas) lalu 1 (lunas)
+            ->orderBy('tenggat', 'asc')
+            ->paginate(10);
 
-        // Mengembalikan view admin dengan data
-        // Asumsi view berada di 'admin.hutang.index'
-        return view('admin.hutang.index', compact('hutangList', 'status'));
+        // Data tambahan untuk View
+        $aturanTenggats = AturanTenggat::with('warung')->get();
+        $allWarungs = Warung::select('id', 'nama_warung')->get();
+
+        return view('admin.hutang.index', compact('hutangList', 'status', 'aturanTenggats', 'allWarungs'));
     }
 
+    
     /**
      * Menampilkan detail Hutang tertentu dari warung manapun.
      *

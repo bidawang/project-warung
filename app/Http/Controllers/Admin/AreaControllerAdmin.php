@@ -109,7 +109,7 @@ class AreaControllerAdmin extends Controller
     public function show(Area $area)
     {
         // Load relasi aturan tenggat, laba, dan warung
-        $area->load(['aturanTenggat', 'laba', 'warung']);
+        $area->load(['laba', 'warung']);
 // dd($area);
         return view('admin.area.show', compact('area'));
     }
