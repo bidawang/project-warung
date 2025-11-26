@@ -37,4 +37,13 @@ class Barang extends Model
     {
         return $this->hasMany(HargaJual::class, 'id_barang');
     }
+    public function areaPembelian()
+    {
+        return $this->belongsToMany(
+            AreaPembelian::class,
+            'asal_barang',
+            'id_barang',            // FK di tabel pivot
+            'id_area_pembelian'     // FK tujuan
+        );
+    }
 }

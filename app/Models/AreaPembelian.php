@@ -25,4 +25,14 @@ class AreaPembelian extends Model
         'area',
         'markup',
     ];
+
+    public function barangs()
+    {
+        return $this->belongsToMany(
+            Barang::class,
+            'asal_barang',
+            'id_area_pembelian',    // FK di tabel pivot
+            'id_barang'             // FK tujuan
+        );
+    }
 }

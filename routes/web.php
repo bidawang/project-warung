@@ -41,7 +41,8 @@ use App\Http\Controllers\Admin\{
     HargaPulsaControllerAdmin,
     SaldoPulsaControllerAdmin,
     RiwayatTransaksiControllerAdmin,
-    HutangControllerAdmin
+    HutangControllerAdmin,
+    AsalBarangControllerAdmin
 };
 
 use App\Http\Controllers\Kasir\{
@@ -109,6 +110,7 @@ Route::prefix('/admin')->name('admin.')->group(function () {
 
     Route::resource('/barang', BarangControllerAdmin::class);
     Route::resource('transaksibarang', TransaksiBarangController::class);
+    Route::get('transaksi-barang/rencana', [TransaksiBarangController::class, 'indexRencana'])->name('transaksibarang.rencana.index');
     Route::post('transaksibarang/update-status-massal', [TransaksiBarangController::class, 'updateStatusMassal'])->name('transaksibarang.updateStatusMassal');
     Route::post('/kirim-massal-proses', [TransaksiBarangController::class, 'kirimMassalProses'])->name('transaksibarang.kirim.mass.proses');
     Route::post('/kirim-rencana-proses', [TransaksiBarangController::class, 'kirimRencanaProses'])->name('transaksibarang.kirim.rencana.proses');
@@ -133,6 +135,13 @@ Route::prefix('/admin')->name('admin.')->group(function () {
 
     Route::get('/hutang', [HutangControllerAdmin::class, 'index'])->name('hutang.index');
     Route::get('/hutang/{hutang}/detail', [HutangControllerAdmin::class, 'detailAllWarung'])->name('hutang.detail');
+    Route::resource('asalbarang', AsalBarangControllerAdmin::class)->except(['show', 'destroy'])
+        ->parameters([
+            'asalbarang' => 'idArea' // supaya edit($idArea)
+        ]);
+    Route::get('asalbarang/filter', [AsalBarangControllerAdmin::class, 'filterBarang'])->name('asalbarang.filter');
+    // Ubah juga route create Anda jika belum sesuai dengan name()
+    Route::get('asalbarang/create', [AsalBarangControllerAdmin::class, 'create'])->name('asalbarang.create');
 });
 
 

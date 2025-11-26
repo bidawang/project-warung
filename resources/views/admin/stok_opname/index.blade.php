@@ -52,9 +52,9 @@
             </div>
         @elseif ($listWarung->isEmpty())
              <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4" role="alert">
-                <p class="font-bold">Perhatian</p>
-                <p>Tidak ada warung terdaftar. Harap daftarkan warung terlebih dahulu untuk memulai Stok Opname.</p>
-            </div>
+                 <p class="font-bold">Perhatian</p>
+                 <p>Tidak ada warung terdaftar. Harap daftarkan warung terlebih dahulu untuk memulai Stok Opname.</p>
+             </div>
         @endif
 
         {{-- ========================================= --}}
@@ -124,12 +124,12 @@
                                 Saat ini baru **{{ $daysSinceLastOpname }} hari** berlalu. Anda dapat melakukan Opname berikutnya minimal **2 hari** setelah opname terakhir.</p>
                         </div>
                     @elseif ($canInputToday && $lastOpnameDate)
-                         <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4" role="alert">
+                          <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4" role="alert">
                             <p class="font-bold">Info Opname</p>
                             <p>Opname terakhir dilakukan pada tanggal **{{ $lastOpnameDate->translatedFormat('d F Y') }}**. Anda **dapat** melakukan input opname hari ini.</p>
                         </div>
                     @elseif ($canInputToday && !$lastOpnameDate)
-                         <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4" role="alert">
+                          <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4" role="alert">
                             <p class="font-bold">Info</p>
                             <p>Saat ini belum ada riwayat stok opname untuk warung ini. Input opname pertama Anda sekarang!</p>
                         </div>
@@ -157,7 +157,7 @@
                                                     class="border border-gray-300 rounded-lg px-2 py-1 w-28 text-center
                                                             @if(!$canInputToday) bg-gray-100 cursor-not-allowed @endif focus:ring-blue-500 focus:border-blue-500"
                                                     placeholder="{{ $stok['stok_sistem'] }}"
-                                                    value="{{ old('jumlah.'.$stok['id_stok_warung']) }}"
+                                                    value="{{ old('jumlah.'.$stok['id_stok_warung'], $stok['jumlah_opname']) }}" {{-- Ditambahkan $stok['jumlah_opname'] untuk pre-fill nilai jika sudah diopname hari ini --}}
                                                     {{ $canInputToday ? '' : 'disabled' }}>
                                                 <input type="hidden" name="id_stok_warung[]" value="{{ $stok['id_stok_warung'] }}">
                                             </td>
@@ -171,7 +171,7 @@
                         <div class="flex justify-end mt-6">
                             <button type="submit"
                                 class="font-bold py-2 px-6 rounded-lg shadow-md transition duration-150
-                                        {{ $canInputToday ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-400 text-gray-600 cursor-not-allowed' }}"
+                                            {{ $canInputToday ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-400 text-gray-600 cursor-not-allowed' }}"
                                 {{ $canInputToday ? '' : 'disabled' }}>
                                 Simpan Hasil Opname
                             </button>
@@ -208,8 +208,8 @@
                             <thead class="bg-gray-200 text-gray-700 uppercase text-xs">
                                 <tr>
                                     <th class="py-3 px-6 text-left">Nama Barang</th>
-                                    <th class="py-3 px-6 text-center">Stok Sistem (Sebelum)</th> {{-- Berubah --}}
-                                    <th class="py-3 px-6 text-center">Stok Fisik (Opname)</th> {{-- Berubah --}}
+                                    <th class="py-3 px-6 text-center">Stok Sistem (Sebelum)</th> {{-- Judul sudah benar --}}
+                                    <th class="py-3 px-6 text-center">Stok Fisik (Opname)</th> {{-- Judul sudah benar --}}
                                     <th class="py-3 px-6 text-center">Selisih</th>
                                     <th class="py-3 px-6 text-center">Status</th>
                                 </tr>
@@ -217,8 +217,10 @@
                             <tbody>
                                 @forelse ($stokSekarang as $stok)
                                     @php
-                                        $jumlahOpname = $stok['jumlah_opname']; // jumlah_sesudah
-                                        $stokSistem = $stok['stok_sistem']; // jumlah_sebelum
+                                        // $stok['jumlah_opname'] = jumlah_sesudah (dari Controller)
+                                        // $stok['stok_sistem'] = jumlah_sebelum (dari Controller saat $tanggalFilter aktif)
+                                        $jumlahOpname = $stok['jumlah_opname'];
+                                        $stokSistem = $stok['stok_sistem'];
                                         $selisih = $stok['selisih'];
 
                                         if ($jumlahOpname !== null) {
@@ -235,9 +237,9 @@
                                     @endphp
                                     <tr class="border-b hover:bg-gray-50">
                                         <td class="py-3 px-6 font-medium">{{ $stok['nama_barang'] }}</td>
-                                        <td class="py-3 px-6 text-center font-mono">{{ $stokSistem }}</td> {{-- Diganti ke stokSistem --}}
+                                        <td class="py-3 px-6 text-center font-mono">{{ $stokSistem }}</td> {{-- Menampilkan Stok Sistem (jumlah_sebelum) --}}
                                         <td class="py-3 px-6 text-center font-mono">
-                                            {{ $jumlahOpname ?? 'Tidak Diperiksa' }}
+                                            {{ $jumlahOpname ?? 'Tidak Diperiksa' }} {{-- Menampilkan Stok Fisik (jumlah_sesudah) --}}
                                         </td>
                                         <td class="py-3 px-6 text-center font-bold {{ $selisihColor }}">
                                             {{ is_numeric($selisihTampil) ? $selisihTampil : '-' }}

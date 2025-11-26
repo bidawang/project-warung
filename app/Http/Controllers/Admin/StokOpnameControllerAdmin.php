@@ -70,6 +70,15 @@ class StokOpnameControllerAdmin extends Controller
             ->latest('created_at')
             ->first();
 
+        // =========================================================================
+        // >>> LOGIKA BARU: AUTO-SELECT TANGGAL TERBARU UNTUK TAB RIWAYAT <<<
+        // =========================================================================
+        if ($activeTab === 'riwayat' && !$tanggalFilter && $lastOpname) {
+            // Jika di tab riwayat dan belum ada filter tanggal, gunakan tanggal opname terbaru
+            $tanggalFilter = Carbon::parse($lastOpname->created_at)->toDateString();
+        }
+        // =========================================================================
+
         $canInputToday = true;
         $lastOpnameDate = null;
         $daysSinceLastOpname = null;
@@ -93,16 +102,20 @@ class StokOpnameControllerAdmin extends Controller
             ->groupBy('tanggal')
             ->orderByDesc('tanggal')
             ->get();
-        // dd($riwayatTanggal);
-        // Ambil stok warung hanya untuk warung yang aktif
+
+        // Ambil stok warung hanya untuk warung yang aktif (untuk list barang)
         $stokWarung = StokWarung::with(['barang'])
             ->where('id_warung', $activeWarungId)
             ->get();
 
         $tanggalTampil = $tanggalFilter ?: Carbon::now()->toDateString();
 
+        // Flag untuk menentukan apakah sedang di mode riwayat
+        $isViewingHistory = $tanggalFilter !== null;
+
         $opnameTanggal = collect();
         if ($tanggalTampil) {
+            // Ambil data opname untuk tanggal yang dilihat
             $opnameTanggal = StokOpname::with('stokWarung')
                 ->whereDate('created_at', $tanggalTampil)
                 ->whereHas('stokWarung', function ($query) use ($activeWarungId) {
@@ -113,25 +126,34 @@ class StokOpnameControllerAdmin extends Controller
         }
 
         // Gabungkan stok warung dan hasil opname
-        $dataGabung = $stokWarung->map(function ($stok) use ($opnameTanggal) {
+        $dataGabung = $stokWarung->map(function ($stok) use ($opnameTanggal, $isViewingHistory) {
             $barang = $stok->barang;
             $opname = $opnameTanggal->get($stok->id);
 
-            $jumlahOpname = $opname ? $opname->jumlah : null;
-            $stokSistem = $stok->jumlah ?? 0;
-            $selisih = $jumlahOpname !== null ? $jumlahOpname - $stokSistem : null;
+            // Default: Ambil stok current dari StokWarung (untuk list Input Terbaru)
+            $stokSistemTampil = $stok->jumlah ?? 0;
+            $jumlahOpnameTampil = null;
+            $selisih = null;
+            $status = '❌ Tidak Diperiksa';
 
-            if ($jumlahOpname !== null) {
+            if ($opname) {
+                $jumlahOpnameTampil = $opname->jumlah_sesudah;
+
+                if ($isViewingHistory) {
+                    // RIWAYAT MODE: Gunakan jumlah_sebelum dari riwayat sebagai 'Stok Sistem (Sebelum)'
+                    $stokSistemTampil = $opname->jumlah_sebelum ?? 0;
+                }
+                // Jika sedang Input Terbaru, $stokSistemTampil tetap menggunakan stok current dari StokWarung
+
+                $selisih = $jumlahOpnameTampil - $stokSistemTampil;
                 $status = '✅ Sudah dicek';
-            } else {
-                $status = '❌ Tidak Diperiksa';
             }
 
             return [
                 'id_stok_warung' => $stok->id,
                 'nama_barang' => $barang->nama_barang ?? '-',
-                'stok_sistem' => $stokSistem,
-                'jumlah_opname' => $jumlahOpname,
+                'stok_sistem' => $stokSistemTampil, // In History: jumlah_sebelum. In Input: current StokWarung::jumlah
+                'jumlah_opname' => $jumlahOpnameTampil, // jumlah_sesudah
                 'status' => $status,
                 'selisih' => $selisih,
             ];
@@ -145,7 +167,7 @@ class StokOpnameControllerAdmin extends Controller
         return view('admin.stok_opname.index', [
             'stokSekarang' => $dataGabung,
             'riwayatTanggal' => $riwayatTanggal,
-            'tanggalFilter' => $tanggalFilter,
+            'tanggalFilter' => $tanggalFilter, // $tanggalFilter sekarang bisa berisi tanggal terbaru
             'activeTab' => $activeTab,
             'canInputToday' => $canInputToday,
             'lastOpnameDate' => $lastOpnameDate,

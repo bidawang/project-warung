@@ -25,6 +25,7 @@ class BarangControllerAdmin extends Controller
     public function create()
     {
         $subkategoris = Subkategori::with('kategori')->get();
+        // dd($subkategoris);
         return view('admin.barang.create', compact('subkategoris'));
     }
 
