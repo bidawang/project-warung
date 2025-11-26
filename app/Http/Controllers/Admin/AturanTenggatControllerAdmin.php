@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\AturanTenggat;
+use App\Models\Warung;
 
 
 class AturanTenggatControllerAdmin extends Controller
@@ -58,12 +59,17 @@ class AturanTenggatControllerAdmin extends Controller
     /**
      * Menyimpan aturan tenggat baru dengan validasi bentrok tanggal.
      */
+
+    public function create() {
+        $warung = Warung::all();
+        return view('admin.hutang.create_aturan_tenggat',compact('warung'));
+    }
     public function store(Request $request)
     {
         $data = $request->validate([
             'id_warung' => 'required|exists:warung,id',
-            'tanggal_awal' => 'required|date',
-            'tanggal_akhir' => 'required|date|after_or_equal:tanggal_awal',
+            'tanggal_awal' => 'required',
+            'tanggal_akhir' => 'required|after_or_equal:tanggal_awal',
             'jatuh_tempo_hari' => 'required|integer|min:1',
             'bunga' => 'required|numeric|min:0',
             'keterangan' => 'nullable|string|max:255',
@@ -75,7 +81,13 @@ class AturanTenggatControllerAdmin extends Controller
         // Simpan data
         AturanTenggat::create($data);
 
-        return back()->with('success', 'Aturan tenggat baru berhasil ditambahkan.');
+        return redirect()->route('admin.hutang.index')->with('success', 'Aturan tenggat berhasil ditambahkan.');
+    }
+
+    public function edit($id){
+        $aturanTenggat = AturanTenggat::findOrFail($id);
+        $warung = Warung::all();
+        return view('admin.hutang.edit_aturan_tenggat', compact('aturanTenggat','warung'));
     }
 
     /**
@@ -85,8 +97,8 @@ class AturanTenggatControllerAdmin extends Controller
     {
         $data = $request->validate([
             'id_warung' => 'required|exists:warung,id',
-            'tanggal_awal' => 'required|date',
-            'tanggal_akhir' => 'required|date|after_or_equal:tanggal_awal',
+            'tanggal_awal' => 'required',
+            'tanggal_akhir' => 'required|after_or_equal:tanggal_awal',
             'jatuh_tempo_hari' => 'required|integer|min:1',
             'bunga' => 'required|numeric|min:0',
             'keterangan' => 'nullable|string|max:255',
@@ -99,7 +111,7 @@ class AturanTenggatControllerAdmin extends Controller
         // Update data
         $aturanTenggat->update($data);
 
-        return back()->with('success', 'Aturan tenggat berhasil diperbarui.');
+        return redirect()->route('admin.hutang.index')->with('success', 'Aturan tenggat berhasil diperbarui.');
     }
 
     /**
