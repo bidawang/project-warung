@@ -16,6 +16,7 @@ class TransaksiBarang extends Model
         'id_barang',
         'id_area_pembelian',
         'jumlah',
+        'jumlah_terpakai',  
         'harga',
         'status',
         'jenis',

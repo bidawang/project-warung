@@ -8,70 +8,57 @@ use App\Models\TransaksiBarang;
 use App\Models\Warung;
 use App\Models\Barang;
 use App\Models\AreaPembelian;
+use App\Models\TransaksiAwal;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
 class RencanaBelanjaControllerAdmin extends Controller
 {
     protected function getStockData()
-    {
-        // Mengambil semua TransaksiBarang (Stok Sumber) yang masih memiliki stok > 0
-        $allTransactions = TransaksiBarang::with(['barang', 'areaPembelian']) 
-        ->where('jumlah', '>', 0) 
+{
+    $allTransactions = TransaksiBarang::with(['barang','areaPembelian'])
+        ->whereColumn('jumlah','>','jumlah_terpakai')
         ->get()
-        ->map(function ($trx) {
+        ->map(function($trx){
             return [
-                'id'              => $trx->id,
-                'id_barang'       => $trx->id_barang,
-                'nama_barang'     => $trx->barang->nama_barang ?? '-',
-                'jumlah'          => $trx->jumlah,
-                'harga'           => $trx->harga,
-                // TAMBAHKAN DATA AREA PEMBELIAN
-                'area_pembelian'  => $trx->areaPembelian->area ?? null,
+                'id'        => $trx->id,
+                'id_barang' => $trx->id_barang,
+                'nama_barang'=> $trx->barang->nama_barang ?? '-',
+                'jumlah'    => $trx->jumlah - $trx->jumlah_terpakai, // stok real
+                'harga'     => $trx->harga,
+                'area'      => $trx->areaPembelian->area ?? '-',
             ];
         });
-// dd($allTransactions);
-        // Group by id_barang -> list stok sumber
-        $stockByBarang = $allTransactions->groupBy('id_barang')->map(function ($items) {
-            return $items->map(fn($i) => [
-                'id'            => $i['id'],
-                'jumlah_awal'   => $i['jumlah'],
-                'harga'         => $i['harga'],
-            ])->values();
-        });
 
-        // Ambil semua AreaPembelian
-        $areaPembelians = AreaPembelian::all();
+    return [
+        'stockByBarang'     => $allTransactions->groupBy('id_barang'),
+        'allTransactions'   => $allTransactions->values(),   // penting
+        'warungs'           => Warung::all(),
+        'areaPembelians'    => AreaPembelian::all()
+    ];
+}
 
-        return [
-            'stockByBarang'     => $stockByBarang,
-            'warungs'           => Warung::all(),
-            'allTransactions'   => $allTransactions, // Digunakan oleh JS
-            'areaPembelians'    => $areaPembelians, // Data Area Pembelian baru
-        ];
-    }
+public function index()
+{
+    $data = $this->getStockData();
+    
+    $rencana = RencanaBelanja::with(['barang','warung'])
+    ->where('status','dibeli')
+    ->get()
+    ->groupBy('id_warung');
+// dd($rencana);
+    return view('admin.rencanabelanja.index',[
+        'rencanaBelanjaByWarung' => $rencana,
+        'allTransactionsForJs'   => $data['allTransactions'], // dipakai JS
+        'stockByBarang'          => $data['stockByBarang'],
+        'warungs'=>$data['warungs'],
+    ]);
+}
 
-    /**
-     * Menampilkan halaman rencana belanja.
-     */
-    public function index(Request $request)
-    {
-        $data = $this->getStockData();
-        $allTransactionsForJs = $data['allTransactions'];
-
-        // Ambil Rencana Belanja yang belum selesai (jumlah_dibeli < jumlah_awal)
-        $rencanaBelanjas = RencanaBelanja::with(['barang', 'warung'])
-            ->whereColumn('jumlah_dibeli', '<', 'jumlah_awal')
-            ->get();
-
-        // Grouping berdasarkan ID Warung
-        $rencanaBelanjaByWarung = $rencanaBelanjas->groupBy('id_warung');
-// dd($rencanaBelanjaByWarung, $allTransactionsForJs, $data);
-        return view('admin.rencanabelanja.index', array_merge($data, [
-            'rencanaBelanjaByWarung' => $rencanaBelanjaByWarung,
-            'allTransactionsForJs' => $allTransactionsForJs,
-        ]));
-    }
 
     /**
      * Memproses pengiriman rencana belanja ke warung.
@@ -130,12 +117,98 @@ class RencanaBelanjaControllerAdmin extends Controller
             ->filter()
             ->values()
             ->sortBy('nama_barang');
-
+// dd($totalKebutuhan);
         return view('admin.rencanabelanja.pembelian', compact('totalKebutuhan'));
     }
 
     public function store(Request $request)
-    {
-        dd($request->all());
+{
+    // Validasi tetap sama
+    $validated = $request->validate([
+        'items' => 'required|array',
+        'items.*.id_barang'       => 'required|integer|exists:barang,id',
+        'items.*.rencana_ids'     => 'required|string',
+
+        'items.*.purchases'       => 'required_without:items.*.skip|array',
+        'items.*.purchases.*.area_pembelian_id' => 'required_without:items.*.skip|integer|exists:area_pembelian,id',
+        'items.*.purchases.*.jumlah_beli'       => 'required_without:items.*.skip|integer|min:1',
+        'items.*.purchases.*.harga'             => 'required_without:items.*.skip|numeric|min:0',
+        'items.*.purchases.*.tanggal_kadaluarsa' => 'nullable|date',
+    ]);
+
+    $grandTotal = 0;
+    $keteranganTransaksi = "Pembelian Berdasarkan Rencana Belanja Warung";
+    $rencanaUpdates = [];
+
+    DB::beginTransaction();
+    try {
+
+        $transaksi = TransaksiAwal::create([
+            'tanggal' => now(),
+            'keterangan' => $keteranganTransaksi,
+            'total' => 0
+        ]);
+
+        foreach ($request->items as $itemData) {
+
+            /** SKIP barang — lewati total proses */
+            if (!empty($itemData['skip']) && $itemData['skip'] == 1) {
+                continue;
+            }
+
+            $idBarang = $itemData['id_barang'];
+            $rencanaIds = array_map('intval', explode(',', $itemData['rencana_ids']));
+            $totalDibeliPerGroup = 0;
+
+            /** Purchases bisa kosong → gunakan null-safe */
+            foreach ($itemData['purchases'] ?? [] as $purchase) {
+
+                $jumlahBeli = (int) $purchase['jumlah_beli'];
+                $hargaUnit  = (float) $purchase['harga'];
+                $totalHargaBaris = $jumlahBeli * $hargaUnit;
+
+                TransaksiBarang::create([
+                    'id_transaksi_awal' => $transaksi->id,
+                    'id_area_pembelian' => $purchase['area_pembelian_id'],
+                    'id_barang'         => $idBarang,
+                    'jumlah'            => $jumlahBeli,
+                    'jumlah_terpakai'    => 0,
+                    'harga'             => $hargaUnit,
+                    'tanggal_kadaluarsa'=> $purchase['tanggal_kadaluarsa'] ?? null,
+                    'jenis'             => 'rencana',
+                ]);
+
+                $grandTotal += $totalHargaBaris;
+                $totalDibeliPerGroup += $jumlahBeli;
+            }
+
+            /** update semua rencana yang terkait */
+            foreach ($rencanaIds as $rencanaId) {
+                $rencanaUpdates[$rencanaId] = ($rencanaUpdates[$rencanaId] ?? 0) + $totalDibeliPerGroup;
+            }
+        }
+
+        foreach ($rencanaUpdates as $rencanaId => $jumlahBeli) {
+            $r = RencanaBelanja::find($rencanaId);
+            if ($r) {
+                $r->jumlah_dibeli += $jumlahBeli;
+                $r->status = 'dibeli';
+                $r->save();
+            }
+        }
+
+        $transaksi->update(['total' => $grandTotal]);
+
+        DB::table('dana_utama')->where('jenis_dana','wrb_old')->decrement('saldo',$grandTotal);
+
+        DB::commit();
+        return redirect()->route('admin.rencana.index')->with('success','Transaksi rencana berhasil diproses.');
+    
+    } catch (\Exception $e) {
+        DB::rollBack();
+        \Log::error($e);
+        return back()->withErrors(['process_error'=>"Gagal memproses transaksi. Error: ".$e->getMessage()]);
     }
+}
+
 }

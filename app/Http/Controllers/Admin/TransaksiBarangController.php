@@ -155,67 +155,116 @@ class TransaksiBarangController extends Controller
 
     public function store(Request $request)
     {
-        dd($request->all());
-        // Simpan transaksi awal
-        $transaksi = TransaksiAwal::create([
-            'tanggal' => now(),
-            'keterangan' => $request->keterangan,
-            'total' => 0, // akan dihitung di bawah
+        // dd($request->all()); // Hapus dd() setelah pengujian
+
+        // 1. Validasi Input (Tambahkan validasi sesuai kebutuhan)
+        // dd($request->all());
+        $request->validate([
+            // Tambahkan validasi untuk id_area, id_barang, jumlah, total_harga, dll.
+            'id_area.*' => 'nullable|integer|exists:area_pembelian,id',
+            'id_barang.*.*' => 'nullable|integer|exists:barang,id',
+            'jumlah.*.*' => 'nullable|integer|min:0',
+            'total_harga.*.*' => 'nullable|numeric|min:0',
+            'tanggal_kadaluarsa.*.*' => 'nullable|date',
+            'lain_keterangan.*' => 'nullable|string',
+            'lain_harga.*' => 'nullable|numeric|min:0',
         ]);
-
         $grandTotal = 0;
+        
+        DB::beginTransaction();
+        try {
+            // 2. Simpan transaksi awal
+            $transaksi = TransaksiAwal::create([
+                'tanggal' => now(),
+                'keterangan' => $request->keterangan,
+                'total' => 0, // akan dihitung di bawah
+            ]);
 
-        // Loop area pembelian
-        if ($request->id_area) {
-            foreach ($request->id_area as $areaIndex => $areaId) {
-                if (isset($request->id_barang[$areaIndex])) {
-                    foreach ($request->id_barang[$areaIndex] as $i => $barangId) {
-                        $jumlah = $request->jumlah[$areaIndex][$i] ?? 0;
-                        $harga  = $request->total_harga[$areaIndex][$i] ?? 0;
-                        $tanggalKadaluarsa = $request->tanggal_kadaluarsa[$areaIndex][$i] ?? null;
+            // 3. Loop area pembelian (Transaksi Barang)
+            if ($request->id_area) {
+                foreach ($request->id_area as $areaIndex => $areaId) {
+                    if (isset($request->id_barang[$areaIndex])) {
+                        foreach ($request->id_barang[$areaIndex] as $i => $barangId) {
+                            $jumlah = $request->jumlah[$areaIndex][$i] ?? 0;
+                            // Asumsi $harga di sini adalah total harga per baris (jumlah * harga_satuan)
+                            $hargaTotalBaris = $request->total_harga[$areaIndex][$i] ?? 0;
+                            $tanggalKadaluarsa = $request->tanggal_kadaluarsa[$areaIndex][$i] ?? null;
 
-                        TransaksiBarang::create([
-                            'id_transaksi_awal'   => $transaksi->id,
-                            'id_area_pembelian'   => $areaId,
-                            'id_barang'           => $barangId,
-                            'jumlah'              => $jumlah,
-                            'harga'               => $harga,
-                            'tanggal_kadaluarsa'  => $tanggalKadaluarsa, // Menambahkan kolom baru
-                            'jenis'               => 'tambahan',
-                            // 'status'              => 'pending',
-                        ]);
+                            // Lewati jika data tidak lengkap atau nol
+                            if (!$barangId || ($jumlah == 0 && $hargaTotalBaris == 0)) {
+                                continue;
+                            }
 
-                        $grandTotal += $harga;
+                            // Kita asumsikan kolom 'harga' di TransaksiBarang menyimpan harga total baris ini
+                            // Jika 'harga' menyimpan harga satuan, logika ini harus disesuaikan.
+                            TransaksiBarang::create([
+                                'id_transaksi_awal' 	=> $transaksi->id,
+                                'id_area_pembelian' 	=> $areaId,
+                                'id_barang' 	 		=> $barangId,
+                                'jumlah' 		 		=> $jumlah,
+                                'harga' 		 		=> $hargaTotalBaris,
+                                'tanggal_kadaluarsa' 	=> $tanggalKadaluarsa,
+                                'jenis' 		 		=> 'tambahan', // Jenis Transaksi adalah tambahan/manual
+                            ]);
+
+                            $grandTotal += $hargaTotalBaris;
+                        }
                     }
                 }
             }
-        }
 
-        // Loop transaksi lain-lain (opsional)
-        if ($request->lain_keterangan && $request->lain_harga) {
-            foreach ($request->lain_keterangan as $i => $ket) {
-                $harga = $request->lain_harga[$i] ?? 0;
+            // 4. Loop transaksi lain-lain (opsional)
+            if ($request->lain_keterangan && $request->lain_harga) {
+                foreach ($request->lain_keterangan as $i => $ket) {
+                    $harga = $request->lain_harga[$i] ?? 0;
 
-                // Lewati jika kosong
-                if (!$ket && !$harga) {
-                    continue;
+                    // Lewati jika keterangan atau harga kosong
+                    if (empty($ket) && $harga == 0) {
+                        continue;
+                    }
+
+                    TransaksiLainLain::create([
+                        'id_transaksi_awal' => $transaksi->id,
+                        'keterangan' 		=> $ket,
+                        'harga' 		 	=> $harga,
+                    ]);
+
+                    $grandTotal += $harga;
                 }
-
-                TransaksiLainLain::create([
-                    'id_transaksi_awal' => $transaksi->id,
-                    'keterangan'        => $ket,
-                    'harga'             => $harga,
-                ]);
-
-                $grandTotal += $harga;
             }
+
+            // 5. Update total transaksi awal
+            $transaksi->update(['total' => $grandTotal]);
+
+            // 6. Kurangi Saldo di Dana Utama
+            // Kurangi saldo dari dana_utama yang memiliki jenis_dana = 'wrb_old'
+            // Lakukan pengecekan agar grandTotal > 0
+            if ($grandTotal > 0) {
+                $affected = DB::table('dana_utama')
+                    ->where('jenis_dana', 'wrb_old')
+                    ->decrement('saldo', $grandTotal);
+
+                if ($affected === 0) {
+                    // Opsional: Berikan peringatan jika tidak ada saldo yang dikurangi
+                    \Log::warning("Tidak ada saldo 'wrb_old' yang ditemukan/dikurangi untuk transaksi ID: " . $transaksi->id);
+                }
+            }
+
+            DB::commit();
+
+            return redirect()->route('admin.transaksibarang.index')
+                ->with('success', 'Transaksi manual berhasil ditambahkan dan saldo dana telah dikurangi!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            // Log error
+            \Log::error('Gagal memproses transaksi manual: ' . $e->getMessage());
+            
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['process_error' => 'Gagal memproses transaksi. Silakan coba lagi. Error: ' . $e->getMessage()]);
         }
-
-        // Update total transaksi awal
-        $transaksi->update(['total' => $grandTotal]);
-
-        return redirect()->route('transaksibarang.index')
-            ->with('success', 'Transaksi berhasil ditambahkan!');
     }
 
 
@@ -377,6 +426,9 @@ class TransaksiBarangController extends Controller
             ->with('success', count($transaksiIdsDiproses) . ' item stok berhasil didistribusikan ke warung!');
     }
 
+
+
+    //KEMUNGKINAN KDA TEPAKAI !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 
     public function kirimRencanaProses(Request $request)
     {

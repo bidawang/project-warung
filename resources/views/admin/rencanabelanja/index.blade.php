@@ -1,152 +1,126 @@
 @extends('layouts.admin')
 
-@section('title', 'Rencana Belanja Per Warung')
-
+@section('title','Rencana Belanja Per Warung')
 @section('content')
 <div class="flex-1 flex flex-col overflow-hidden">
 
     {{-- HEADER --}}
-    <header class="flex justify-between items-center p-6 bg-white border-b-2 border-gray-200 shadow-sm">
-        <button id="openSidebarBtn" class="text-gray-500 hover:text-gray-900 lg:hidden">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-        </button>
-        <h1 class="text-2xl font-bold text-gray-800">Manajemen Rencana Belanja</h1>
-        <div class="flex items-center">
-            <span class="mr-4 font-semibold hidden sm:inline">Admin User</span>
-            <div class="w-10 h-10 bg-blue-500 rounded-full"></div>
-        </div>
+    <header class="flex justify-between items-center p-6 bg-white border-b shadow">
+        <h1 class="text-2xl font-bold">Manajemen Rencana Belanja</h1>
     </header>
 
-    {{-- ERROR --}}
     @if($errors->any())
-    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-        <strong>Terjadi kesalahan:</strong>
-        <ul class="mt-2 list-disc list-inside text-sm">
-            @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+    <div class="bg-red-100 text-red-700 px-4 py-3 rounded mb-4">
+        <strong>Kesalahan:</strong>
+        <ul class="list-disc ml-5 text-sm">
+            @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
         </ul>
     </div>
     @endif
 
 
-    {{-- MAIN CONTENT AREA --}}
-    <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6 md:p-10">
+    <main class="flex-1 overflow-y-auto bg-gray-50 p-6">
 
-        {{-- Navigasi / Aksi Cepat --}}
-        <div class="mb-8 flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
-            <a href="{{ route('admin.transaksibarang.index') }}"
-               class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg shadow text-sm flex items-center justify-center">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h11l-3-3m0 6l3-3m-3 3v7m9-14v2a2 2 0 01-2 2h-6a2 2 0 01-2-2v-2a2 2 0 012-2h6a2 2 0 012 2z"/></svg>
+        <div class="flex gap-3 mb-6">
+            <a href="{{ route('admin.transaksibarang.index') }}" class="btn bg-indigo-600 text-white px-4 py-2 rounded shadow">
                 Ke Stok Pengiriman
             </a>
-
-            <a href="{{ route('admin.rencana.create') }}"
-               class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg shadow text-sm flex items-center justify-center">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+            <a href="{{ route('admin.rencana.create') }}" class="btn bg-blue-600 text-white px-4 py-2 rounded shadow">
                 Buat Rencana Baru
             </a>
         </div>
 
 
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
 
-            {{-- ------------------- KOLOM STOK GLOBAL ------------------- --}}
-            {{-- Menampilkan sisa stok yang tersedia dari TransaksiBarang --}}
-            <div class="md:col-span-1 bg-white p-6 rounded-xl shadow-xl h-fit border">
-                <h2 class="text-xl font-bold text-gray-800 flex items-center mb-4 border-b pb-2">
-                    <svg class="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-3m-2 0V5a2 2 0 00-2-2H9a2 2 0 00-2 2v2m5 5v10"/></svg>
-                    Stok Global
-                </h2>
-
-                <div id="stokGlobalContainer" class="space-y-3 max-h-96 overflow-y-auto pr-2">
-                    <p class="text-sm text-gray-500 italic">Memuat data stok...</p>
+            {{-- ==================== STOK GLOBAL (DETAIL PER TRX & AREA) ==================== --}}
+            <div class="bg-white p-5 shadow rounded border h-fit">
+                <h2 class="font-bold text-lg mb-3 border-b pb-2">Stok Global (Detail TRX)</h2>
+                <div id="stokGlobalContainer" class="space-y-2 max-h-96 overflow-y-auto pr-1 text-sm text-gray-700">
+                    Load...
                 </div>
             </div>
 
 
-            {{-- ------------------- KOLOM RENCANA BELANJA ------------------- --}}
-            {{-- Daftar rencana belanja yang belum selesai per warung --}}
-            <div class="md:col-span-3 bg-white p-6 rounded-xl shadow-xl border">
+            {{-- ==================== LIST RENCANA ==================== --}}
+            <div class="md:col-span-3 bg-white p-6 shadow rounded border">
+
                 <form id="formKirimRencana" method="POST" action="{{ route('admin.transaksibarang.kirim.rencana.proses') }}">
-                @csrf
+                    @csrf
 
-                <div class="flex flex-col md:flex-row justify-between items-start mb-4 border-b pb-4">
-                    <h2 class="text-2xl font-bold text-gray-800 flex items-center mb-2 md:mb-0">
-                        <svg class="w-6 h-6 mr-2 text-red-500" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>
-                        Rencana Belanja per Warung
-                    </h2>
+                    <div class="flex justify-between items-center mb-4 border-b pb-3">
+                        <h2 class="text-xl font-bold">Rencana Belanja per Warung</h2>
 
-                    <button type="submit" id="btnSubmitRencana" disabled
-                        class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow text-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                        <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                        Kirim Rencana
-                    </button>
-                </div>
+                        <button id="btnSubmitRencana" disabled
+                            class="bg-green-600 text-white px-4 py-2 rounded disabled:opacity-40">
+                            Kirim Rencana
+                        </button>
+                    </div>
 
-                <input type="text" id="searchRencana"
-                        class="w-full mb-6 border px-3 py-2 rounded"
-                        placeholder="Cari Warung...">
+                    <input type="text" id="searchRencana" placeholder="Cari Warung..."
+                            class="border px-3 py-2 rounded mb-5 w-full">
 
-                {{-- LIST WARUNG --}}
-                <div id="rencanaContainer" class="space-y-6">
 
-                @forelse($rencanaBelanjaByWarung as $warungId => $items)
-                <div class="p-4 bg-indigo-50 border-r-4 border-indigo-400 rounded item-block rencana-warung-block"
-                     data-warung-id="{{ $warungId }}"
-                     data-nama-warung="{{ $items[0]->warung->nama_warung }}">
+                    <div id="rencanaContainer" class="space-y-6">
 
-                    <h3 class="font-bold text-indigo-700 text-lg mb-3 flex justify-between items-center border-b pb-1">
-                        <span>{{ $items[0]->warung->nama_warung }}</span>
-                        <input type="checkbox" class="chk-rencana-warung cursor-pointer" data-warung-id="{{ $warungId }}"/>
-                    </h3>
+                        @forelse($rencanaBelanjaByWarung as $warungId=>$items)
 
-                    <ul class="space-y-3">
-                        @foreach($items as $i)
-                        @php
-                            $need = $i->jumlah_awal - $i->jumlah_dibeli;
-                        @endphp
+                        <div class="p-4 bg-indigo-50 border-l-4 border-indigo-500 rounded rencana-warung-block"
+                            data-warung-id="{{ $warungId }}"
+                            data-nama-warung="{{ $items[0]->warung->nama_warung }}">
 
-                        <li class="rencana-item p-3 border-l-4 border-indigo-500 bg-white shadow-sm"
-                            data-rencana-id="{{ $i->id }}"
-                            data-barang-id="{{ $i->barang->id }}"
-                            data-kebutuhan="{{ $need }}">
-
-                            <span class="font-semibold">{{ $i->barang->nama_barang }}</span>
-
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-2 text-xs mt-1">
-
-                                <div class="flex space-x-1">
-                                    <span>Kebutuhan:</span>
-                                    <strong class="text-red-600">{{ $need }}</strong>
-                                </div>
-
-                                <div class="flex items-center space-x-2">
-                                    <span>Kirim:</span>
-                                    <input type="number"
-                                            name="items[{{ $i->id }}][jumlah]"
-                                            class="rencana-qty-input border rounded px-2 py-1 w-16 text-center bg-gray-100"
-                                            disabled min="1" max="{{ $need }}"
-                                            value="{{ $need }}">
-                                </div>
-
-                                <div class="col-span-2 flex items-center space-x-2">
-                                    <span>Stok:</span>
-                                    <select name="items[{{ $i->id }}][id_transaksi_barang]"
-                                        class="rencana-trx-select border rounded px-2 py-1 w-full bg-gray-100" disabled>
-                                        <option value="">Pilih...</option>
-                                    </select>
-                                </div>
-
+                            <div class="flex justify-between border-b pb-1 mb-2">
+                                <h3 class="font-bold text-indigo-700">{{ $items[0]->warung->nama_warung }}</h3>
+                                <input type="checkbox" class="chk-rencana-warung" data-warung-id="{{ $warungId }}">
                             </div>
-                        </li>
-                        @endforeach
-                    </ul>
 
-                </div>
-                @empty
-                    <p class="text-center text-gray-500">Tidak ada rencana belanja yang belum selesai.</p>
-                @endforelse
+                            <ul class="space-y-3">
 
-                </div>
+                                @foreach($items as $i)
+                                <li class="p-3 bg-white border shadow-sm rounded rencana-item"
+                                    data-rencana-id="{{ $i->id }}"
+                                    data-barang-id="{{ $i->barang->id }}"
+                                    data-kebutuhan="{{ $i->jumlah_awal }}">
+
+                                    <div class="font-semibold">{{ $i->barang->nama_barang }} 
+                                        {{-- Penambahan span untuk menampilkan total kirim --}}
+                                        <span class="ml-2 text-indigo-500 font-normal">(Kirim: <span class="total-kirim-span">0</span>)</span>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-4 gap-2 mt-1 text-xs">
+
+                                        <span>Kebutuhan:
+                                            <strong class="text-red-600">{{ $i->jumlah_awal }}</strong>
+                                        </span>
+
+                                        <div class="md:col-span-3">
+                                            {{-- Kontainer untuk opsi multi-select --}}
+                                            <div id="multiTrxContainer-{{ $i->id }}" class="space-y-2">
+                                                <p class="text-gray-400">Pilih sumber stok di bawah.</p>
+                                            </div>
+                                            
+                                            {{-- Tombol untuk menambah opsi multi-select --}}
+                                            <button type="button" 
+                                                    data-rencana-id="{{ $i->id }}" 
+                                                    data-barang-id="{{ $i->barang->id }}"
+                                                    class="btn-add-trx mt-2 text-blue-600 hover:text-blue-800 text-sm disabled:opacity-50" disabled>
+                                                + Tambah Sumber Stok
+                                            </button>
+                                        </div>
+
+                                    </div>
+                                </li>
+                                @endforeach
+
+                            </ul>
+                        </div>
+
+                        @empty
+                            <p class="text-center text-gray-500">Tidak ada rencana.</p>
+                        @endforelse
+
+                    </div>
+
                 </form>
             </div>
         </div>
@@ -154,166 +128,291 @@
 </div>
 
 
-{{-- ===================== JAVASCRIPT LOGIC ====================== --}}
+{{-- ================= JS ================= --}}
 <script>
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener("DOMContentLoaded",()=>{
 
-    // 1. Inisialisasi Data dari PHP
-    const trx=@json($allTransactionsForJs??[]);
-    const stockTrx={},stockBarang={},stockSisa={};
+    // Data dari Controller: jumlah sudah merupakan STOK REAL (jumlah - jumlah_terpakai)
+    const trx=@json($allTransactionsForJs??[]); 
+    const stockTrx={}, stockBarang={}, stockSisa={};
 
-    // Mapping data transaksi barang (stok sumber)
     trx.forEach(t=>{
-        let b=t.id_barang,
-            nama=t.nama_barang||"Barang-"+b,
-            // Logika untuk menentukan Asal Pembelian (sesuai controller)
-            // asal=t.supplier?.nama_supplier||t.supplier_name||t.keterangan_pembelian||"Tanpa keterangan";
-            asal=t.area_pembelian||t.supplier?.t.keterangan_pembelian||"Tanpa keterangan";
-
-        stockTrx[t.id]={...t,nama_barang:nama,asal_pembelian:asal}; // Data lengkap transaksi sumber
-        stockBarang[b]||(stockBarang[b]=[]);
-        stockBarang[b].push(stockTrx[t.id]); // Pengelompokan stok sumber per barang
-        stockSisa[t.id]=t.jumlah; // Sisa stok awal (dari DB)
+        stockTrx[t.id]=t;
+        stockBarang[t.id_barang]??=[];
+        stockBarang[t.id_barang].push(t);
+        stockSisa[t.id]=t.jumlah; // Jumlah di sini adalah STOK REAL
     });
 
+    const fmt=n=>n.toLocaleString("id-ID");
 
-    // Fungsi format angka (separasi ribuan)
-    function fmt(n){return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,".");}
-
-
-    // 2. Rendering Stok Global
+    /* ================= STOK GLOBAL (RENDER DETAIL PER TRX & AREA) ================= */
     function renderStock(){
-        let box=document.getElementById("stokGlobalContainer");
-        box.innerHTML="";
+        let el=document.getElementById("stokGlobalContainer");
+        el.innerHTML="";
 
-        // Urutkan berdasarkan nama barang
-        Object.keys(stockTrx).sort((a,b)=>
-            stockTrx[a].nama_barang.localeCompare(stockTrx[b].nama_barang)
-        ).forEach(id=>{
-            let s=stockSisa[id]; // Sisa stok setelah alokasi (dinamis)
-            let c=s==0?"text-red-500":s<=10?"text-yellow-600":"text-green-700";
+        // Tampilkan detail stok per transaksi (TRX) termasuk Area Pembelian
+        Object.values(stockTrx).sort((a,b)=>a.nama_barang.localeCompare(b.nama_barang)).forEach(s=>{
+            let x=stockSisa[s.id];
+            if(x<=0) return; // Hanya tampilkan stok yang tersisa
             
-            // Cek jika stok habis, tidak perlu tampilkan
-            if(s <= 0) return; 
+            let color = x < 5 ? 'text-red-600' : x < 15 ? 'text-yellow-600' : 'text-green-700';
 
-            box.innerHTML+=`
-                <div class="border p-2 rounded bg-white">
-                    <div class="flex justify-between text-sm font-semibold">
-                        <span>${stockTrx[id].nama_barang}</span><span>TRX-${id}</span>
-                    </div>
-                    <div class="flex justify-between text-xs">
-                        <strong class="${c}">${s} pcs</strong>
-                        <span>Rp${fmt(stockTrx[id].harga)}</span>
-                    </div>
-                    <div class="text-xs text-indigo-600 truncate">📦 ${stockTrx[id].asal_pembelian}</div>
-                </div>`;
+            el.innerHTML+=`
+            <div class="border p-2 rounded">
+                <div class="flex justify-between font-semibold">
+                    <span>${s.nama_barang}</span><span>#${s.id}</span>
+                </div>
+                <div class="flex justify-between text-xs">
+                    <span class="${color}">${x} pcs</span>
+                    <span>${s.area}</span>
+                </div>
+            </div>`;
         });
     }
 
 
-    // 3. Mengisi Dropdown Stok
-    function fillSelect(sel,b){
-        sel.innerHTML="<option value=''>Pilih...</option>";
-        // Urutkan berdasarkan ID Transaksi (biasanya yang lama/dulu dibeli)
-        (stockBarang[b]||[]).sort((a,b)=>a.id-b.id).forEach(s=>{
-            // Teks opsi: ID Transaksi, Sisa Stok, Harga, dan Asal Pembelian
-            sel.innerHTML+=`<option value="${s.id}">#${s.id} (${stockSisa[s.id]} pcs) Rp${fmt(s.harga)} | ${s.asal_pembelian}</option>`;
+    /* ================= MULTI-SELECT ITEM ================= */
+    // Fungsi untuk membuat elemen select
+    function createTrxSelect(rencanaId, barangId, container) {
+        const itemIndex = container.children.length; // Sebagai index untuk form array
+        const selectId = `trx-select-${rencanaId}-${itemIndex}`;
+        const inputId = `qty-input-${rencanaId}-${itemIndex}`;
+        
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex items-center gap-2 p-2 bg-gray-50 border rounded trx-item-wrapper';
+        
+        // Input QTY
+        wrapper.innerHTML += `
+            <input type="number" min="1" max="9999" value="1"
+                name="items[${rencanaId}][transactions][${itemIndex}][jumlah]"
+                id="${inputId}"
+                class="rencana-qty-input border rounded w-16 text-center text-xs"
+                data-rencana-id="${rencanaId}"
+                data-barang-id="${barangId}"
+                data-index="${itemIndex}">
+        `;
+
+        // Select TRX
+        const sel = document.createElement('select');
+        sel.name = `items[${rencanaId}][transactions][${itemIndex}][id_transaksi_barang]`;
+        sel.id = selectId;
+        sel.className = 'rencana-trx-select border rounded flex-1 text-xs bg-white';
+        
+        // Remove button
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'text-red-500 hover:text-red-700 font-bold text-lg leading-none';
+        removeBtn.textContent = '×';
+        removeBtn.onclick = () => {
+            wrapper.remove();
+            recalc();
+            // Cek apakah container kosong, jika iya tampilkan placeholder
+            if (container.children.length === 0) {
+                 container.innerHTML = '<p class="text-gray-400">Pilih sumber stok di bawah.</p>';
+            }
+        };
+
+        wrapper.appendChild(sel);
+        wrapper.appendChild(removeBtn);
+        container.appendChild(wrapper);
+
+        // Isi dan tambahkan event listener
+        fillSelect(sel, barangId, inputId);
+        document.getElementById(inputId).oninput = recalc; // QTY input event
+        sel.onchange = recalc; // Select change event
+
+        // Hapus placeholder jika ada
+        if (container.querySelector('p.text-gray-400')) {
+            container.querySelector('p.text-gray-400').remove();
+        }
+
+        return sel;
+    }
+
+    // Fungsi untuk mengisi opsi select TRX
+    function fillSelect(sel, barangId, qtyInputId){
+        sel.innerHTML=`<option value="">Pilih Sumber</option>`;
+        const qtyInput = document.getElementById(qtyInputId);
+
+        (stockBarang[barangId]??[]).forEach(s=>{
+            sel.innerHTML+=`<option value="${s.id}">
+                TRX-${s.id} (${s.area}) • ${stockSisa[s.id]} pcs (Rp${fmt(s.harga)})
+            </option>`;
+        });
+
+        // Event listener untuk membatasi input QTY berdasarkan stok yang tersedia
+        sel.addEventListener('change', () => {
+            const selectedTrxId = sel.value;
+            if (selectedTrxId) {
+                // Maksimum QTY adalah sisa stok yang belum teralokasi
+                const maxStock = stockSisa[selectedTrxId] + (qtyInput.dataset.allocated | 0); // Tambah alokasi lama jika ada
+                qtyInput.setAttribute('max', maxStock);
+                
+                // Jika QTY melebihi max, set ke max.
+                if ((qtyInput.value | 0) > maxStock) {
+                     qtyInput.value = maxStock;
+                }
+            } else {
+                 qtyInput.removeAttribute('max');
+            }
+            recalc(); // Panggil recalc setelah perubahan nilai select
         });
     }
 
-
-    // 4. Perhitungan Ulang Stok (Saat ada perubahan alokasi)
+    /* ================= RECALC (LOGIKA PENTING) ================= */
     function recalc(){
-        // Reset stokSisa ke nilai awal sebelum alokasi
-        Object.keys(stockTrx).forEach(id=>stockSisa[id]=stockTrx[id].jumlah);
+        // 1. Reset Sisa Stok (Global)
+        // stockTrx[i].jumlah sudah berisi STOK REAL dari controller
+        Object.keys(stockSisa).forEach(i=>stockSisa[i]=stockTrx[i].jumlah); 
+        
+        // 2. Kalkulasi Total Kirim per Warung & Kurangi Stok
+        let totalWarungChecked = 0;
+        let totalKirimPerRencana = {};
 
-        // Kurangi stok berdasarkan alokasi pada rencana belanja yang dicentang
-        document.querySelectorAll(".chk-rencana-warung:checked").forEach(ch=>{
-            ch.closest(".rencana-warung-block").querySelectorAll(".rencana-item").forEach(i=>{
-                let qty=parseInt(i.querySelector(".rencana-qty-input").value),
-                    trx=i.querySelector(".rencana-trx-select").value;
-                
-                if(trx && qty > 0){
-                    stockSisa[trx]-=qty;
-                    // pastikan stok tidak negatif
-                    if(stockSisa[trx]<0) stockSisa[trx]=0; 
-                }
-            });
-        });
+        document.querySelectorAll(".chk-rencana-warung:checked").forEach(ch => {
+            totalWarungChecked++;
+            
+            ch.closest(".rencana-warung-block").querySelectorAll(".rencana-item").forEach(i => {
+                const rencanaId = i.dataset.rencanaId;
+                totalKirimPerRencana[rencanaId] = 0;
 
-        updateOptionText(); // Update teks dropdown dengan sisa stok baru
-        renderStock(); // Render ulang kolom stok global
-    }
-
-
-    // 5. Update Teks Opsi Dropdown
-    function updateOptionText(){
-        document.querySelectorAll(".rencana-trx-select").forEach(s=>{
-            [...s.options].forEach(o=>{
-                let id=o.value;if(!id)return;
-                // Update sisa stok dan asal pembelian di teks opsi
-                o.textContent=`#${id} (${stockSisa[id]} pcs) Rp${fmt(stockTrx[id].harga)} | ${stockTrx[id].asal_pembelian}`;
-                
-                // Non-aktifkan opsi jika stok sisa 0 DAN opsi tersebut BUKAN yang sedang dipilih
-                o.disabled=stockSisa[id]<=0 && o.value!=s.value;
-            });
-        });
-    }
-
-
-    // 6. Event Listeners untuk Warung Checkbox
-    document.querySelectorAll(".rencana-warung-block").forEach(block=>{
-        let chk=block.querySelector(".chk-rencana-warung");
-
-        chk.addEventListener("change",()=>{
-            let enable=chk.checked;
-            block.querySelectorAll(".rencana-item").forEach(i=>{
-                let qty=i.querySelector(".rencana-qty-input"),
-                    sel=i.querySelector(".rencana-trx-select"),
-                    id=i.dataset.barangId;
-
-                // Aktifkan/non-aktifkan input/select
-                qty.disabled=sel.disabled=!enable;
-                
-                if(enable){
-                    fillSelect(sel,id); // Isi dropdown saat diaktifkan
+                i.querySelectorAll(".trx-item-wrapper").forEach(wrapper => {
+                    const qtyInput = wrapper.querySelector(".rencana-qty-input");
+                    const sel = wrapper.querySelector(".rencana-trx-select");
                     
-                    // Tambahkan event listener untuk perubahan
-                    sel.addEventListener("change",recalc);
-                    qty.addEventListener("input",recalc);
-                } else {
-                    // Hapus event listener saat dinonaktifkan (opsional, tapi baik)
-                    sel.removeEventListener("change",recalc);
-                    qty.removeEventListener("input",recalc);
-                    // Reset value saat dinonaktifkan
-                    sel.value = ''; 
-                    qty.value = qty.getAttribute('max');
+                    const qty = qtyInput.value | 0;
+                    const trx = sel.value;
+
+                    // Update total kirim untuk item rencana ini
+                    totalKirimPerRencana[rencanaId] += qty;
+
+                    if (trx) {
+                        // Kurangi stok global
+                        stockSisa[trx] -= qty;
+                        qtyInput.dataset.allocated = qty; // Simpan alokasi saat ini
+                    } else {
+                        qtyInput.dataset.allocated = 0;
+                    }
+                });
+                
+                // 3. Tampilkan Total Kirim & Validasi Visual
+                const kebutuhan = i.dataset.kebutuhan | 0;
+                const totalKirim = totalKirimPerRencana[rencanaId];
+                
+                const kirimTotalSpan = i.querySelector(".total-kirim-span");
+
+                if (kirimTotalSpan) {
+                    kirimTotalSpan.textContent = totalKirim;
+                }
+                
+                // Visual feedback jika total kirim > kebutuhan
+                i.style.backgroundColor = totalKirim > kebutuhan ? 'rgba(255, 235, 238, 0.7)' : 'white';
+                
+            });
+        });
+
+        // 4. Update Opsi Select dan Stok Global
+        document.querySelectorAll(".rencana-trx-select").forEach(s=>{
+            const currentTrx = s.value;
+            const qtyInput = s.closest(".trx-item-wrapper").querySelector(".rencana-qty-input");
+            const allocated = qtyInput.dataset.allocated | 0;
+
+            [...s.options].forEach(o=>{
+                if(!o.value) return;
+                
+                const sisaSaatIni = stockSisa[o.value];
+                const stokAwal = stockTrx[o.value].jumlah;
+
+                let sisaDisplay = sisaSaatIni;
+                
+                // Jika opsi ini adalah yang sedang dipilih, tambahkan kembali alokasi saat ini untuk ditampilkan
+                if (o.value == currentTrx) {
+                    sisaDisplay += allocated;
+                }
+
+                // Update text opsi select, termasuk AREA dan SISA STOK
+                o.textContent=`TRX-${o.value} (${stockTrx[o.value].area}) • ${sisaDisplay} pcs (Rp${fmt(stockTrx[o.value].harga)})`;
+                
+                // Disable jika stok <= 0 DAN bukan opsi yang sedang dipilih
+                o.disabled=sisaSaatIni <= 0 && s.value != o.value; 
+            });
+            
+            // Set max attribute pada QTY input
+            if (currentTrx) {
+                const maxStock = stockSisa[currentTrx] + allocated;
+                qtyInput.setAttribute('max', maxStock);
+                
+                // Jika QTY melebihi max, set ke max
+                if ((qtyInput.value | 0) > maxStock) {
+                    qtyInput.value = maxStock;
+                }
+            } else {
+                 qtyInput.removeAttribute('max');
+            }
+        });
+
+        // Render stok global
+        renderStock();
+        
+        // Atur tombol submit
+        document.getElementById("btnSubmitRencana").disabled = totalWarungChecked === 0;
+    }
+
+    /* ================= EVENT LISTENERS ================= */
+    document.querySelectorAll(".chk-rencana-warung").forEach(ch=>{
+        ch.addEventListener("change",()=>{
+            let b=ch.closest(".rencana-warung-block");
+            const isChecked = ch.checked;
+            
+            // Atur disabled state untuk tombol 'Tambah Sumber Stok' di warung ini
+            b.querySelectorAll(".btn-add-trx").forEach(btn => {
+                btn.disabled = !isChecked;
+            });
+            
+            // Atur disabled state untuk semua input dan select di warung ini
+            b.querySelectorAll(".rencana-item").forEach(i=>{
+                i.querySelectorAll("input, select").forEach(el => {
+                    el.disabled = !isChecked;
+                });
+                
+                // Hapus semua select jika tidak dicentang (untuk bersih-bersih)
+                if (!isChecked) {
+                    const container = i.querySelector(`div[id^="multiTrxContainer-"]`);
+                    // Hanya hapus elemen trx, sisakan placeholder jika ada
+                    container.querySelectorAll('.trx-item-wrapper').forEach(w => w.remove());
+                    if (!container.querySelector('p.text-gray-400')) {
+                        container.innerHTML = '<p class="text-gray-400">Pilih sumber stok di bawah.</p>';
+                    }
                 }
             });
-            recalc(); // Hitung ulang setelah aktivasi/non-aktivasi
-            toggleSubmit(); // Atur status tombol kirim
+            
+            // Re-kalkulasi setelah perubahan checkbox
+            recalc();
+        })
+    });
+    
+    // Event listener untuk tombol tambah sumber stok
+    document.querySelectorAll(".btn-add-trx").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const rencanaId = btn.dataset.rencanaId;
+            const barangId = btn.dataset.barangId;
+            const container = document.getElementById(`multiTrxContainer-${rencanaId}`);
+            
+            createTrxSelect(rencanaId, barangId, container);
+            recalc();
         });
     });
 
 
-    // 7. Toggle Tombol Kirim
-    function toggleSubmit(){
-        let any=[...document.querySelectorAll(".chk-rencana-warung:checked")].length;
-        document.getElementById("btnSubmitRencana").disabled=!any;
-    }
-
-
-    // 8. Fungsi Pencarian Warung
-    document.getElementById("searchRencana").addEventListener("input",e=>{
+    // Listener Pencarian
+    document.getElementById("searchRencana").oninput=e=>{
         let q=e.target.value.toLowerCase();
         document.querySelectorAll(".rencana-warung-block").forEach(b=>{
             b.style.display=b.dataset.namaWarung.toLowerCase().includes(q)?"block":"none";
         });
-    });
+    };
 
-    // Panggil saat halaman dimuat
     renderStock();
 });
 </script>
-
 @endsection
