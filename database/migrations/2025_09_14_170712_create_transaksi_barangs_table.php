@@ -17,7 +17,7 @@ return new class extends Migration
             $table->integer('jumlah');
             $table->enum('status', ['pending', 'selesai', 'dikirim', 'terima', 'tolak'])->default('pending');
             $table->decimal('harga', 15, 2);
-            $table->enum('jenis', ['keluar', 'masuk']);
+            $table->enum('jenis', ['rencana', 'tambahan']);
             $table->date('tanggal_kadaluarsa')->nullable(); // Menambahkan kolom baru
             $table->text('keterangan')->nullable();
             $table->timestamps();

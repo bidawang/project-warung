@@ -115,7 +115,7 @@ class StokBarangControllerKasir extends Controller
      */
     public function barangMasuk(Request $request)
     {
-        $status = $request->get('status', 'pending');
+        $status = $request->get('status', 'kirim');
         $search = $request->get('search');
 
         //         $barangMasuk = BarangMasuk::with([

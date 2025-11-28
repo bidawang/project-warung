@@ -48,7 +48,7 @@
                         Kirim Stok Terpilih
                     </button>
                     {{-- Tombol navigasi ke Rencana Belanja --}}
-                    <a href="{{ route('transaksibarang.index',['view'=>'rencana']) }}"
+                    <a href="{{ route('admin.rencana.index') }}"
                         class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow transition-colors duration-200 flex items-center justify-center text-sm">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2m-9 0a2 2 0 002 2h2m-2 0h-2m9 0h2m-2 0a2 2 0 00-2-2h-2" />
@@ -56,7 +56,7 @@
                         Ke Rencana Belanja
                     </a>
                     @endif
-                    <a href="{{ route('transaksibarang.create') }}"
+                    <a href="{{ route('admin.transaksibarang.create') }}"
                         class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow transition-colors duration-200 flex items-center justify-center text-sm">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -80,7 +80,7 @@
                 <ul class="flex space-x-4">
                     @foreach($tabs as $key => $label)
                     <li>
-                        <a href="{{ route('transaksibarang.index',['status'=>$key]) }}"
+                        <a href="{{ route('admin.transaksibarang.index',['status'=>$key]) }}"
                             class="inline-block px-4 py-2 rounded-t-lg font-semibold transition-colors
                             {{ $status === $key ? 'bg-white border border-b-0 border-gray-300 text-blue-600' : 'text-gray-600 hover:text-blue-600' }}">
                             {{ $label }}
@@ -127,6 +127,13 @@
 
                                 <td class="px-4 py-4 border-b text-sm font-semibold text-gray-700">
                                     {{ $trx->barang->nama_barang ?? '-' }}
+                                    {{-- ⭐ PERBAIKAN: Hidden input BARANG_ID diletakkan di sini --}}
+                                    @if($status === 'pending')
+                                    <input type="hidden"
+                                           name="transaksi[{{ $trx->id }}][barang_id]"
+                                           value="{{ $trx->id_barang }}">
+                                    @endif
+                                    {{-- ⭐ END PERBAIKAN --}}
                                 </td>
 
                                 <td class="px-4 py-4 border-b text-sm text-center">
@@ -142,7 +149,7 @@
                                 <td class="px-4 py-4 border-b text-sm text-center">
                                     @if($status === 'pending')
                                     <button type="button" class="btn-add text-xs bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-1 px-3 rounded-full transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                data-id="{{ $trx->id }}" disabled>+ Warung Lain</button>
+                                        data-id="{{ $trx->id }}" disabled>+ Warung Lain</button>
                                     @else
                                     <span class="text-gray-500">{{ ucfirst($trx->status) }}</span>
                                     @endif
@@ -257,7 +264,7 @@
                         class="warung-select border border-gray-300 rounded px-2 py-1 text-sm flex-1 focus:ring-blue-500 focus:border-blue-500 bg-white transition duration-150">
                         ${baseOptions}
                     </select>
-                    <input type="hidden" name="transaksi[${trxId}][barang_id]" value="${stockByBarang[Object.keys(stockByBarang).find(bid => stockByBarang[bid].some(s => s.id == trxId))]?.[0].id_barang ?? ''}">
+                    {{-- ⭐ BARIS HIDDEN INPUT BARANG_ID DIHAPUS DARI SINI --}}
                     <input type="number" name="transaksi[${trxId}][details][${rowId}][jumlah]" value="${defaultQty}" min="1" max="${maxQty}" required
                         class="qty-input border border-gray-300 rounded px-2 py-1 text-sm w-16 text-center focus:ring-blue-500 focus:border-blue-500 transition duration-150"/>
                     <button type="button" class="btn-del text-red-500 hover:text-red-700 text-xs font-semibold w-10 py-1 transition duration-150 rounded" title="Hapus baris" ${isFirst ? 'style="visibility:hidden;"' : ''}>Hapus</button>

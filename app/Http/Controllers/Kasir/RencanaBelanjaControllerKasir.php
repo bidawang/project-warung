@@ -87,7 +87,7 @@ class RencanaBelanjaControllerKasir extends Controller
         // dd($request->all());
         // PENTING: ID Warung harus diambil secara dinamis dari user yang login (Kasir).
         $idWarung = session('id_warung');
-
+// dd($idWarung);
         // Validasi array input dari form
         $validatedData = $request->validate([
             'rencana' => 'required|array',
@@ -109,6 +109,7 @@ class RencanaBelanjaControllerKasir extends Controller
                     'id_barang' => $item['id_barang'],
                     'jumlah_awal' => $jumlahAwal,
                     'jumlah_dibeli' => 0,
+                    'jumlah_diterima' => 0,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];

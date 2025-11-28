@@ -105,7 +105,7 @@
                 {{-- Kolom Kanan: Form Transaksi (2/3 lebar) --}}
                 <div class="md:col-span-2 bg-white p-6 rounded-lg shadow-md">
                     {{-- ... Form Transaksi Tetap Sama ... --}}
-                    <form action="{{ route('transaksibarang.store') }}" method="POST" id="formTransaksiBarang">
+                    <form action="{{ route('admin.transaksibarang.store') }}" method="POST" id="formTransaksiBarang">
                         @csrf
                         {{-- Area Pembelian --}}
                         <div class="mb-6">
@@ -196,7 +196,7 @@
 
                         {{-- Tombol Aksi --}}
                         <div class="flex justify-end space-x-4">
-                            <a href="{{ route('transaksibarang.index') }}"
+                            <a href="{{ route('admin.transaksibarang.index') }}"
                                 class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded-lg transition-colors duration-200">
                                 Batal
                             </a>

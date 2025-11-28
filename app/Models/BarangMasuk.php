@@ -28,6 +28,7 @@ class BarangMasuk extends Model
         'id_barang',
         'jumlah',
         'status',
+        'tanggal_kadaluarsa',
     ];
 
     public function transaksiBarang(): BelongsTo

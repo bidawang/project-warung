@@ -73,7 +73,7 @@ class BarangMasukControllerKasir extends Controller
             return $bm;
         });
 
-        dd($barangMasuk);
+        dd($barangMasuk);  
         return view('barangmasuk.index', compact('barangMasuk', 'status', 'search'));
     }
 
@@ -152,7 +152,7 @@ class BarangMasukControllerKasir extends Controller
 
             // 2. Update status di tabel barang_masuk
             BarangMasuk::whereIn('id', $request->barangMasuk)->update(['status' => $request->status_baru]);
-// dd()
+// dd($request->All());
             $message = 'Status barang masuk berhasil diperbarui menjadi ' . $request->status_baru;
 
             // 3. Logika Update Stok (Hanya jika status_baru adalah 'terima')

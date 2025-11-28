@@ -42,7 +42,8 @@ use App\Http\Controllers\Admin\{
     SaldoPulsaControllerAdmin,
     RiwayatTransaksiControllerAdmin,
     HutangControllerAdmin,
-    AsalBarangControllerAdmin
+    AsalBarangControllerAdmin,
+    RencanaBelanjaControllerAdmin,
 };
 
 use App\Http\Controllers\Kasir\{
@@ -109,8 +110,15 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::resource('/stokopname', StokOpnameControllerAdmin::class);
 
     Route::resource('/barang', BarangControllerAdmin::class);
-    Route::resource('transaksibarang', TransaksiBarangController::class);
-    Route::get('transaksi-barang/rencana', [TransaksiBarangController::class, 'indexRencana'])->name('transaksibarang.rencana.index');
+    Route::resource('transaksibarang', TransaksiBarangController::class)->except(['show']);
+
+    Route::resource('rencana', RencanaBelanjaControllerAdmin::class);
+
+    Route::get('transaksibarang/rencana', [RencanaBelanjaControllerAdmin::class, 'indexRencana'])->name('transaksibarang.rencana.index');
+    Route::get('transaksi-barang/rencana/create', [RencanaBelanjaControllerAdmin::class, 'createRencana'])->name('createrencanabelanja'); // Menampilkan form
+    Route::post('/store/rencana', [RencanaBelanjaControllerAdmin::class, 'storeRencana'])->name('store.rencana');
+
+
     Route::post('transaksibarang/update-status-massal', [TransaksiBarangController::class, 'updateStatusMassal'])->name('transaksibarang.updateStatusMassal');
     Route::post('/kirim-massal-proses', [TransaksiBarangController::class, 'kirimMassalProses'])->name('transaksibarang.kirim.mass.proses');
     Route::post('/kirim-rencana-proses', [TransaksiBarangController::class, 'kirimRencanaProses'])->name('transaksibarang.kirim.rencana.proses');
@@ -143,6 +151,7 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     // Ubah juga route create Anda jika belum sesuai dengan name()
     Route::get('asalbarang/create', [AsalBarangControllerAdmin::class, 'create'])->name('asalbarang.create');
 });
+// Route::resource('transaksibarang', TransaksiBarangController::class);
 
 
 Route::prefix('kasir')->name('kasir.')->group(function () {
@@ -207,7 +216,6 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::get('/profil', [ProfilControllerKasir::class, 'index'])->name('profil.index');
 });
 
-Route::resource('transaksibarang', TransaksiBarangController::class);
 
 Route::resource('kategori', KategoriController::class);
 Route::resource('subkategori', SubKategoriController::class);
@@ -248,7 +256,7 @@ Route::post('/laba/import', [LabaController::class, 'import'])->name('laba.impor
 Route::get('/kasir/api/notif-barang-masuk', function () {
     $count = \App\Models\BarangMasuk::whereHas('stokWarung.warung', function ($q) {
         $q->where('id_user', auth()->id());
-    })->where('status', 'pending')->count();
+    })->where('status', 'kirim')->count();
 
     return response()->json(['count' => $count]);
 })->middleware('auth');

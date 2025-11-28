@@ -18,8 +18,9 @@ return new class extends Migration
             $table->unsignedBigInteger('id_stok_warung');
             $table->integer('jumlah');
             $table->string('keterangan')->nullable();
-            $table->enum('status', ['pending', 'terima', 'tolak'])->default('pending');
-            $table->dateTime('tanggal_kedaluarsa')->nullable();
+            $table->enum('status', ['pending', 'kirim', 'terima', 'tolak'])->default('pending');
+            $table->enum('jenis', ['rencana', 'tambahan']);
+            $table->dateTime('tanggal_kadaluarsa')->nullable();
             $table->timestamps();
 
             $table->foreign('id_transaksi_barang')->references('id')->on('transaksi_barang')->onDelete('cascade');
