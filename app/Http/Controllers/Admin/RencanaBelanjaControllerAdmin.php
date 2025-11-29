@@ -20,7 +20,7 @@ class RencanaBelanjaControllerAdmin extends Controller
 {
     protected function getStockData()
 {
-    $allTransactions = TransaksiBarang::with(['barang','areaPembelian'])
+    $allTransactions = TransaksiBarang::with(['barang','areaPembelian'])->where('jenis','rencana')
         ->whereColumn('jumlah','>','jumlah_terpakai')
         ->get()
         ->map(function($trx){
@@ -45,7 +45,6 @@ class RencanaBelanjaControllerAdmin extends Controller
 public function index()
 {
     $data = $this->getStockData();
-    
     $rencana = RencanaBelanja::with(['barang','warung'])
     ->where('status','dibeli')
     ->get()
