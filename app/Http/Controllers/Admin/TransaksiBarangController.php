@@ -58,27 +58,26 @@ class TransaksiBarangController extends Controller
         ];
     }
 
-    // --- FUNGSI 1: DAFTAR STOK PENGIRIMAN (Kolom Kiri) ---
     public function index(Request $request)
     {
         // dd(123);
         $status = $request->query('status', 'pending');
-        $query = TransaksiBarang::with(['transaksiKas', 'barang', 'barangMasuk']);
+        $query = TransaksiBarang::with(['transaksiKas', 'barang'])->where('jenis', 'tambahan');
 
         // Logika Filter Status (Sama seperti sebelumnya)
         if ($status === 'pending') {
             // Tampilkan semua stok yang masih memiliki jumlah > 0
-            $query->whereHas('barangMasuk', fn($q) => $q->where('status', 'pending'));
+            $query->where('status','pending') ;
         } elseif ($status === 'kirim') {
-            $query->whereHas('barangMasuk', fn($q) => $q->where('status', 'kirim'));
+            $query->where('status', 'dikirim'); ;
         } elseif ($status === 'terima') {
-            $query->whereHas('barangMasuk', fn($q) => $q->where('status', 'terima'));
+            $query->where('status', 'terima'); ;
         } elseif ($status === 'tolak') {
-            $query->whereHas('barangMasuk', fn($q) => $q->where('status', 'tolak'));
+            $query->where('status', 'tolak'); ;
         }
 
         $transaksibarangs = $query->paginate(10)->appends(['status' => $status]);
-
+// dd($transaksibarangs);
         // Ambil data stok dan warung
         $data = $this->getStockData();
         $warungs = $data['warungs'];
@@ -107,7 +106,7 @@ class TransaksiBarangController extends Controller
 
         TransaksiBarang::whereIn('id', $request->ids)->update(['status' => $request->status]);
 
-        return redirect()->route('transaksibarang.index', ['status' => 'pending'])
+        return redirect()->route('admin.transaksibarang.index', ['status' => 'pending'])
             ->with('success', 'Status transaksi berhasil diperbarui.');
     }
 
@@ -166,7 +165,7 @@ class TransaksiBarangController extends Controller
             'jumlah.*.*' => 'nullable|integer|min:0',
             'total_harga.*.*' => 'nullable|numeric|min:0',
             'tanggal_kadaluarsa.*.*' => 'nullable|date',
-            'lain_keterangan.*' => 'nullable|string',
+            'keterangan.*' => 'nullable|string',
             'lain_harga.*' => 'nullable|numeric|min:0',
         ]);
         $grandTotal = 0;
@@ -204,6 +203,7 @@ class TransaksiBarangController extends Controller
                                 'jumlah' 		 		=> $jumlah,
                                 'harga' 		 		=> $hargaTotalBaris,
                                 'tanggal_kadaluarsa' 	=> $tanggalKadaluarsa,
+                                                'jumlah_terpakai' => 0, // akan dihitung di bawah
                                 'jenis' 		 		=> 'tambahan', // Jenis Transaksi adalah tambahan/manual
                             ]);
 
