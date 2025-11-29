@@ -72,7 +72,7 @@ public function index()
         $rencanaBelanjas = RencanaBelanja::with(['barang', 'warung'])
             ->whereColumn('jumlah_dibeli', '<', 'jumlah_awal')
             ->get();
-
+// dd($rencanaBelanjas);
         $totalKebutuhan = $rencanaBelanjas
             ->groupBy('id_barang') // Kelompokkan berdasarkan Barang
             ->map(function ($groupedItems, $id_barang) {

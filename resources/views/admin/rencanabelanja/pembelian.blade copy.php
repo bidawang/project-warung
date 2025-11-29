@@ -1,51 +1,4 @@
-@extends('layouts.admin')
-@section('title','Buat Transaksi Pembelian dari Kebutuhan Rencana')
-@section('content')
 
-<div class="flex-1 flex flex-col overflow-hidden">
-
-<header class="flex justify-between items-center p-4 bg-white border-b border-gray-300 shadow-sm">
-    <h1 class="text-xl font-bold text-gray-800">🛒 Pembelian Berdasarkan Rencana</h1>
-    <a href="{{ route('admin.rencana.index') }}" class="bg-gray-600 text-white px-3 py-1 text-sm rounded hover:bg-gray-700 transition duration-150 shadow-md">
-        <i class="fas fa-arrow-left mr-1"></i> Kembali
-    </a>
-</header>
-
-<main class="p-4 overflow-y-auto bg-gray-50">
-
-@if($errors->any())
-    <div class="bg-red-100 text-red-700 p-3 rounded mb-3 border border-red-300 text-sm">
-        <strong>Kesalahan Validasi:</strong>
-        <ul class="list-disc ml-5 mt-1">
-            @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
-        </ul>
-    </div>
-@endif
-
-@if($totalKebutuhan->isEmpty())
-    <div class="text-center py-8 text-gray-500 border border-gray-300 rounded-lg bg-white shadow-inner">Tidak ada kebutuhan Rencana Pembelian yang perlu diproses.</div>
-@else
-
-<form action="{{ route('admin.rencana.store') }}" method="POST" id="pembelianForm">
-@csrf
-
-<div class="shadow overflow-hidden border border-gray-200 sm:rounded-lg mb-4">
-<table class="min-w-full divide-y divide-gray-200">
-<thead class="bg-gray-100 sticky top-0 z-10">
-<tr class="text-xs text-gray-600 uppercase tracking-wider">
-    {{-- 6 Kolom Utama dengan penyesuaian lebar --}}
-    <th class="p-2 text-left w-[25%]">Item | Skip | Sisa Kebutuhan</th> 
-    <th class="p-2 text-left w-[18%]">Area Pembelian</th>
-    <th class="p-2 text-center w-[12%]">Qty (pcs)</th>
-    <th class="p-2 text-center w-[15%]">Total Harga (Rp)</th>
-    <th class="p-2 text-center w-[18%]">Tanggal Exp.</th>
-    <th class="p-2 text-center w-[12%]">Aksi</th>
-</tr>
-</thead>
-
-<tbody id="purchaseTableBody" class="bg-white divide-y divide-gray-200">
-
-@foreach($totalKebutuhan as $g => $item)
 @php
     $validAreas = $item['valid_areas'];
     $noArea = $validAreas->isEmpty();
@@ -60,15 +13,28 @@
     })->toJson();
 @endphp
 
-{{-- === HEADER GRUP BARANG (Ringkas: Nama & Kebutuhan Total - colspan=6) === --}}
-<tr class="group-header-row bg-white text-gray-800 border-t-4 border-gray-600 {{ $autoSkip ? 'is-skipped' : '' }}" data-group="{{ $g }}">
-    <td colspan="6" class="p-1 px-2"> 
-        <div class="flex items-center space-x-3">
-            <span class="text-gray-900 text-base font-bold">{{ $item['nama_barang'] }}</span>
-            <span class="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-xs font-semibold">
-                Kebutuhan Total: {{ $item['total_kebutuhan'] }} pcs
-            </span>
+{{-- === HEADER GRUP BARANG (COMPACT VIEW) === --}}
+<tr class="bg-indigo-50 font-semibold text-gray-800 border-t-4 border-indigo-300 {{ $autoSkip ? 'is-skipped' : '' }}" data-group="{{ $g }}">
+    <td colspan="6" class="p-3">
+        <div class="flex justify-between items-center flex-wrap">
+            <div class="flex items-center space-x-4">
+                <span class="text-indigo-800 text-lg font-extrabold">{{ $item['nama_barang'] }}</span>
+                <button type="button" class="text-xs bg-indigo-200 text-indigo-700 px-2 py-1 rounded-full hover:bg-indigo-300 transition detail-button flex items-center gap-1 shadow-sm" data-group="{{ $g }}">
+                    <i class="fas fa-info-circle"></i> Detail ({{ $item['total_kebutuhan'] }} pcs)
+                </button>
+            </div>
+            
+            <div class="flex items-center space-x-6 text-sm">
+                <span class="text-gray-600 whitespace-nowrap">Sisa Kebutuhan: <span class="text-red-500 font-extrabold" id="sisa_kebutuhan_{{ $g }}"></span> pcs</span>
+
+                <label class="text-red-600 font-medium cursor-pointer flex items-center">
+                    <input type="hidden" name="items[{{ $g }}][skip]" value="{{ $autoSkip ? 1 : 0 }}" class="skip-hidden-input"> 
+                    <input type="checkbox" class="skip-checkbox mr-1 h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500" data-group="{{ $g }}" {{ $autoSkip ? 'checked' : '' }}> 
+                    Skip
+                </label>
+            </div>
         </div>
+
         {{-- Hidden Input Data --}}
         <input type="hidden" name="items[{{ $g }}][id_barang]" value="{{ $item['id_barang'] }}">
         <input type="hidden" name="items[{{ $g }}][rencana_ids]" value="{{ implode(',',$item['rencana_ids']) }}">
@@ -77,39 +43,26 @@
     </td>
 </tr>
 
-{{-- BARIS DETAIL KEBUTUHAN PER WARUNG (Minimalis - colspan=6) --}}
-<tr class="detail-row bg-gray-50 border-b border-gray-200" data-group="{{ $g }}">
-    <td colspan="6" class="px-2 py-1">
-        <div class="text-xs text-gray-700 flex flex-wrap gap-x-3">
-            <strong class="text-gray-800">Split Kebutuhan:</strong>
-            @foreach($item['detail_warung'] as $detail)
-                <span class="whitespace-nowrap">{{ $detail['warung'] }}: <span class="font-bold text-gray-700">{{ $detail['kebutuhan'] }} pcs</span></span>
-            @endforeach
+{{-- Box Detail Kebutuhan (default hidden) --}}
+<tr class="hidden detail-row bg-indigo-100 border-b border-indigo-200" data-group="{{ $g }}">
+    <td colspan="6" class="p-3">
+        <strong class="text-indigo-800 text-sm">Kebutuhan per Warung:</strong>
+        <div class="flex flex-wrap gap-2 mt-2">
+        @foreach($item['detail_warung'] as $detail)
+            <span class="bg-white p-2 text-xs rounded shadow-sm border border-indigo-300">{{ $detail['warung'] }}: <span class="text-indigo-600 font-bold">{{ $detail['kebutuhan'] }} pcs</span></span>
+        @endforeach
         </div>
     </td>
 </tr>
 
-{{-- ROW PEMBELIAN PERTAMA (INPUT) --}}
+
+{{-- ROW PEMBELIAN PERTAMA --}}
 <tr class="purchase-row group-row border-t border-gray-200 {{ $autoSkip ? 'bg-red-50' : 'bg-white' }}" data-group="{{ $g }}" data-index="0">
     
-    {{-- Kolom 1: SKIP & Sisa Kebutuhan (Paling Kiri) --}}
-    <td class="p-1">
-        <div class="flex items-center justify-between mb-1">
-            <label class="text-red-600 font-medium cursor-pointer flex items-center text-xs">
-                <input type="hidden" name="items[{{ $g }}][skip]" value="{{ $autoSkip ? 1 : 0 }}" class="skip-hidden-input"> 
-                <input type="checkbox" class="skip-checkbox mr-1 h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500" data-group="{{ $g }}" {{ $autoSkip ? 'checked' : '' }}> 
-                **SKIP**
-            </label>
-            <span class="text-gray-600 text-xs whitespace-nowrap">
-                Sisa: <span class="text-red-600 font-bold" id="sisa_kebutuhan_{{ $g }}">0</span> pcs
-            </span>
-        </div>
-    </td>
-
-    {{-- Kolom 2: SELECT AREA --}}
+    {{-- Kolom Pembelian Area --}}
     <td class="p-1">
         <select {{ $autoSkip ? 'disabled' : '' }} name="items[{{ $g }}][purchases][0][area_pembelian_id]" 
-                class="area-select w-full border border-gray-300 p-2 text-xs rounded-md focus:ring-gray-500 focus:border-gray-500" data-group="{{ $g }}">
+                class="area-select w-full border border-gray-300 p-2 text-xs rounded-md focus:ring-indigo-500 focus:border-indigo-500" data-group="{{ $g }}">
             @if($noArea)
                 <option value="" selected>❌ Tidak ada area</option>
             @elseif($singleArea)
@@ -123,35 +76,41 @@
         </select>
     </td>
 
-    {{-- Kolom 3: Jumlah Beli (Qty) --}}
+    {{-- Kolom Pembelian QTY --}}
     <td class="p-1">
         <input type="number" name="items[{{ $g }}][purchases][0][jumlah_beli]" 
                 value="{{ $autoSkip ? 0 : ($singleArea ? $item['total_kebutuhan'] : 0) }}" 
                 {{ $autoSkip ? 'disabled' : '' }}
                 min="0"
-                class="qty w-full border border-gray-300 p-2 text-center text-sm rounded-md focus:ring-gray-500 focus:border-gray-500"
+                class="qty w-full border border-gray-300 p-2 text-center text-sm rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                 data-group="{{ $g }}"
-                oninput="this.value = Math.abs(this.value); updateGroupTotals('{{ $g }}')">
+                data-type="qty-input">
     </td>
 
-    {{-- Kolom 4: Total Harga (INPUT) --}}
+    {{-- Kolom Harga Satuan --}}
     <td class="p-1">
         <input type="number" name="items[{{ $g }}][purchases][0][harga]" 
                 value="0" {{ $autoSkip ? 'disabled' : '' }}
                 min="0"
-                class="row-total-price w-full border border-gray-300 p-2 text-right text-sm rounded-md focus:ring-gray-500 focus:border-gray-500"
+                class="price w-full border border-gray-300 p-2 text-right text-sm rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                 data-group="{{ $g }}"
-                oninput="this.value = Math.abs(this.value); updateGroupTotals('{{ $g }}')">
+                data-type="price-input" 
+                oninput="this.value = Math.abs(this.value)">
+    </td>
+    
+    {{-- Kolom Total Harga --}}
+    <td class="p-1 text-right font-bold text-gray-700 total-price-cell whitespace-nowrap text-sm bg-gray-50" id="total_price_{{ $g }}_0">
+        0
     </td>
 
-    {{-- Kolom 5: Tanggal Exp --}}
+    {{-- Kolom Tanggal Exp --}}
     <td class="p-1">
         <input type="date" name="items[{{ $g }}][purchases][0][tanggal_kadaluarsa]" 
                 {{ $autoSkip ? 'disabled' : '' }}
-                class="w-full border border-gray-300 p-2 text-center text-xs rounded-md focus:ring-gray-500 focus:border-gray-500">
+                class="w-full border border-gray-300 p-2 text-center text-xs rounded-md focus:ring-indigo-500 focus:border-indigo-500">
     </td>
 
-    {{-- Kolom 6: Aksi --}}
+    {{-- Kolom Aksi --}}
     <td class="text-center p-1">
         @if($noArea)
             <span class="text-orange-500 text-xs font-bold">SKIP</span>
@@ -167,14 +126,10 @@
 </tr>
 
 <tr class="total-row bg-gray-100 border-t border-gray-300" data-group="{{ $g }}">
-    {{-- Total Beli Label (Col 1 & 2 digabung) --}}
-    <td colspan="2" class="text-right font-semibold p-2 text-gray-800">Total Beli:</td> 
-    {{-- Total Qty Value (Col 3) --}}
-    <td class="text-center font-extrabold p-2 text-lg text-blue-700 whitespace-nowrap" id="total_qty_bought_{{ $g }}">0</td>
-    {{-- Total Harga Value (Spanning Col 4 & 5) --}}
+    <td colspan="1" class="text-right font-semibold p-2 text-gray-800">Total Beli:</td>
+    <td class="text-center font-extrabold p-2 text-lg text-indigo-700 whitespace-nowrap" id="total_qty_bought_{{ $g }}">0</td>
     <td colspan="2" class="text-right font-extrabold p-2 text-lg text-green-700 whitespace-nowrap" id="grand_total_price_{{ $g}}">0</td>
-    {{-- Aksi Column (Col 6) --}}
-    <td colspan="1"></td> 
+    <td colspan="2"></td>
 </tr>
 
 @endforeach
@@ -182,7 +137,7 @@
 </table>
 </div>
 
-<button type="submit" id="btnSubmitPembelian" class="mt-3 bg-gray-600 text-white px-5 py-2 rounded hover:bg-gray-700 transition duration-150 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm" disabled>
+<button type="submit" id="btnSubmitPembelian" class="mt-3 bg-indigo-600 text-white px-5 py-2 rounded hover:bg-indigo-700 transition duration-150 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm" disabled>
     <i class="fas fa-paper-plane mr-2"></i> Proses Pembelian
 </button>
 </form>
@@ -205,8 +160,9 @@ document.addEventListener("DOMContentLoaded", function() {
     if (!purchaseTableBody) return;
 
     // Loop semua item yang ada di table body
-    document.querySelectorAll('tr.group-header-row').forEach(headerRow => {
+    document.querySelectorAll('tr.bg-indigo-50').forEach(headerRow => {
         const g = headerRow.dataset.group;
+        const autoSkip = headerRow.classList.contains('is-skipped');
         const totalKebutuhanEl = document.getElementById(`total_kebutuhan_${g}`);
         
         if (!totalKebutuhanEl) return;
@@ -232,7 +188,7 @@ function attachEventListeners() {
     document.removeEventListener("click", rowButtonHandler);
     document.addEventListener("click", rowButtonHandler);
 
-    // Input Qty dan Total Row Price
+    // Input Qty dan Price
     document.removeEventListener("input", inputHandler);
     document.addEventListener("input", inputHandler);
     
@@ -240,6 +196,12 @@ function attachEventListeners() {
     document.querySelectorAll(".skip-checkbox").forEach(cb => {
         cb.removeEventListener("change", skipHandler);
         cb.addEventListener("change", skipHandler);
+    });
+
+    // Detail Button
+    document.querySelectorAll(".detail-button").forEach(btn => {
+        btn.removeEventListener("click", detailHandler);
+        btn.addEventListener("click", detailHandler);
     });
 }
 
@@ -256,9 +218,9 @@ function rowButtonHandler(e) {
 function inputHandler(e) {
     const group = e.target.dataset.group;
     
-    // Cek jika input adalah Qty atau Total Harga per Baris
-    if (group && (e.target.classList.contains('qty') || e.target.classList.contains('row-total-price'))) {
+    if (group && (e.target.classList.contains('qty') || e.target.classList.contains('price'))) {
         
+        // Pastikan nilai selalu positif
         if (e.target.value < 0) e.target.value = 0;
         
         updateGroupTotals(group);
@@ -272,8 +234,7 @@ function skipHandler(e) {
     document.querySelector(`input[name="items[${g}][skip]"]`).value = disabled ? 1 : 0;
     
     const purchaseRows = document.querySelectorAll(`tr.purchase-row[data-group="${g}"]`);
-    const headerRow = document.querySelector(`tr.group-header-row[data-group="${g}"]`);
-    const detailRow = document.querySelector(`tr.detail-row[data-group="${g}"]`);
+    const headerRow = document.querySelector(`tr.bg-indigo-50[data-group="${g}"]`);
     
     // Tambah/Hapus kelas untuk styling
     headerRow.classList.toggle('is-skipped', disabled);
@@ -288,7 +249,7 @@ function skipHandler(e) {
             if (el.type !== 'hidden' && el.type !== 'checkbox') {
                 el.disabled = disabled;
                 // Reset value to 0 if disabled
-                if (disabled && (el.classList.contains('qty') || el.classList.contains('row-total-price'))) {
+                if (disabled && (el.classList.contains('qty') || el.classList.contains('price'))) {
                     el.value = 0;
                 }
             }
@@ -320,39 +281,40 @@ function updateGroupTotals(g){
     // Loop semua baris pembelian untuk group ini
     document.querySelectorAll(`tr.purchase-row[data-group="${g}"]`).forEach(row=>{
         const qtyInput = row.querySelector('.qty')
-        const rowTotalPriceInput = row.querySelector('.row-total-price')
+        const priceInput = row.querySelector('.price')
+        const totalPriceCell = row.querySelector('.total-price-cell')
         
         const qty = parseInt(qtyInput.value) || 0
-        const rowTotal = parseInt(rowTotalPriceInput.value) || 0
+        const price = parseInt(priceInput.value) || 0
         
+        const totalPrice = qty * price
+
         if (!isSkipped) {
             totalQtyBought += qty
-            grandTotalPrice += rowTotal 
+            grandTotalPrice += totalPrice
+            if(totalPriceCell) totalPriceCell.innerText = formatNumber(totalPrice)
+        } else {
+            if(totalPriceCell) totalPriceCell.innerText = '0'
         }
     })
 
     const sisaKebutuhan = totalKebutuhan[g] - totalQtyBought
     
-    // Update total di footer dan sisa kebutuhan di header
+    // Update total di footer
     document.getElementById(`total_qty_bought_${g}`).innerText = formatNumber(totalQtyBought)
     document.getElementById(`sisa_kebutuhan_${g}`).innerText = formatNumber(sisaKebutuhan)
     document.getElementById(`grand_total_price_${g}`).innerText = formatNumber(grandTotalPrice)
 
     // Validasi Sisa Kebutuhan (Styling)
     const sisaKebutuhanEl = document.getElementById(`sisa_kebutuhan_${g}`);
-    const headerRow = document.querySelector(`tr.group-header-row[data-group="${g}"]`);
-    const detailRow = document.querySelector(`tr.detail-row[data-group="${g}"]`);
+    const headerRow = document.querySelector(`tr.bg-indigo-50[data-group="${g}"]`);
     
     if (sisaKebutuhan < 0) {
         sisaKebutuhanEl.classList.add('text-red-700', 'animate-pulse');
-        headerRow.classList.add('bg-red-100', 'border-red-500');
-        detailRow.classList.add('bg-red-50');
-        detailRow.classList.remove('bg-gray-50');
+        headerRow.classList.add('bg-red-200', 'border-red-500');
     } else {
         sisaKebutuhanEl.classList.remove('text-red-700', 'animate-pulse');
-        headerRow.classList.remove('bg-red-100', 'border-red-500');
-        detailRow.classList.remove('bg-red-50');
-        detailRow.classList.add('bg-gray-50');
+        headerRow.classList.remove('bg-red-200', 'border-red-500');
     }
     
     checkFormValidity();
@@ -364,7 +326,7 @@ function checkFormValidity() {
     let hasUnskippedZero = false;
     let hasNegativeSisa = false;
     let anyValidGroup = false;
-    let hasInputError = false; 
+    let hasInputError = false; // Cek untuk input Area/Price/Qty 0 yang belum diisi
 
     for(const g in totalKebutuhan) {
         const sisaEl = document.getElementById(`sisa_kebutuhan_${g}`);
@@ -389,15 +351,15 @@ function checkFormValidity() {
                 document.querySelectorAll(`tr.purchase-row[data-group="${g}"]`).forEach(row => {
                     const areaSelect = row.querySelector('.area-select');
                     const qtyInput = row.querySelector('.qty');
-                    const rowTotalPriceInput = row.querySelector('.row-total-price');
+                    const priceInput = row.querySelector('.price');
                     
                     const qty = parseInt(qtyInput?.value) || 0;
-                    const rowTotal = parseInt(rowTotalPriceInput?.value) || 0;
+                    const price = parseInt(priceInput?.value) || 0;
                     const area = areaSelect?.value;
 
-                    // Jika qty > 0, harus ada area dan total harga > 0
+                    // Jika qty > 0 tapi area/price 0
                     if (qty > 0) {
-                        if (!area || rowTotal === 0) { 
+                        if (!area || price === 0) {
                             hasInputError = true;
                         }
                     }
@@ -413,9 +375,9 @@ function checkFormValidity() {
     }
     
     const submitBtn = document.getElementById('btnSubmitPembelian');
-    submitBtn.classList.remove('bg-red-600', 'hover:bg-red-700', 'bg-orange-500', 'hover:bg-orange-600', 'bg-gray-600', 'hover:bg-gray-700');
+    submitBtn.classList.remove('bg-red-600', 'hover:bg-red-700', 'bg-orange-500', 'hover:bg-orange-600', 'bg-indigo-600', 'hover:bg-indigo-700');
     
-    if (!anyValidGroup && Object.keys(totalKebutuhan).length > 0) {
+    if (!anyValidGroup) {
         submitBtn.disabled = true;
         submitBtn.innerText = '❌ Tidak ada item untuk diproses.';
         submitBtn.classList.add('bg-gray-400');
@@ -425,7 +387,7 @@ function checkFormValidity() {
         submitBtn.classList.add('bg-red-600', 'hover:bg-red-700');
     } else if (hasInputError) {
         submitBtn.disabled = true;
-        submitBtn.innerText = '⚠️ Ada Baris Pembelian yang Belum Lengkap (Area/Total Harga 0)!';
+        submitBtn.innerText = '⚠️ Ada Baris Pembelian yang Belum Lengkap (Area/Harga 0)!';
         submitBtn.classList.add('bg-orange-500', 'hover:bg-orange-600');
     } else if (hasUnskippedZero) {
         submitBtn.disabled = true;
@@ -434,7 +396,35 @@ function checkFormValidity() {
     } else {
         submitBtn.disabled = false;
         submitBtn.innerText = '✅ Proses Pembelian';
-        submitBtn.classList.add('bg-gray-600', 'hover:bg-gray-700');
+        submitBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+    }
+}
+
+
+// ================= DETAIL HANDLER =======================
+function detailHandler(e) {
+    e.preventDefault();
+    const g = e.currentTarget.dataset.group;
+    const headerRow = e.currentTarget.closest('tr');
+    
+    // Detail row berada tepat setelah header row
+    let detailRow = headerRow.nextElementSibling;
+
+    if (detailRow && detailRow.classList.contains('detail-row') && detailRow.dataset.group === g) {
+        detailRow.classList.toggle('hidden');
+        
+        const icon = e.currentTarget.querySelector('i');
+        const textNode = e.currentTarget.childNodes[2]; 
+
+        if (detailRow.classList.contains('hidden')) {
+            icon.classList.remove('fa-times-circle');
+            icon.classList.add('fa-info-circle');
+            textNode.nodeValue = ' Detail (' + formatNumber(totalKebutuhan[g]) + ' pcs)';
+        } else {
+            icon.classList.remove('fa-info-circle');
+            icon.classList.add('fa-times-circle');
+            textNode.nodeValue = ' Tutup Detail';
+        }
     }
 }
 
@@ -461,31 +451,24 @@ function addRow(g){
     });
     
     const rowBgClass = isSkipped ? 'bg-red-50' : 'bg-white';
-    
-    // Row tambahan hanya menampilkan input (Kolom 1 - 5)
+
     let html = `
     <tr class="purchase-row border-t border-gray-200 ${rowBgClass}" data-group="${g}" data-index="${row}">
-        {{-- Kolom 1: Dibuat kosong atau hanya pemisah visual --}}
-        <td class="p-1"></td>
-        {{-- Kolom 2: Area Select --}}
         <td class="p-1">
             <select name="items[${g}][purchases][${row}][area_pembelian_id]" 
-                class="area-select w-full border border-gray-300 p-2 text-xs rounded-md focus:ring-gray-500 focus:border-gray-500" ${noArea||isSkipped?'disabled':''}>
+                class="area-select w-full border border-gray-300 p-2 text-xs rounded-md focus:ring-indigo-500 focus:border-indigo-500" ${noArea||isSkipped?'disabled':''}>
                 ${optionsHtml}
             </select>
         </td>
-        {{-- Kolom 3: Qty --}}
         <td class="p-1"><input type="number" name="items[${g}][purchases][${row}][jumlah_beli]" 
-                class="qty w-full border border-gray-300 p-2 text-center text-sm rounded-md focus:ring-gray-500 focus:border-gray-500" 
-                ${noArea||isSkipped?'disabled':''} min="0" value="0" data-group="${g}" oninput="this.value = Math.abs(this.value); updateGroupTotals('${g}')"></td>
-        {{-- Kolom 4: Total Harga (Input) --}}
+                class="qty w-full border border-gray-300 p-2 text-center text-sm rounded-md focus:ring-indigo-500 focus:border-indigo-500" 
+                ${noArea||isSkipped?'disabled':''} min="0" value="0" data-group="${g}" data-type="qty-input" oninput="this.value = Math.abs(this.value)"></td>
         <td class="p-1"><input type="number" name="items[${g}][purchases][${row}][harga]" 
-                class="row-total-price w-full border border-gray-300 p-2 text-right text-sm rounded-md focus:ring-gray-500 focus:border-gray-500" 
-                ${noArea||isSkipped?'disabled':''} min="0" value="0" data-group="${g}" oninput="this.value = Math.abs(this.value); updateGroupTotals('${g}')"></td>
-        {{-- Kolom 5: Tanggal Exp --}}
+                class="price w-full border border-gray-300 p-2 text-right text-sm rounded-md focus:ring-indigo-500 focus:border-indigo-500" 
+                ${noArea||isSkipped?'disabled':''} min="0" value="0" data-group="${g}" data-type="price-input" oninput="this.value = Math.abs(this.value)"></td>
+        <td class="p-1 text-right font-bold text-gray-700 total-price-cell whitespace-nowrap text-sm bg-gray-50" id="total_price_${g}_${row}">0</td>
         <td class="p-1"><input type="date" name="items[${g}][purchases][${row}][tanggal_kadaluarsa]" 
-                class="w-full border border-gray-300 p-2 text-center text-xs rounded-md focus:ring-gray-500 focus:border-gray-500" ${noArea||isSkipped?'disabled':''}></td>
-        {{-- Kolom 6: Aksi --}}
+                class="w-full border border-gray-300 p-2 text-center text-xs rounded-md focus:ring-indigo-500 focus:border-indigo-500" ${noArea||isSkipped?'disabled':''}></td>
         <td class="text-center p-1">
             <button type="button" class="text-red-600 hover:text-red-800 remove-row transition p-1 rounded-full" data-group="${g}" title="Hapus Baris">
                 <i class="fas fa-minus-circle"></i>
@@ -517,7 +500,7 @@ function removeRow(g, rowElement){
 
 // ================= HELPER ===========================
 function formatNumber(num) {
-    // Menggunakan toLocaleString untuk format angka yang lebih baik (misalnya 1.000.000)
+    // Menggunakan toLocaleString untuk format angka yang lebih baik
     return (Number(num) || 0).toLocaleString('id-ID'); 
 }
 </script>

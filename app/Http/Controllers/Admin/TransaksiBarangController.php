@@ -269,162 +269,188 @@ class TransaksiBarangController extends Controller
 
 
     public function kirimMassalProses(Request $request)
-    {
-        // 1. Filtering dan Sanitasi Input
-        // Perhatikan struktur input: $request->transaksi adalah array [transaksiBarangId => ['barang_id' => X, 'details' => [...]]]
-        $allData = $request->all();
-        // dd($allData);
+{
+    // 1. Filtering dan Sanitasi Input
+    $allData = $request->all();
+    $transaksiFiltered = collect($allData['transaksi'] ?? [])
+        ->filter(function ($trx) {
+            return !empty($trx['details']);
+        })
+        ->toArray();
+    $request->merge(['transaksi' => $transaksiFiltered]);
 
-        // Filter input yang TIDAK memiliki detail pengiriman
-        $transaksiFiltered = collect($allData['transaksi'] ?? [])
-            ->filter(function ($trx) {
-                // Hanya proses yang memiliki array details yang tidak kosong
-                return !empty($trx['details']);
-            })
-            ->toArray();
-        // dd($transaksiFiltered);
-        // Menggabungkan kembali data yang sudah difilter ke dalam request untuk validasi
-        $request->merge(['transaksi' => $transaksiFiltered]);
-
-        // Validasi, menggunakan ID transaksi sebagai kunci array
-        try {
-            $data = $request->validate([
-                'transaksi' => 'required|array',
-                // Validasi transaksiId (kunci array) harus ada di tabel TransaksiBarang.
-                'transaksi.*' => ['array', function ($attribute, $value, $fail) use ($request) {
-                    // Ambil ID TransaksiBarang dari key
-                    $transaksiId = explode('.', $attribute)[1];
-                    if (!TransaksiBarang::where('id', $transaksiId)->exists()) {
-                        $fail("Transaksi dengan ID {$transaksiId} tidak valid atau tidak ditemukan.");
-                    }
-                }],
-                // 'transaksi.*.barang_id' tidak diperlukan karena sudah divalidasi melalui TransaksiBarang ID,
-                // tapi kita biarkan untuk menjaga konsistensi data dari form (hidden input di JS)
-                'transaksi.*.barang_id' => 'nullable|exists:barang,id',
-                'transaksi.*.details' => 'required|array',
-                'transaksi.*.details.*.warung_id' => 'required|exists:warung,id',
-                'transaksi.*.details.*.jumlah' => 'required|integer|min:1',
-            ], [
-                // ... Pesan Validasi
-                'transaksi.required' => 'Data transaksi wajib diisi.',
-                'transaksi.*.details.required' => 'Detail pengiriman harus ada.',
-                'transaksi.*.details.*.warung_id.required' => 'Warung tujuan wajib dipilih.',
-                'transaksi.*.details.*.warung_id.exists' => 'Warung tujuan tidak valid.',
-                'transaksi.*.details.*.jumlah.required' => 'Jumlah pengiriman wajib diisi.',
-                'transaksi.*.details.*.jumlah.integer' => 'Jumlah pengiriman harus berupa angka.',
-                'transaksi.*.details.*.jumlah.min' => 'Jumlah minimal adalah 1.',
-            ]);
-        } catch (ValidationException $e) {
-            // Jika ada error validasi, dd() akan terhindar.
-            return redirect()->back()->withErrors($e->errors())->withInput();
-        }
-
-
-        $transaksiIdsDiproses = [];
-
-        DB::transaction(function () use ($data, &$transaksiIdsDiproses) {
-
-            // ⭐ Fetch Warung data with Area and Laba relations outside the loop (optimization)
-            $warungIds = collect($data['transaksi'])->pluck('details.*.warung_id')->flatten()->unique()->toArray();
-            // Asumsi relasi: Warung -> belongsTo -> Area, Area -> hasMany -> Laba
-            $warungs = Warung::with('area.laba')->whereIn('id', $warungIds)->get()->keyBy('id');
-
-            foreach ($data['transaksi'] as $transaksiId => $transaksiData) {
-                // $transaksiId adalah ID dari TransaksiBarang (Pembelian) yang mau didistribusikan
-                $transaksiBarang = TransaksiBarang::with('areaPembelian')->findOrFail($transaksiId);
-                // Asumsi TransaksiBarang memiliki kolom 'harga' (total) dan 'jumlah' (kuantitas)
-                $hargaBeliPerUnit = $transaksiBarang->jumlah > 0 ? $transaksiBarang->harga / $transaksiBarang->jumlah : 0;
-
-                // Cek ketersediaan stok agar tidak terjadi pengiriman berlebih
-                $maxStock = $transaksiBarang->jumlah;
-                $totalPengiriman = collect($transaksiData['details'])->sum('jumlah');
-
-                if ($totalPengiriman > $maxStock) {
-                    throw ValidationException::withMessages([
-                        "transaksi.{$transaksiId}" => "Total jumlah pengiriman ({$totalPengiriman}) untuk barang {$transaksiBarang->barang->nama_barang} melebihi stok yang tersedia ({$maxStock}).",
-                    ]);
+    // Validasi
+    try {
+        $data = $request->validate([
+            'transaksi' => 'required|array',
+            'transaksi.*' => ['array', function ($attribute, $value, $fail) use ($request) {
+                $transaksiId = explode('.', $attribute)[1];
+                if (!TransaksiBarang::where('id', $transaksiId)->exists()) {
+                    $fail("Transaksi dengan ID {$transaksiId} tidak valid atau tidak ditemukan.");
                 }
+            }],
+            'transaksi.*.barang_id' => 'nullable|exists:barang,id',
+            'transaksi.*.details' => 'required|array',
+            'transaksi.*.details.*.warung_id' => 'required|exists:warung,id',
+            'transaksi.*.details.*.jumlah' => 'required|integer|min:1',
+        ], [
+            // ... Pesan Validasi
+            'transaksi.required' => 'Data transaksi wajib diisi.',
+            'transaksi.*.details.required' => 'Detail pengiriman harus ada.',
+            'transaksi.*.details.*.warung_id.required' => 'Warung tujuan wajib dipilih.',
+            'transaksi.*.details.*.warung_id.exists' => 'Warung tujuan tidak valid.',
+            'transaksi.*.details.*.jumlah.required' => 'Jumlah pengiriman wajib diisi.',
+            'transaksi.*.details.*.jumlah.integer' => 'Jumlah pengiriman harus berupa angka.',
+            'transaksi.*.details.*.jumlah.min' => 'Jumlah minimal adalah 1.',
+        ]);
+    } catch (ValidationException $e) {
+        return redirect()->back()->withErrors($e->errors())->withInput();
+    }
+// dd($data);
 
-                $markupPercent = optional($transaksiBarang->areaPembelian)->markup ?? 0;
-                // Harga modal untuk Warung = Harga Beli + Markup Area Pembelian
-                $hargaModalWarung = $hargaBeliPerUnit * (1 + ($markupPercent / 100));
+    $transaksiIdsDiproses = [];
 
-                foreach ($transaksiData['details'] as $detail) {
-                    $warungId = $detail['warung_id'];
-                    $jumlahKirim = $detail['jumlah'];
+    DB::transaction(function () use ($data, &$transaksiIdsDiproses) {
 
-                    // Dapatkan data Warung
-                    $warung = $warungs->get($warungId);
-                    if (!$warung) continue;
+        // Fetch Warung data dengan Area dan Laba relations
+        $warungIds = collect($data['transaksi'])->pluck('details.*.warung_id')->flatten()->unique()->toArray();
+        $warungs = Warung::with('area.laba')->whereIn('id', $warungIds)->get()->keyBy('id');
 
-                    // 1. Cari atau buat Stok Warung
-                    $stokWarung = StokWarung::firstOrCreate(
-                        [
-                            'id_warung' => $warungId,
-                            'id_barang' => $transaksiBarang->id_barang,
-                        ],
-                        ['jumlah' => 0]
-                    );
+        foreach ($data['transaksi'] as $transaksiId => $transaksiData) {
+            $transaksiBarang = TransaksiBarang::with('areaPembelian')->findOrFail($transaksiId);
 
-                    // 2. Buat Barang Masuk (Status 'pending' = Warung belum konfirmasi terima)
-                    $barangMasuk = BarangMasuk::create([
-                        'id_transaksi_barang' => $transaksiBarang->id,
-                        'id_stok_warung' => $stokWarung->id,
-                        'id_barang' => $transaksiBarang->id_barang,
-                        'jumlah' => $jumlahKirim,
-                        'status' => 'kirim',
-                        // Menambahkan kolom tanggal_kadaluarsa dari TransaksiBarang sumber
-                        'tanggal_kadaluarsa' => $transaksiBarang->tanggal_kadaluarsa,
-                    ]);
+            $stokTersedia = $transaksiBarang->jumlah - $transaksiBarang->jumlah_terpakai;
+            $totalPengiriman = collect($transaksiData['details'])->sum('jumlah');
 
-                    // 3. Catat Hutang (sebesar harga modal ke Warung)
-                    $hargaTotalHutang = $hargaModalWarung * $jumlahKirim;
+            // Cek ketersediaan stok yang sebenarnya
+            if ($totalPengiriman > $stokTersedia) {
+                throw ValidationException::withMessages([
+                    "transaksi.{$transaksiId}" => "Total jumlah pengiriman ({$totalPengiriman}) untuk barang {$transaksiBarang->barang->nama_barang} melebihi stok yang tersedia ({$stokTersedia}).",
+                ]);
+            }
 
-                    HutangBarangMasuk::create([
-                        'id_warung' => $warungId,
-                        'id_barang_masuk' => $barangMasuk->id,
-                        'total' => round($hargaTotalHutang),
-                        'jumlah_unit' => $jumlahKirim,
-                        'status_pembayaran' => 'belum lunas',
-                        'tanggal_hutang' => now(), // Menambahkan tanggal hutang
-                    ]);
+            // Hitung harga per unit dari stok sumber
+            $hargaBeliPerUnit = $transaksiBarang->jumlah > 0 ? $transaksiBarang->harga / $transaksiBarang->jumlah : 0;
+            $markupPercent = optional($transaksiBarang->areaPembelian)->markup ?? 0;
+            $hargaModalWarung = $hargaBeliPerUnit * (1 + ($markupPercent / 100));
 
-                    // ⭐ 4. LOGIKA INSERT KE HARGAJUAL
-                    $laba = optional($warung->area)->laba()
-                        ->where('input_minimal', '<=', $hargaModalWarung)
-                        ->where('input_maksimal', '>=', $hargaModalWarung)
-                        ->first();
+            // --- PROSES PENGIRIMAN KE WARUNG ---
+            foreach ($transaksiData['details'] as $detail) {
+                $warungId = $detail['warung_id'];
+                $jumlahKirim = $detail['jumlah'];
 
-                    // Ambil nilai harga_jual dari entri laba yang cocok
-                    $hargaJualSatuan = optional($laba)->harga_jual ?? 0;
+                $warung = $warungs->get($warungId);
+                if (!$warung) continue;
 
-                    HargaJual::create([
+                // 1. Cari atau buat Stok Warung
+                $stokWarung = StokWarung::firstOrCreate(
+                    [
                         'id_warung' => $warungId,
                         'id_barang' => $transaksiBarang->id_barang,
-                        'harga_sebelum_markup' => $hargaBeliPerUnit,
-                        'harga_modal' => round($hargaModalWarung),
-                        // Mengisi kedua range dengan harga jual yang ditemukan
-                        'harga_jual_range_awal' => $hargaJualSatuan,
-                        'harga_jual_range_akhir' => $hargaJualSatuan,
-                        'periode_awal' => now(),
-                        'periode_akhir' => null,
-                    ]);
-                }
+                    ],
+                    ['jumlah' => 0]
+                );
 
-                // 5. Perbarui status TransaksiBarang (Stok Sumber)
-                // HANYA jika total stok yang dikirim SAMA dengan jumlah pembelian awal
-                // Jika Anda ingin mengizinkan pengiriman parsial, logika ini perlu diubah.
-                // Saat ini, diasumsikan sekali di-submit, transaksi ini dianggap selesai dikirim.
+                // 2. Buat Barang Masuk (Status 'kirim')
+                $barangMasuk = BarangMasuk::create([
+                    'id_transaksi_barang' => $transaksiBarang->id,
+                    'id_stok_warung' => $stokWarung->id,
+                    'id_barang' => $transaksiBarang->id_barang,
+                    'jumlah' => $jumlahKirim,
+                    'status' => 'kirim',
+                    'jenis' => 'tambahan',
+                    'tanggal_kadaluarsa' => $transaksiBarang->tanggal_kadaluarsa,
+                ]);
+
+                // 3. Catat Hutang
+                $hargaTotalHutang = $hargaModalWarung * $jumlahKirim;
+                HutangBarangMasuk::create([
+                    'id_warung' => $warungId,
+                    'id_barang_masuk' => $barangMasuk->id,
+                    'total' => round($hargaTotalHutang),
+                    'jumlah_unit' => $jumlahKirim,
+                    'status_pembayaran' => 'belum lunas',
+                    'tanggal_hutang' => now(),
+                ]);
+
+                // 4. Logika INSERT KE HARGAJUAL
+                $laba = optional($warung->area)->laba()
+                    ->where('input_minimal', '<=', $hargaModalWarung)
+                    ->where('input_maksimal', '>=', $hargaModalWarung)
+                    ->first();
+
+                $hargaJualSatuan = optional($laba)->harga_jual ?? 0;
+
+                HargaJual::create([
+                    'id_warung' => $warungId,
+                    'id_barang' => $transaksiBarang->id_barang,
+                    'harga_sebelum_markup' => $hargaBeliPerUnit,
+                    'harga_modal' => round($hargaModalWarung),
+                    'harga_jual_range_awal' => $hargaJualSatuan,
+                    'harga_jual_range_akhir' => $hargaJualSatuan,
+                    'periode_awal' => now(),
+                    'periode_akhir' => null,
+                ]);
+            }
+            
+            // --- LOGIKA PEMBARUAN STOK SUMBER (TransaksiBarang) ---
+            
+            // 5. Update jumlah_terpakai pada TransaksiBarang sumber
+            $transaksiBarang->jumlah_terpakai += $totalPengiriman;
+            $transaksiBarang->save(); // Simpan perubahan jumlah_terpakai
+
+            $sisaStok = $transaksiBarang->jumlah - $transaksiBarang->jumlah_terpakai;
+
+            if ($sisaStok > 0) {
+                // 6. Jika ada sisa, buat TransaksiBarang baru untuk sisa stok
+                
+                // Hitung ulang harga total untuk sisa stok
+                $hargaSisa = $hargaBeliPerUnit * $sisaStok; 
+                
+                $dataSisa = $transaksiBarang->toArray();
+                
+                // Hapus ID lama agar Laravel tahu ini data baru
+                unset($dataSisa['id']); 
+                
+                // Update kolom yang relevan untuk data sisa
+                $dataSisa['jumlah'] = $sisaStok;
+                $dataSisa['jumlah_terpakai'] = 0; // Sisa stok belum terpakai
+                $dataSisa['harga'] = round($hargaSisa); // Harga total untuk sisa stok
+                $dataSisa['status'] = 'pending'; // Status kembali pending
+                $dataSisa['id_transaksi_awal'] = $transaksiBarang->id_transaksi_awal; // Opsional: catat ID sumber aslinya
+                
+                // Buat entri TransaksiBarang baru untuk sisa stok
+                $newTransaksiBarang = TransaksiBarang::create($dataSisa);
+                
+                // Catat transaksi lama sebagai 'parsial' (atau 'selesai')
+                $transaksiBarang->status = 'pending'; 
+                $transaksiBarang->save();
+                
+                $transaksiIdsDiproses[] = $transaksiId . " (parsial, sisa stok dibuat dengan ID: {$newTransaksiBarang->id})";
+
+            } else {
+                // 7. Jika stok habis, ubah status menjadi 'dikirim' (selesai)
                 $transaksiBarang->status = 'dikirim';
                 $transaksiBarang->save();
-                $transaksiIdsDiproses[] = $transaksiId;
+                $transaksiIdsDiproses[] = $transaksiId . " (selesai)";
             }
-        });
+        }
+    });
 
-        // Redirect menggunakan route 'index' dengan status yang sesuai setelah pengiriman
-        return redirect()->route('admin.transaksibarang.index', ['status' => 'kirim'])
-            ->with('success', count($transaksiIdsDiproses) . ' item stok berhasil didistribusikan ke warung!');
+    // Redirect
+    $totalItemDiproses = count($data['transaksi'] ?? []);
+    $successMessage = $totalItemDiproses . ' item stok berhasil didistribusikan. ';
+    
+    // Tambahkan notifikasi khusus untuk pengiriman parsial
+    if (collect($transaksiIdsDiproses)->contains(fn($id) => str_contains($id, 'parsial'))) {
+        $successMessage .= 'Beberapa item diproses parsial dan sisa stok telah dibuat sebagai entri baru.';
+    } else {
+        $successMessage .= 'Semua item dikirim penuh.';
     }
+
+    return redirect()->route('admin.transaksibarang.index', ['status' => 'kirim'])
+        ->with('success', $successMessage);
+}
 
 
 
