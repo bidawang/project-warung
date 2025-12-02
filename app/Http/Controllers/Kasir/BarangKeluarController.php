@@ -114,7 +114,7 @@ class BarangKeluarController extends Controller
             'items.*.id_stok_warung' => 'required|exists:stok_warung,id',
             'items.*.jumlah' => 'required|integer|min:1',
             'items.*.harga' => 'required|numeric|min:0',
-            'jenis' => 'required|in:penjualan barang,hutang barang',
+            'jenis' => 'required|in:penjualan,hutang',
             'id_user_member' => 'nullable|exists:users,id',
             'bayar' => 'nullable|numeric|min:0',
             'total_harga' => 'required|numeric|min:0',
@@ -124,6 +124,7 @@ class BarangKeluarController extends Controller
 
         $idWarung = session('id_warung');
         if (! $idWarung) {
+
             return redirect()->route('kasir.kasir')->with('error', 'ID warung tidak ditemukan di sesi.');
         }
 
