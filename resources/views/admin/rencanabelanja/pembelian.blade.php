@@ -47,17 +47,17 @@
 
 @foreach($totalKebutuhan as $g => $item)
 @php
-    $validAreas = $item['valid_areas'];
-    $noArea = $validAreas->isEmpty();
-    $singleArea = $validAreas->count() === 1;
-    $autoSkip = $noArea; 
-    
-    $areaOptions = $validAreas->map(function($a) {
-        return [
-            'id'   => $a->id,
-            'area' => $a->area
-        ];
-    })->toJson();
+  $validAreas = $item['valid_areas'];
+  $noArea = $validAreas->isEmpty();
+  $singleArea = $validAreas->count() === 1;
+  $autoSkip = $noArea; 
+  
+  $areaOptions = $validAreas->map(function($a) {
+    return [
+      'id'  => $a->id,
+      'area' => $a->area
+    ];
+  })->toJson();
 @endphp
 
 {{-- === HEADER GRUP BARANG (Ringkas: Nama & Kebutuhan Total - colspan=6) === --}}
@@ -98,7 +98,7 @@
             <label class="text-red-600 font-medium cursor-pointer flex items-center text-xs">
                 <input type="hidden" name="items[{{ $g }}][skip]" value="{{ $autoSkip ? 1 : 0 }}" class="skip-hidden-input"> 
                 <input type="checkbox" class="skip-checkbox mr-1 h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500" data-group="{{ $g }}" {{ $autoSkip ? 'checked' : '' }}> 
-                **SKIP**
+                SKIP
             </label>
             <span class="text-gray-600 text-xs whitespace-nowrap">
                 Sisa: <span class="text-red-600 font-bold" id="sisa_kebutuhan_{{ $g }}">0</span> pcs
@@ -125,27 +125,28 @@
 
     {{-- Kolom 3: Jumlah Beli (Qty) --}}
     <td class="p-1">
+    <label class="block text-xs font-medium text-gray-700">Qty (pcs)</label>
         <input type="number" name="items[{{ $g }}][purchases][0][jumlah_beli]" 
                 value="{{ $autoSkip ? 0 : ($singleArea ? $item['total_kebutuhan'] : 0) }}" 
                 {{ $autoSkip ? 'disabled' : '' }}
                 min="0"
                 class="qty w-full border border-gray-300 p-2 text-center text-sm rounded-md focus:ring-gray-500 focus:border-gray-500"
-                data-group="{{ $g }}"
-                oninput="this.value = Math.abs(this.value); updateGroupTotals('{{ $g }}')">
+                data-group="{{ $g }}">
     </td>
 
     {{-- Kolom 4: Total Harga (INPUT) --}}
     <td class="p-1">
+    <label class="block text-xs font-medium text-gray-700">Total Harga (Rp)</label>
         <input type="number" name="items[{{ $g }}][purchases][0][harga]" 
                 value="0" {{ $autoSkip ? 'disabled' : '' }}
                 min="0"
                 class="row-total-price w-full border border-gray-300 p-2 text-right text-sm rounded-md focus:ring-gray-500 focus:border-gray-500"
-                data-group="{{ $g }}"
-                oninput="this.value = Math.abs(this.value); updateGroupTotals('{{ $g }}')">
+                data-group="{{ $g }}">
     </td>
 
     {{-- Kolom 5: Tanggal Exp --}}
     <td class="p-1">
+    <label class="block text-xs font-medium text-gray-700">Tanggal Exp.</label>
         <input type="date" name="items[{{ $g }}][purchases][0][tanggal_kadaluarsa]" 
                 {{ $autoSkip ? 'disabled' : '' }}
                 class="w-full border border-gray-300 p-2 text-center text-xs rounded-md focus:ring-gray-500 focus:border-gray-500">
@@ -218,6 +219,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // Hitung total awal
         updateGroupTotals(g);
+        updateAreaSelects(g); // Panggil fungsi baru untuk inisialisasi area
     });
     
     // Attach Listeners
@@ -226,16 +228,25 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 
-// ===================== EVENT LISTENERS =======================
+// ===================== EVENT LISTENERS (DELEGASI) =======================
 function attachEventListeners() {
-    // Tombol Add/Remove Row
+    // Tombol Add/Remove Row (Event Delegation)
     document.removeEventListener("click", rowButtonHandler);
     document.addEventListener("click", rowButtonHandler);
 
-    // Input Qty dan Total Row Price
+    // Input Qty dan Total Row Price (Event Delegation)
     document.removeEventListener("input", inputHandler);
     document.addEventListener("input", inputHandler);
     
+    // Area Select Change (Delegation tidak bekerja baik di 'change' event pada select, 
+    // jadi kita attach pada elemen yang sudah ada saat DOMContentLoaded)
+    // Untuk elemen baru, listener di-attach di addRow.
+    document.querySelectorAll(".area-select").forEach(select => {
+        // Hapus listener lama jika ada
+        select.removeEventListener("change", areaChangeHandler);
+        select.addEventListener("change", areaChangeHandler);
+    });
+    
     // Skip Checkbox
     document.querySelectorAll(".skip-checkbox").forEach(cb => {
         cb.removeEventListener("change", skipHandler);
@@ -244,25 +255,33 @@ function attachEventListeners() {
 }
 
 function rowButtonHandler(e) {
-    if (e.target.closest(".add-row")?.classList.contains("add-row")) {
+    // Gunakan e.target.closest() untuk delegasi event
+    if (e.target.closest(".add-row")) {
         e.preventDefault();
         addRow(e.target.closest(".add-row").dataset.group);
-    } else if (e.target.closest(".remove-row")?.classList.contains("remove-row")) {
+    } else if (e.target.closest(".remove-row")) {
         e.preventDefault();
         removeRow(e.target.closest(".remove-row").dataset.group, e.target.closest('tr'));
     }
 }
 
 function inputHandler(e) {
-    const group = e.target.dataset.group;
+    const group = e.target.closest('tr.purchase-row')?.dataset.group;
     
     // Cek jika input adalah Qty atau Total Harga per Baris
     if (group && (e.target.classList.contains('qty') || e.target.classList.contains('row-total-price'))) {
         
+        // Pastikan nilai selalu non-negatif
         if (e.target.value < 0) e.target.value = 0;
         
         updateGroupTotals(group);
     }
+}
+
+function areaChangeHandler(e) {
+    const g = e.target.dataset.group;
+    updateAreaSelects(g);
+    checkFormValidity(); // Cek validitas saat area berubah
 }
 
 function skipHandler(e) {
@@ -307,7 +326,72 @@ function skipHandler(e) {
         }
     });
     
+    updateAreaSelects(g); // Update area selects state
     updateGroupTotals(g); // Update total dan cek validasi
+}
+
+
+// ================= UPDATE AREA SELECTS (Fungsi Baru) =====================
+function updateAreaSelects(g) {
+    const selectedAreaIds = new Set();
+    const areaSelects = document.querySelectorAll(`tr.purchase-row[data-group="${g}"] .area-select`);
+        
+    // 1. Kumpulkan ID area yang sudah terpilih
+    areaSelects.forEach(select => {
+        if (select.value) {
+            selectedAreaIds.add(select.value);
+        }
+    });
+    
+    // 2. Iterasi lagi untuk menonaktifkan opsi yang sudah terpilih di SEMUA baris
+    areaSelects.forEach(select => {
+        const currentValue = select.value;
+        
+        select.querySelectorAll('option').forEach(option => {
+            const areaId = option.value;
+            
+            // Abaikan opsi kosong/Pilih Area
+            if (!areaId) return; 
+            
+            // Jika ID area ada di Set dan BUKAN nilai saat ini, maka disable
+            if (selectedAreaIds.has(areaId) && areaId !== currentValue) {
+                option.disabled = true;
+                option.classList.add('bg-gray-200');
+            } else {
+                // Aktifkan kembali opsi yang tadinya didisable
+                option.disabled = false;
+                option.classList.remove('bg-gray-200');
+            }
+        });
+    });
+    
+    // 3. Cek apakah tombol tambah baris harus dinonaktifkan
+    const addButton = document.querySelector(`tr.purchase-row[data-group="${g}"] .add-row`);
+    if (addButton) {
+        const areaOptionsData = document.getElementById(`area_options_data_${g}`).value;
+        const totalValidAreas = JSON.parse(areaOptionsData).length;
+        
+        // Hitung jumlah baris pembelian yang ada
+        const currentRowsCount = document.querySelectorAll(`tr.purchase-row[data-group="${g}"]`).length;
+        
+        const maxRowsReached = currentRowsCount >= totalValidAreas;
+        
+        // Cek apakah tombol awalnya dinonaktifkan karena singleArea, kita jangan ubah titlenya
+        const isSingleArea = addButton.title.includes('hanya ada 1 area valid');
+        const isSkipped = document.querySelector(`.skip-checkbox[data-group="${g}"]`)?.checked || false;
+
+        if (maxRowsReached && !isSingleArea) {
+            addButton.disabled = true;
+            addButton.classList.add('opacity-50', 'cursor-not-allowed');
+            addButton.title = "Semua Area Pembelian yang valid sudah digunakan.";
+        } else if (!isSingleArea && !isSkipped) {
+            // Hanya aktifkan kembali jika tidak dalam kondisi singleArea/isSkipped
+            addButton.disabled = false;
+            addButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            addButton.title = 'Tambah Area Pembelian (Split Purchase)';
+        }
+        // Jika singleArea atau isSkipped, biarkan statusnya seperti di Blade/skipHandler
+    }
 }
 
 
@@ -322,6 +406,7 @@ function updateGroupTotals(g){
         const qtyInput = row.querySelector('.qty')
         const rowTotalPriceInput = row.querySelector('.row-total-price')
         
+        // Ambil nilai
         const qty = parseInt(qtyInput.value) || 0
         const rowTotal = parseInt(rowTotalPriceInput.value) || 0
         
@@ -355,6 +440,7 @@ function updateGroupTotals(g){
         detailRow.classList.add('bg-gray-50');
     }
     
+    updateAreaSelects(g); // Panggil juga untuk memastikan tombol add row diperbarui
     checkFormValidity();
 }
 
@@ -371,14 +457,11 @@ function checkFormValidity() {
         const totalBoughtEl = document.getElementById(`total_qty_bought_${g}`);
         const isSkipped = document.querySelector(`.skip-checkbox[data-group="${g}"]`)?.checked || false;
         
-        if (sisaEl) {
+        // Tambahkan pengecekan null untuk totalBoughtEl
+        if (sisaEl && totalBoughtEl) { 
             const sisa = parseInt(sisaEl.innerText.replace(/\./g, '')) || 0;
             const totalBought = parseInt(totalBoughtEl.innerText.replace(/\./g, '')) || 0;
-            
-            if (sisa < 0) {
-                hasNegativeSisa = true;
-            }
-            
+                        
             if (!isSkipped) {
                 // Check for unskipped zero purchase
                 if (totalKebutuhan[g] > 0 && totalBought === 0) {
@@ -397,6 +480,7 @@ function checkFormValidity() {
 
                     // Jika qty > 0, harus ada area dan total harga > 0
                     if (qty > 0) {
+                        // Jika area belum dipilih, atau total harga 0
                         if (!area || rowTotal === 0) { 
                             hasInputError = true;
                         }
@@ -407,13 +491,14 @@ function checkFormValidity() {
                     anyValidGroup = true;
                 }
             } else {
-                anyValidGroup = true;
+                anyValidGroup = true; // Jika di-skip, dianggap valid untuk diproses
             }
         }
     }
     
     const submitBtn = document.getElementById('btnSubmitPembelian');
-    submitBtn.classList.remove('bg-red-600', 'hover:bg-red-700', 'bg-orange-500', 'hover:bg-orange-600', 'bg-gray-600', 'hover:bg-gray-700');
+    // Clear semua kelas status
+    submitBtn.classList.remove('bg-red-600', 'hover:bg-red-700', 'bg-orange-500', 'hover:bg-orange-600', 'bg-gray-600', 'hover:bg-gray-700', 'bg-gray-400');
     
     if (!anyValidGroup && Object.keys(totalKebutuhan).length > 0) {
         submitBtn.disabled = true;
@@ -444,20 +529,40 @@ function addRow(g){
     const areaOptionsData = document.getElementById(`area_options_data_${g}`).value;
     const areaOptions = JSON.parse(areaOptionsData);
     const noArea = areaOptions.length === 0;
+    
+    // Ambil semua area yang sudah terpilih
+    const currentSelectedAreaIds = new Set();
+    document.querySelectorAll(`tr.purchase-row[data-group="${g}"] .area-select`).forEach(select => {
+        if (select.value) {
+            currentSelectedAreaIds.add(select.value);
+        }
+    });
     
-    if (areaOptions.length <= rowCounts[g]) {
-        alert(`Pembelian tidak bisa dipecah lagi karena semua ${areaOptions.length} Area Pembelian yang valid sudah digunakan atau hanya ada satu area valid.`);
+    // Cek ketersediaan slot (sudah dilakukan di updateAreaSelects, tapi di sini double check)
+    if (areaOptions.length <= currentSelectedAreaIds.size) {
+        alert(`Pembelian tidak bisa dipecah lagi karena semua ${areaOptions.length} Area Pembelian yang valid sudah digunakan.`);
         return;
     }
+
+    // Dapatkan ID Area yang tersedia pertama kali
+    let nextAreaId = '';
+    for (const a of areaOptions) {
+        if (!currentSelectedAreaIds.has(String(a.id))) {
+            nextAreaId = String(a.id);
+            break;
+        }
+    }
     
     const row = nextRow[g]++;
     rowCounts[g]++;
     
     const isSkipped = document.querySelector(`.skip-checkbox[data-group="${g}"]`)?.checked || false;
     
+    // Bangun opsi HTML dengan nextAreaId sebagai selected
     let optionsHtml = noArea ? '<option value="" selected>❌ Tidak ada</option>' : '<option value="">Pilih Area</option>';
     areaOptions.forEach(a => {
-        optionsHtml += `<option value="${a.id}">${a.area}</option>`;
+        const isSelected = String(a.id) === nextAreaId;
+        optionsHtml += `<option value="${a.id}" ${isSelected ? 'selected' : ''}>${a.area}</option>`;
     });
     
     const rowBgClass = isSkipped ? 'bg-red-50' : 'bg-white';
@@ -470,20 +575,26 @@ function addRow(g){
         {{-- Kolom 2: Area Select --}}
         <td class="p-1">
             <select name="items[${g}][purchases][${row}][area_pembelian_id]" 
-                class="area-select w-full border border-gray-300 p-2 text-xs rounded-md focus:ring-gray-500 focus:border-gray-500" ${noArea||isSkipped?'disabled':''}>
+                class="area-select w-full border border-gray-300 p-2 text-xs rounded-md focus:ring-gray-500 focus:border-gray-500" data-group="${g}" ${noArea||isSkipped?'disabled':''}>
                 ${optionsHtml}
             </select>
         </td>
         {{-- Kolom 3: Qty --}}
-        <td class="p-1"><input type="number" name="items[${g}][purchases][${row}][jumlah_beli]" 
+        <td class="p-1">
+<label class="block text-xs font-medium text-gray-700 mb-1">Qty (pcs)</label>
+<input type="number" name="items[${g}][purchases][${row}][jumlah_beli]" 
                 class="qty w-full border border-gray-300 p-2 text-center text-sm rounded-md focus:ring-gray-500 focus:border-gray-500" 
-                ${noArea||isSkipped?'disabled':''} min="0" value="0" data-group="${g}" oninput="this.value = Math.abs(this.value); updateGroupTotals('${g}')"></td>
+                ${noArea||isSkipped?'disabled':''} min="0" value="0" data-group="${g}"></td>
         {{-- Kolom 4: Total Harga (Input) --}}
-        <td class="p-1"><input type="number" name="items[${g}][purchases][${row}][harga]" 
+        <td class="p-1">
+<label class="block text-xs font-medium text-gray-700">Total Harga (Rp)</label>
+<input type="number" name="items[${g}][purchases][${row}][harga]" 
                 class="row-total-price w-full border border-gray-300 p-2 text-right text-sm rounded-md focus:ring-gray-500 focus:border-gray-500" 
-                ${noArea||isSkipped?'disabled':''} min="0" value="0" data-group="${g}" oninput="this.value = Math.abs(this.value); updateGroupTotals('${g}')"></td>
+                ${noArea||isSkipped?'disabled':''} min="0" value="0" data-group="${g}"></td>
         {{-- Kolom 5: Tanggal Exp --}}
-        <td class="p-1"><input type="date" name="items[${g}][purchases][${row}][tanggal_kadaluarsa]" 
+        <td class="p-1">
+<label class="block text-xs font-medium text-gray-700">Tanggal Exp.</label>
+<input type="date" name="items[${g}][purchases][${row}][tanggal_kadaluarsa]" 
                 class="w-full border border-gray-300 p-2 text-center text-xs rounded-md focus:ring-gray-500 focus:border-gray-500" ${noArea||isSkipped?'disabled':''}></td>
         {{-- Kolom 6: Aksi --}}
         <td class="text-center p-1">
@@ -497,8 +608,15 @@ function addRow(g){
     const totalRow = document.querySelector(`tr.total-row[data-group="${g}"]`);
     totalRow.insertAdjacentHTML('beforebegin',html);
     
+    // Ambil elemen select yang baru dibuat dan pasang listener-nya
+    const newRow = totalRow.previousElementSibling;
+    const newAreaSelect = newRow.querySelector('.area-select');
+    if (newAreaSelect) {
+        newAreaSelect.addEventListener("change", areaChangeHandler);
+    }
+    
+    updateAreaSelects(g); // Perbarui status select area di semua baris
     updateGroupTotals(g);
-    attachEventListeners(); // Re-attach event listeners for new elements
 }
 
 // ================= REMOVE ROW =======================
@@ -512,6 +630,7 @@ function removeRow(g, rowElement){
     rowElement.remove();
     rowCounts[g]--;
     
+    updateAreaSelects(g); // Panggil ini setelah baris dihapus untuk mengaktifkan kembali opsi
     updateGroupTotals(g);
 }
 
@@ -521,5 +640,4 @@ function formatNumber(num) {
     return (Number(num) || 0).toLocaleString('id-ID'); 
 }
 </script>
-
 @endsection

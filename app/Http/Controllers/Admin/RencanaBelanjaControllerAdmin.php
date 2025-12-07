@@ -122,6 +122,7 @@ public function index()
 
     public function store(Request $request)
 {
+    // dd($request->all());
     // Validasi tetap sama
     $validated = $request->validate([
         'items' => 'required|array',
@@ -130,11 +131,11 @@ public function index()
 
         'items.*.purchases'       => 'required_without:items.*.skip|array',
         'items.*.purchases.*.area_pembelian_id' => 'required_without:items.*.skip|integer|exists:area_pembelian,id',
-        'items.*.purchases.*.jumlah_beli'       => 'required_without:items.*.skip|integer|min:1',
+        'items.*.purchases.*.jumlah_beli'       => 'required_without:items.*.skip|min:1',
         'items.*.purchases.*.harga'             => 'required_without:items.*.skip|numeric|min:0',
         'items.*.purchases.*.tanggal_kadaluarsa' => 'nullable|date',
     ]);
-
+// dd($validated);
     $grandTotal = 0;
     $keteranganTransaksi = "Pembelian Berdasarkan Rencana Belanja Warung";
     $rencanaUpdates = [];
