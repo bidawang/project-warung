@@ -21,7 +21,7 @@ class StokBarangControllerKasir extends Controller
         $search = $request->get('search');
         $userId = Auth::id();
         $today = Carbon::today(); // Ambil tanggal hari ini
-
+// dd(123);
         // 1. Ambil Data Stok Barang (TIDAK BERUBAH)
         $stokBarang = StokWarung::with([
             'barang.transaksiBarang' => function ($query) {
@@ -117,7 +117,7 @@ class StokBarangControllerKasir extends Controller
     {
         $status = $request->get('status', 'kirim');
         $search = $request->get('search');
-
+// dd($request->All());
         //         $barangMasuk = BarangMasuk::with([
         //     'transaksiBarang.areaPembelian',
         //     'stokWarung.barang',
@@ -129,6 +129,7 @@ class StokBarangControllerKasir extends Controller
             'stokWarung.barang',
             'stokWarung.warung.user'
         ])
+        ->where('jenis', 'tambahan')
             ->whereHas('stokWarung.warung', function ($query) {
                 $query->where('id_user', Auth::id());
             })
@@ -168,11 +169,4 @@ class StokBarangControllerKasir extends Controller
         return view('kasir.stok_barang.barang_masuk', compact('barangMasuk', 'status', 'search'));
     }
 
-    // Metode konfirmasi barang masuk (perlu diimplementasikan)
-    public function konfirmasi(Request $request)
-    {
-        // Logika untuk menerima atau menolak barang masuk yang dipilih
-        // ...
-        return redirect()->back()->with('success', 'Status barang berhasil diperbarui!');
-    }
 }

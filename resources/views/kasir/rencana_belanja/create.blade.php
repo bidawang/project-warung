@@ -143,155 +143,126 @@
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('rencanaBelanjaForm');
     const btnKonfirmasi = document.getElementById('btnKonfirmasi');
-    const rencanaInputLeft = document.querySelectorAll('.rencana-input'); // Semua input di kolom Kiri
     const rencanaListBody = document.getElementById('rencanaListBody');
     const ringkasanError = document.getElementById('ringkasanError');
 
-    // Variabel untuk Search
     const searchInput = document.getElementById('searchInput');
-    const barangTableBody = document.querySelector('#barangTable tbody');
-    const allTableRows = barangTableBody.querySelectorAll('tr');
+    const allLeftInputs = document.querySelectorAll('.rencana-input');
 
-    // =======================================================
-    // FUNGSI BARU: PENCARIAN BARANG
-    // =======================================================
-    const filterTable = () => {
-        const searchTerm = searchInput.value.toLowerCase().trim();
-
-        allTableRows.forEach(row => {
-            const rowData = row.dataset.nama || '';
-
-            if (rowData.includes(searchTerm)) {
-                row.style.display = ''; // Tampilkan baris
-            } else {
-                row.style.display = 'none'; // Sembunyikan baris
-            }
+    /* =========================
+       SEARCH
+    ========================== */
+    searchInput.addEventListener('input', () => {
+        const q = searchInput.value.toLowerCase();
+        document.querySelectorAll('#barangTable tbody tr').forEach(tr => {
+            tr.style.display = tr.dataset.nama.includes(q) ? '' : 'none';
         });
-    };
-
-    // =======================================================
-    // FUNGSI UTAMA: MEMPERBARUI DAFTAR RINGKASAN KANAN
-    // =======================================================
-    const updateRencanaList = () => {
-        // Ambil data dari input Kiri, termasuk ID dan Stok
-        const selectedItems = Array.from(rencanaInputLeft)
-            .map(input => {
-                const row = input.closest('tr');
-                const stokSpan = row.querySelector('[data-stok-saat-ini]');
-
-                return {
-                    id: input.dataset.id,
-                    nama: input.dataset.nama,
-                    jumlah: parseInt(input.value) || 0,
-                    stok: parseInt(stokSpan.dataset.stokSaatIni) || 0
-                };
-            })
-            .filter(item => item.jumlah > 0);
-
-        // Bersihkan dan isi ulang daftar
-        rencanaListBody.innerHTML = '';
-        ringkasanError.classList.add('d-none');
-
-        if (selectedItems.length === 0) {
-            rencanaListBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Belum ada barang dipilih.</td></tr>';
-            return false;
-        }
-
-        selectedItems.forEach(item => {
-            const row = rencanaListBody.insertRow();
-            row.innerHTML = `
-                <td>${item.nama}</td>
-                <td class="text-center">${item.stok.toLocaleString('id-ID')}</td>
-                <td class="text-center">
-                    <input type="number"
-                        class="form-control form-control-sm rencana-input-right"
-                        value="${item.jumlah}"
-                        min="0"
-                        data-id="${item.id}"
-                        data-nama="${item.nama}">
-                </td>
-            `;
-        });
-
-        // ⭐ PENTING: Attach listener ke input yang baru dibuat di Kolom Kanan
-        document.querySelectorAll('.rencana-input-right').forEach(inputRight => {
-            inputRight.addEventListener('change', syncQuantities);
-            inputRight.addEventListener('blur', syncQuantities);
-        });
-
-        return true;
-    };
-
-    // =======================================================
-    // FUNGSI BARU: SYNC QUANTITIES (Kiri <--> Kanan)
-    // =======================================================
-    const syncQuantities = (event) => {
-        const inputChanged = event.target;
-        const barangId = inputChanged.dataset.id;
-        const newQuantity = parseInt(inputChanged.value) || 0;
-
-        // Cari input yang sesuai di Kolom Kiri
-        const inputLeft = document.querySelector(`.rencana-input[data-id="${barangId}"]`);
-
-        if (inputLeft) {
-            // Update nilai input Kiri
-            inputLeft.value = newQuantity;
-        }
-
-        // Selalu panggil updateRencanaList untuk merefresh daftar (menghilangkan item jika diubah ke 0)
-        updateRencanaList();
-    };
-
-    // =======================================================
-    // EVENT LISTENERS
-    // =======================================================
-
-    // Event Listener untuk Search
-    searchInput.addEventListener('keyup', filterTable);
-    searchInput.addEventListener('change', filterTable);
-
-    // Event Listener untuk Input Rencana Belanja (Kolom Kiri)
-    rencanaInputLeft.forEach(input => {
-        input.addEventListener('change', updateRencanaList);
-        input.addEventListener('blur', updateRencanaList);
     });
 
-    // Panggil sekali saat load
-    updateRencanaList();
+    /* =========================
+       UPDATE / CREATE ROW RINGKASAN
+    ========================== */
+    const upsertRingkasanRow = (data) => {
+        let row = rencanaListBody.querySelector(`tr[data-id="${data.id}"]`);
 
+        if (data.jumlah <= 0) {
+            if (row) row.remove();
+            return;
+        }
 
-    // =======================================================
-    // EVENT LISTENER UNTUK TOMBOL SUBMIT FINAL (Konfirmasi)
-    // =======================================================
+        if (!row) {
+            row = document.createElement('tr');
+            row.dataset.id = data.id;
+            row.innerHTML = `
+                <td>${data.nama}</td>
+                <td class="text-center">${data.stok.toLocaleString('id-ID')}</td>
+                <td class="text-center">
+                    <input type="number"
+                        class="form-control form-control-sm input-kanan"
+                        min="0"
+                        value="${data.jumlah}"
+                        data-id="${data.id}">
+                </td>
+            `;
+            rencanaListBody.appendChild(row);
+        } else {
+            row.querySelector('.input-kanan').value = data.jumlah;
+        }
+    };
+
+    /* =========================
+       INPUT KIRI → RINGKASAN
+    ========================== */
+    allLeftInputs.forEach(input => {
+        input.addEventListener('input', () => {
+            const row = input.closest('tr');
+            const stok = parseInt(row.querySelector('[data-stok-saat-ini]').dataset.stokSaatIni) || 0;
+
+            upsertRingkasanRow({
+                id: input.dataset.id,
+                nama: input.dataset.nama,
+                stok,
+                jumlah: parseInt(input.value) || 0
+            });
+
+            toggleEmptyState();
+        });
+    });
+
+    /* =========================
+       EVENT DELEGATION
+       RINGKASAN → INPUT KIRI
+    ========================== */
+    rencanaListBody.addEventListener('input', (e) => {
+        if (!e.target.classList.contains('input-kanan')) return;
+
+        const id = e.target.dataset.id;
+        const val = parseInt(e.target.value) || 0;
+
+        const leftInput = document.querySelector(`.rencana-input[data-id="${id}"]`);
+        if (leftInput) leftInput.value = val;
+
+        if (val <= 0) {
+            e.target.closest('tr').remove();
+        }
+
+        toggleEmptyState();
+    });
+
+    /* =========================
+       EMPTY STATE
+    ========================== */
+    const toggleEmptyState = () => {
+        if (rencanaListBody.children.length === 0) {
+            rencanaListBody.innerHTML =
+                '<tr class="empty"><td colspan="3" class="text-center text-muted">Belum ada barang dipilih.</td></tr>';
+        } else {
+            const empty = rencanaListBody.querySelector('.empty');
+            if (empty) empty.remove();
+        }
+    };
+
+    /* =========================
+       SUBMIT
+    ========================== */
     btnKonfirmasi.addEventListener('click', () => {
-        // Panggil updateRencanaList terakhir kali untuk menyinkronkan data final
-        if (!updateRencanaList()) {
-            ringkasanError.textContent = 'Anda belum memilih barang. Masukkan jumlah minimal 1 untuk melanjutkan.';
+        if (rencanaListBody.children.length === 0) {
+            ringkasanError.textContent = 'Pilih minimal 1 barang.';
             ringkasanError.classList.remove('d-none');
             return;
         }
 
-        // Logic pembersihan payload: Hapus semua input yang nilainya <= 0 dari pengiriman
-        document.querySelectorAll('.rencana-input').forEach(input => {
-            const jumlah = parseInt(input.value) || 0;
-            const parentRow = input.closest('tr');
-            const idBarangInput = parentRow.querySelector('input[type="hidden"][name^="rencana"][name$="[id_barang]"]');
+        allLeftInputs.forEach(input => {
+            const qty = parseInt(input.value) || 0;
+            const row = input.closest('tr');
+            const hidden = row.querySelector('input[type="hidden"]');
 
-            if (jumlah <= 0) {
+            if (qty <= 0) {
                 input.removeAttribute('name');
-                if (idBarangInput) {
-                    idBarangInput.removeAttribute('name');
-                }
-            } else {
-                // Pastikan name dikembalikan jika sebelumnya dihapus (Penting untuk keamanan)
-                input.setAttribute('name', `rencana[${input.dataset.id}][jumlah_awal]`);
-                if (idBarangInput) {
-                    idBarangInput.setAttribute('name', `rencana[${input.dataset.id}][id_barang]`);
-                }
+                hidden?.removeAttribute('name');
             }
         });
 
-        // Submit form setelah membersihkan input
         form.submit();
     });
 });

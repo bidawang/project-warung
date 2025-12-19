@@ -272,6 +272,7 @@ class TransaksiBarangController extends Controller
 {
     // 1. Filtering dan Sanitasi Input
     $allData = $request->all();
+    // dd($allData, 'asu');
     $transaksiFiltered = collect($allData['transaksi'] ?? [])
         ->filter(function ($trx) {
             return !empty($trx['details']);
@@ -361,7 +362,7 @@ class TransaksiBarangController extends Controller
                     'jenis' => 'tambahan',
                     'tanggal_kadaluarsa' => $transaksiBarang->tanggal_kadaluarsa,
                 ]);
-
+// dd($barangMasuk);
                 // 3. Catat Hutang
                 $hargaTotalHutang = $hargaModalWarung * $jumlahKirim;
                 HutangBarangMasuk::create([
@@ -460,6 +461,7 @@ class TransaksiBarangController extends Controller
     {
         // ... (Filter dan Validasi tetap sama)
         $allData = $request->all();
+        dd($allData);
         $rencanaFiltered = collect($allData['rencana'] ?? [])
             ->map(function ($warungRencana) {
                 return collect($warungRencana)

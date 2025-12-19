@@ -51,18 +51,32 @@ class RencanaBelanjaControllerAdmin extends Controller
 public function index()
 {
     $data = $this->getStockData();
+
     $rencana = RencanaBelanja::with(['barang','warung'])
-    ->where('status','pending')
-    ->get()
-    ->groupBy('id_warung');
-// dd($rencana);
-    return view('admin.rencanabelanja.index',[
+        ->where('status', 'pending')
+        ->get()
+        ->groupBy('id_warung')
+        ->map(function ($itemsPerWarung) {
+
+            // Gabungkan barang yang sama berdasarkan id_barang
+            return $itemsPerWarung
+                ->groupBy('id_barang')
+                ->map(function ($group) {
+                    $first = $group->first();
+                    $first->jumlah_awal = $group->sum('jumlah_awal');
+                    return $first;
+                })
+                ->values(); // reset key supaya @foreach rapi
+        });
+
+    return view('admin.rencanabelanja.index', [
         'rencanaBelanjaByWarung' => $rencana,
-        'allTransactionsForJs'   => $data['allTransactions'], // dipakai JS
+        'allTransactionsForJs'   => $data['allTransactions'],
         'stockByBarang'          => $data['stockByBarang'],
-        'warungs'=>$data['warungs'],
+        'warungs'                => $data['warungs'],
     ]);
 }
+
 
 
     /**
@@ -320,7 +334,7 @@ public function kirimRencanaProses(Request $request)
                     ],
                     ['jumlah' => 0]
                 );
-// dd($stokWarung);
+
                 // 2. Buat Barang Masuk (Status 'kirim', Jenis 'tambahan')
                 $barangMasuk = BarangMasuk::create([
                     'id_transaksi_barang' => $trxSourceId, // ID TransaksiBarang sumber
@@ -440,5 +454,4 @@ public function kirimRencanaProses(Request $request)
     return redirect()->route('admin.rencana.index') // Redirect kembali ke halaman rencana
         ->with('success', $successMessage);
 }
-
 }

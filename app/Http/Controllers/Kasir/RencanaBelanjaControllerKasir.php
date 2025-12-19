@@ -8,7 +8,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\StokWarung;
 use App\Models\RencanaBelanja;
+use App\Models\BarangMasuk; // Pastikan model ini diimport
 use App\Models\Barang;
+use App\Models\Warung;
+
 
 class RencanaBelanjaControllerKasir extends Controller
 {
@@ -17,43 +20,45 @@ class RencanaBelanjaControllerKasir extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function rencanaBelanja()
-    {
-        // dd(Auth::user());
-        // PENTING: ID Warung harus diambil secara dinamis dari user yang login (Kasir).
-        $idWarung = session('id_warung');
+    public function rencanaBelanja(Request $request)
+{
+    $idWarung = session('id_warung');
+    $status = $request->query('status', 'pending');
 
-        $rencanaBelanjaAktif = RencanaBelanja::with('barang')
-            ->where('id_warung', $idWarung)
-            ->where(function ($query) {
-                $query->whereNull('jumlah_dibeli')
-                    ->orWhere('jumlah_dibeli', 0);
-                //   ->orWhereColumn('status','pending');
-            })
-            ->get();
+    // Memuat relasi 'barang' dan 'barangMasuk'
+    $query = RencanaBelanja::with(['barang'])
+        ->where('id_warung', $idWarung);
 
-        return view('kasir.rencana_belanja.index', compact('rencanaBelanjaAktif'));
+    switch ($status) {
+        case 'pending':
+            $query->where(function ($q) {
+                $q->whereNull('jumlah_dibeli')
+                  ->orWhere('jumlah_dibeli', 0);
+            });
+            break;
+
+        case 'dibeli':
+            $query->where('jumlah_dibeli', '>', 0)
+                  ->where('status', 'dibeli');
+            break;
+
+        case 'dikirim':
+            $query->where('status', 'dikirim');
+            break;
+
+        case 'selesai':
+            // Pada status selesai, kita pastikan data barang masuk juga ikut terambil
+            $query->where('status', 'selesai');
+            break;
     }
 
-    /**
-     * Tampilkan view history (riwayat) Rencana Belanja yang sudah selesai (completed).
-     *
-     * @return \Illuminate\View\View
-     */
-    public function history()
-    {
-        // ID Warung ambil dari session kasir login
-        $idWarung = session('id_warung');
-
-        $historyRencanaBelanja = RencanaBelanja::with('barang')
-            ->where('id_warung', $idWarung)
-            ->where('jumlah_dibeli', '>', 0)
-            ->get();
-
-        return view('kasir.rencana_belanja.history', compact('historyRencanaBelanja'));
-    }
-
-
+    $data = $query->get();
+// dd($data);
+    return view('kasir.rencana_belanja.index', [
+        'data' => $data,
+        'status' => $status
+    ]);
+}
     /**
      * Tampilkan form untuk membuat Rencana Belanja baru.
      * Mengambil daftar semua barang yang tersedia di stok warung, diurutkan dari stok 0.
@@ -131,4 +136,63 @@ class RencanaBelanjaControllerKasir extends Controller
             return redirect()->back()->withInput()->with('error', 'Gagal menyimpan rencana belanja. Silakan coba lagi.');
         }
     }
+
+    public function konfirmasiSelesai(Request $request)
+{
+    // 1. Validasi Input
+    $request->validate([
+        'barangMasuk' => 'required|array',
+        'barangMasuk.*' => 'exists:rencana_belanja,id',
+        'status_baru' => 'required|in:selesai,tolak',
+    ]);
+// dd($request->All());
+    try {
+        DB::beginTransaction();
+
+        // Ambil data rencana belanja yang dipilih
+        $items = RencanaBelanja::whereIn('id', $request->barangMasuk)->get();
+// dd($request->All());
+        if ($request->status_baru === 'selesai') {
+            foreach ($items as $item) {
+                // A. Update status di tabel rencana_belanja
+                $item->update(['status' => 'selesai']);
+
+                $jumlahDibeli = (float) $item->jumlah_dibeli;
+// dd($jumlahDibeli, $item->id_stok_warung);
+                if ($jumlahDibeli > 0) {
+                    // B. Tambahkan ke tabel barang_masuk (Histori Barang Masuk)
+                    
+    //                 BarangMasuk::where('id_stok_warung', $request->idstokwarung)
+    // ->update([
+    //     'status'     => 'terima',
+    //     // 'keterangan' => 'Masuk dari Rencana Belanja',
+    // ]);
+
+                    // C. Update/Increment stok di tabel stok_warung
+                    StokWarung::where('id_warung', session('id_warung'))
+                                ->where('id_barang', $item->id_barang)
+                        ->increment('jumlah', $jumlahDibeli);
+                }
+            }
+            // dd($request->All(), $item->jumlah_dibeli,session('id_warung'));
+            $message = 'Rencana belanja diselesaikan, histori barang masuk dicatat, dan stok berhasil ditambahkan.';
+        } else {
+            // Jika status_baru adalah 'tolak'
+            RencanaBelanja::whereIn('id', $request->barangMasuk)->update(['status' => 'tolak']);
+            $message = 'Rencana belanja yang dipilih telah ditolak.';
+        }
+
+        DB::commit();
+        
+        // Redirect kembali ke tab selesai
+        return redirect()->route('kasir.rencanabelanja.index', ['status' => 'selesai'])
+                         ->with('success', $message);
+
+    } catch (Exception $e) {
+        DB::rollBack();
+        Log::error("Gagal konfirmasi rencana belanja: " . $e->getMessage());
+
+        return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+    }
+}
 }

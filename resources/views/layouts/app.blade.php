@@ -75,7 +75,13 @@
         <div class="container-fluid">
             <a class="navbar-brand d-flex align-items-center" href="{{ url('/dashboard') }}">
                 <i class="fas fa-chart-bar me-2 text-primary"></i>
-                <span class="fw-bold">Kasir App</span>
+@php
+    $warung = \App\Models\Warung::find(session('id_warung'));
+@endphp
+
+<span class="fw-bold">
+    Kasir {{ $warung?->nama_warung ?? 'Tidak Ada Warung' }}
+</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNavbar"
                 aria-controls="topNavbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -132,6 +138,14 @@
 
     <!-- Main Content -->
     <div class="main-content">
+        @if($errors->any())
+    <div class="bg-red-100 text-red-700 px-4 py-3 rounded mb-4">
+        <strong>Kesalahan:</strong>
+        <ul class="list-disc ml-5 text-sm">
+            @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
+        </ul>
+    </div>
+    @endif
         @yield('content')
     </div>
 

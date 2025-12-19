@@ -44,4 +44,5 @@ class RencanaBelanja extends Model
     {
         return $this->belongsTo(Barang::class, 'id_barang');
     }
+
 }

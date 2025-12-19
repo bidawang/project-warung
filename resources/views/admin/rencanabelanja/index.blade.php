@@ -9,14 +9,14 @@
         <h1 class="text-2xl font-bold">Manajemen Rencana Belanja</h1>
     </header>
 
-    @if($errors->any())
-    <div class="bg-red-100 text-red-700 px-4 py-3 rounded mb-4">
-        <strong>Kesalahan:</strong>
-        <ul class="list-disc ml-5 text-sm">
-            @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
-        </ul>
-    </div>
-    @endif
+        @if($errors->any())
+        <div class="bg-red-100 text-red-700 px-4 py-3 rounded mb-4">
+            <strong>Kesalahan:</strong>
+            <ul class="list-disc ml-5 text-sm">
+                @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
+            </ul>
+        </div>
+        @endif
 
 
     <main class="flex-1 overflow-y-auto bg-gray-50 p-6">
@@ -26,7 +26,7 @@
                 Ke Stok Pengiriman
             </a>
             <a href="{{ route('admin.rencana.create') }}" class="btn bg-blue-600 text-white px-4 py-2 rounded shadow">
-                Buat Rencana Baru
+                Daftar Permintaan
             </a>
         </div>
 
@@ -36,7 +36,7 @@
             {{-- ==================== STOK GLOBAL (DETAIL PER TRX & AREA) ==================== --}}
             <div class="bg-white p-5 shadow rounded border h-fit">
                 <h2 class="font-bold text-lg mb-3 border-b pb-2">Stok Global (Detail TRX)</h2>
-                <div id="stokGlobalContainer" class="space-y-2 max-h-96 overflow-y-auto pr-1 text-sm text-gray-700">
+                <div id="stokGlobalContainer" class="space-y-2 overflow-y-auto pr-1 text-sm text-gray-700">
                     Load...
                 </div>
             </div>

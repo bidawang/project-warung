@@ -121,7 +121,7 @@ Route::prefix('/admin')->name('admin.')->group(function () {
 
     Route::post('transaksibarang/update-status-massal', [TransaksiBarangController::class, 'updateStatusMassal'])->name('transaksibarang.updateStatusMassal');
     Route::post('/kirim-massal-proses', [TransaksiBarangController::class, 'kirimMassalProses'])->name('transaksibarang.kirim.mass.proses');
-    Route::post('/kirim-rencana-proses', [TransaksiBarangController::class, 'kirimRencanaProses'])->name('transaksibarang.kirim.rencana.proses');
+    Route::post('/kirim-rencana-proses', [RencanaBelanjaControllerAdmin::class, 'kirimRencanaProses'])->name('transaksibarang.kirim.rencana.proses');
     Route::resource('kategori', KategoriControllerAdmin::class);
     Route::resource('areapembelian', AreaPembelianController::class)->names('areapembelian');
     Route::resource('targetpencapaian', TargetPencapaianController::class);
@@ -192,6 +192,7 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
 
     Route::resource('barangkeluar', BarangKeluarController::class);
     Route::post('kasir/stok-barang/barang-masuk/konfirmasi', [BarangMasukControllerKasir::class, 'updateStatus'])->name('barang-masuk.konfirmasi');
+    Route::post('rencana-belanja/konfirmasi', [RencanaBelanjaControllerKasir::class, 'konfirmasiSelesai'])->name('rencanabelanja.konfirmasi');
     Route::get('/mutasibarang', [MutasiBarangController::class, 'index'])->name('mutasibarang.index');
 
     Route::get('/member', [MemberControllerKasir::class, 'index'])->name('member.index');

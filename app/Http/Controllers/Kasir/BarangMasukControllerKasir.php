@@ -145,7 +145,7 @@ class BarangMasukControllerKasir extends Controller
             'barangMasuk.*' => 'exists:barang_masuk,id',
             'status_baru' => 'required|in:terima,tolak',
         ]);
-
+// dd($request->All());
         try {
             // Memulai Transaksi Database untuk menjamin atomisitas (semua berhasil atau semua gagal)
             DB::beginTransaction();
