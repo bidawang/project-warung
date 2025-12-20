@@ -107,7 +107,6 @@ class BarangKeluarController extends Controller
      */
     public function store(Request $request)
     {
-        // dd('masuk sini');
         // Validasi data input
         $validated = $request->validate([
             'items' => 'required|array|min:1',
@@ -124,45 +123,34 @@ class BarangKeluarController extends Controller
 
         $idWarung = session('id_warung');
         if (! $idWarung) {
-
             return redirect()->route('kasir.kasir')->with('error', 'ID warung tidak ditemukan di sesi.');
         }
 
-        // --- LOGIKA GENERASI KETERANGAN OTOMATIS DIMULAI DI SINI ---
+        // --- LOGIKA GENERASI KETERANGAN OTOMATIS ---
 
-        // 1. Ambil ID Stok Warung yang terlibat
         $stokWarungIds = collect($validated['items'])->pluck('id_stok_warung')->all();
 
-        // 2. Ambil detail barang dari StokWarung (termasuk nama barang)
-        // ASUMSI: StokWarung memiliki relasi 'barang' ke model Barang yang memiliki kolom 'nama'.
         $stokDetails = StokWarung::whereIn('id', $stokWarungIds)
-            ->with('barang') // Memuat relasi Barang
+            ->with('barang')
             ->get();
 
-        // 3. Buat string deskripsi barang
         $itemDescriptions = $stokDetails->map(function ($stok) use ($validated) {
-            // Cari jumlah barang yang terjual/dihutang dari array items
             $itemData = collect($validated['items'])->firstWhere('id_stok_warung', $stok->id);
             $jumlah = $itemData['jumlah'];
-
-            // Ambil nama barang (menggunakan fallback jika relasi barang tidak ada atau nama kosong)
             $namaBarang = optional($stok->barang)->nama_barang ?? 'Barang ID: ' . $stok->id;
-
             return "{$namaBarang} ({$jumlah} Pcs)";
         })->implode(', ');
-// dd($itemDescriptions);
-        // 4. Tentukan Keterangan Otomatis
+
+        // Sesuaikan jenis menjadi penjualan / hutang
         $jenisTransaksi = $validated['jenis'];
-        $tipe = $jenisTransaksi === 'penjualan barang' ? 'penjualan barang' : 'hutang barang';
+        $tipe = $jenisTransaksi === 'penjualan' ? 'penjualan' : 'hutang';
         $defaultKeterangan = "{$tipe} Barang: {$itemDescriptions}";
 
-        // 5. Tentukan Keterangan Final: Gunakan input user, jika kosong gunakan yang otomatis.
         $finalKeterangan = $validated['keterangan'] ?? $defaultKeterangan;
 
-        // --- LOGIKA GENERASI KETERANGAN OTOMATIS SELESAI DI SINI ---
+        // ------------------------------------------------------------------
 
         try {
-            // Mulai DB transaction
             DB::beginTransaction();
 
             // Ambil kas warung jenis cash
@@ -174,35 +162,55 @@ class BarangKeluarController extends Controller
             $transaksiKas = TransaksiKas::create([
                 'id_kas_warung'     => $kasWarung->id,
                 'total'             => $validated['total_harga'],
-                // Hanya set metode_pembayaran jika jenisnya penjualan (bukan hutang)
-                'metode_pembayaran' => $validated['jenis'] === 'penjualan barang' ? 'cash' : null,
+                'metode_pembayaran' => $validated['jenis'] === 'penjualan' ? 'cash' : null,
                 'jenis'             => $validated['jenis'],
-                // Keterangan menggunakan hasil otomatis/manual
                 'keterangan'        => $finalKeterangan,
             ]);
 
-            // Jika hutang, buat record Hutang.
+            // =============================
+            //   KHUSUS HUTANG → ATURAN TENGGAT
+            // =============================
             $hutang = null;
-            if ($validated['jenis'] === 'hutang barang' && ! empty($validated['id_user_member'])) {
+
+            if ($validated['jenis'] === 'hutang' && !empty($validated['id_user_member'])) {
+
+                $hariIni = now()->day;
+
+                // Cari aturan sesuai tanggal awal–akhir
+                $aturan = \App\Models\AturanTenggat::where('id_warung', $idWarung)
+                    ->where('tanggal_awal', '<=', $hariIni)
+                    ->where('tanggal_akhir', '>=', $hariIni)
+                    ->first();
+
+                // Tentukan tenggat otomatis
+                if ($aturan) {
+                    $tenggatOtomatis = now()->addDays($aturan->jatuh_tempo_hari);
+                } else {
+                    $tenggatOtomatis = now()->addDays(7); // fallback default
+                }
+
+                // Buat record hutang
                 $hutang = Hutang::create([
-                    'id_warung'      => $idWarung,
-                    'id_user'        => $validated['id_user_member'],
+                    'id_warung'          => $idWarung,
+                    'id_user'            => $validated['id_user_member'],
                     'jumlah_hutang_awal' => $validated['total_harga'],
-                    'jumlah_sisa_hutang'   => $validated['total_harga'],
-                    'tenggat'        => $validated['tenggat'] ?? now()->addDays(7),
-                    'status'         => 'belum lunas',
-                    // Keterangan Hutang menggunakan hasil otomatis/manual
-                    'keterangan'     => $finalKeterangan,
+                    'jumlah_sisa_hutang' => $validated['total_harga'],
+                    'tenggat'            => $tenggatOtomatis,
+                    'status'             => 'belum lunas',
+                    'keterangan'         => $finalKeterangan,
                 ]);
             }
 
-            // Loop untuk menyimpan barang keluar + transaksi barang keluar
+            // =============================
+            //   SIMPAN BARANG KELUAR
+            // =============================
+
             foreach ($validated['items'] as $item) {
                 $barangKeluar = BarangKeluar::create([
                     'id_stok_warung' => $item['id_stok_warung'],
                     'jumlah'         => $item['jumlah'],
                     'jenis'          => $validated['jenis'],
-                    'keterangan'     => $validated['keterangan'] ?? null, // Keterangan di BarangKeluar tetap menggunakan input user asli (bisa null) atau disamakan dengan finalKeterangan
+                    'keterangan'     => $validated['keterangan'] ?? null,
                 ]);
 
                 TransaksiBarangKeluar::create([
@@ -211,21 +219,21 @@ class BarangKeluarController extends Controller
                     'jumlah'           => $item['jumlah'],
                 ]);
 
-                // Kurangi stok di tabel stok_warung
+                // Kurangi stok
                 StokWarung::where('id', $item['id_stok_warung'])
                     ->where('id_warung', $idWarung)
                     ->decrement('jumlah', $item['jumlah']);
 
-                // Jika hutang, buat relasi ke barang_hutang
+                // Catat barang terkait hutang
                 if ($hutang) {
                     \App\Models\BarangHutang::create([
-                        'id_hutang'          => $hutang->id,
-                        'id_barang_keluar'   => $barangKeluar->id,
+                        'id_hutang'        => $hutang->id,
+                        'id_barang_keluar' => $barangKeluar->id,
                     ]);
                 }
             }
-            DB::commit();
 
+            DB::commit();
             return redirect()->route('kasir.kasir')->with('success', 'Transaksi berhasil disimpan!');
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -237,6 +245,7 @@ class BarangKeluarController extends Controller
             return back()->withInput()->with('error', 'Terjadi kesalahan saat menyimpan transaksi: ' . $e->getMessage());
         }
     }
+
 
     public function show(BarangKeluar $barangKeluar)
     {
