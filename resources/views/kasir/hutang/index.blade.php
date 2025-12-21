@@ -19,8 +19,8 @@
                        class="btn btn-outline-secondary {{ request('status') == null ? 'active' : '' }}">
                        Semua
                     </a>
-                    <a href="{{ route('kasir.hutang.index', ['status' => 'belum lunas']) }}"
-                       class="btn btn-outline-secondary {{ request('status') == 'belum lunas' ? 'active' : '' }}">
+                    <a href="{{ route('kasir.hutang.index', ['status' => 'belum_lunas']) }}"
+                       class="btn btn-outline-secondary {{ request('status') == 'belum_lunas' ? 'active' : '' }}">
                        Belum Lunas
                     </a>
                     <a href="{{ route('kasir.hutang.index', ['status' => 'lunas']) }}"
@@ -50,7 +50,7 @@
                                 <td>Rp {{ number_format($hutang->jumlah_hutang_awal, 0, ',', '.') }}</td>
                                 <td>{{ \Carbon\Carbon::parse($hutang->tenggat)->format('Y-m-d') }}</td>
                                 <td>
-                                    @if($hutang->status == 'belum lunas')
+                                    @if($hutang->status == 'belum_lunas')
                                         <span class="badge bg-danger">Belum Lunas</span>
                                     @else
                                         <span class="badge bg-success">Lunas</span>

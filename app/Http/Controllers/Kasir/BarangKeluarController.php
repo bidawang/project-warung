@@ -196,7 +196,7 @@ class BarangKeluarController extends Controller
                     'jumlah_hutang_awal' => $validated['total_harga'],
                     'jumlah_sisa_hutang' => $validated['total_harga'],
                     'tenggat'            => $tenggatOtomatis,
-                    'status'             => 'belum lunas',
+                    'status'             => 'belum_lunas',
                     'keterangan'         => $finalKeterangan,
                 ]);
             }
