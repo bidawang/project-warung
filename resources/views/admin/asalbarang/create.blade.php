@@ -5,7 +5,7 @@
     <h1 class="text-2xl font-bold mb-4">Atur Asal Barang</h1>
     <a href="{{ route('admin.asalbarang.index') }}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-6 rounded-full transition-colors duration-200">Kembali</a>
 
-    <form action="{{ route('admin.asalbarang.store') }}" method="POST">
+    <form class="py-2" action="{{ route('admin.asalbarang.store') }}" method="POST">
         @csrf
 
         {{-- Area Pembelian --}}

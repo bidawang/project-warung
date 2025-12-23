@@ -112,7 +112,9 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::resource('/barang', BarangControllerAdmin::class);
     Route::resource('transaksibarang', TransaksiBarangController::class)->except(['show']);
 
-    Route::resource('rencana', RencanaBelanjaControllerAdmin::class);
+    Route::resource('rencana', RencanaBelanjaControllerAdmin::class)->except(['show']);
+
+    Route::get('rencana/pembelian-per-area', [RencanaBelanjaControllerAdmin::class, 'createByArea'])->name('rencana.pembelian_per_area');
 
     Route::get('transaksibarang/rencana', [RencanaBelanjaControllerAdmin::class, 'indexRencana'])->name('transaksibarang.rencana.index');
     Route::get('transaksi-barang/rencana/create', [RencanaBelanjaControllerAdmin::class, 'createRencana'])->name('createrencanabelanja'); // Menampilkan form

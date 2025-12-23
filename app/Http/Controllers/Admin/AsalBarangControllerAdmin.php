@@ -100,48 +100,52 @@ class AsalBarangControllerAdmin extends Controller
 
     // Metode baru untuk AJAX filtering
     public function filterBarang(Request $request)
-    {
-        $areaId = $request->area_id;
-        $kategoriId = $request->kategori_id;
-        $subkategoriId = $request->subkategori_id;
-        $search = $request->search;
+{
+    $areaId = $request->area_id;
+    $kategoriId = $request->kategori_id;
+    $subkategoriId = $request->subkategori_id;
+    $search = $request->search;
 
-        $query = Barang::query()->with('subKategori.kategori');
+    // Tambahkan withCount untuk menghitung berapa banyak area yang nge-claim
+    $query = Barang::query()->with(['subKategori.kategori', 'areaPembelian'])
+                            ->withCount('areaPembelian');
 
-        // filter kategori
-        if ($kategoriId) {
-            $query->whereHas('subKategori', function ($q) use ($kategoriId) {
-                $q->where('id_kategori', $kategoriId);
-            });
-        }
-
-        // filter sub kategori
-        if ($subkategoriId) {
-            $query->where('id_sub_kategori', $subkategoriId);
-        }
-
-        // search nama barang
-        if ($search) {
-            $query->where('nama_barang', 'LIKE', '%' . $search . '%');
-        }
-
-        $barangs = $query->get();
-
-        $selected = [];
-        if ($areaId) {
-            $area = AreaPembelian::find($areaId);
-            if ($area) {
-                // Ambil ID barang yang sudah terasosiasi dengan Area Pembelian ini
-                $selected = $area->barangs->pluck('id')->toArray();
-            }
-        }
-
-        // Return the HTML partial for the barang list
-        return view('admin.asalbarang.partials.barang-list', [
-            'barangs' => $barangs,
-            'selected' => $selected
-        ])->render();
+    if ($kategoriId) {
+        $query->whereHas('subKategori', function ($q) use ($kategoriId) {
+            $q->where('id_kategori', $kategoriId);
+        });
     }
+
+    if ($subkategoriId) {
+        $query->where('id_sub_kategori', $subkategoriId);
+    }
+
+    if ($search) {
+        $query->where('nama_barang', 'LIKE', '%' . $search . '%');
+    }
+
+    // Ambil data dan urutkan menggunakan Collection
+    $barangs = $query->get()->sortBy(function($barang) {
+        // Logika urutan:
+        // 1. Barang dengan count 0 akan di paling atas
+        // 2. Semakin besar count area_pembelian_count, semakin bawah posisinya
+        return $barang->area_pembelian_count;
+    });
+
+    $selected = [];
+    if ($areaId) {
+        $area = AreaPembelian::find($areaId);
+        if ($area) {
+            $selected = $area->barangs->pluck('id')->toArray();
+        }
+    }
+
+    return view('admin.asalbarang.partials.barang-list', [
+        'barangs' => $barangs,
+        'selected' => $selected,
+        'currentAreaId' => $areaId
+    ])->render();
+}
 
     // Store
     public function store(Request $request)
