@@ -79,19 +79,19 @@ class KasirControllerKasir extends Controller
         $barangKeluars = BarangKeluar::whereHas('stokWarung', function ($query) use ($idWarung) {
             $query->where('id_warung', $idWarung);
         })
-        ->with(['stokWarung.barang'])
-        ->latest()
-        ->limit(10) // Batasi 10 item terbaru untuk ringkasan di kasir
-        ->get()
-        ->map(function ($bk) {
-            return [
-                'tanggal' => $bk->created_at,
-                'jenis' => $bk->jenis === 'penjualan' ? 'Penjualan' : ucwords($bk->jenis),
-                'nama_barang' => $bk->stokWarung->barang->nama_barang ?? 'N/A',
-                'jumlah' => $bk->jumlah,
-                'keterangan' => $bk->keterangan,
-            ];
-        });
+            ->with(['stokWarung.barang'])
+            ->latest()
+            ->limit(10) // Batasi 10 item terbaru untuk ringkasan di kasir
+            ->get()
+            ->map(function ($bk) {
+                return [
+                    'tanggal' => $bk->created_at,
+                    'jenis' => $bk->jenis === 'penjualan' ? 'Penjualan' : ucwords($bk->jenis),
+                    'nama_barang' => $bk->stokWarung->barang->nama_barang ?? 'N/A',
+                    'jumlah' => $bk->jumlah,
+                    'keterangan' => $bk->keterangan,
+                ];
+            });
 
         // 2. Ambil Mutasi Barang (sebagai barang keluar dari warung ini)
         $mutasiKeluars = MutasiBarang::where('warung_asal', $idWarung)
@@ -128,8 +128,6 @@ class KasirControllerKasir extends Controller
      */
     public function store(Request $request)
     {
-        // Anda harus menambahkan validasi request yang ketat di sini!
-// dd($request->all());
         $idWarung = session('id_warung');
         $items = $request->input('items');
         $totalBayar = $request->input('total_bayar');
@@ -207,17 +205,15 @@ class KasirControllerKasir extends Controller
                 // 5. Update Stok Warung
                 // Periksa stok sebelum dikurangi
                 if ($stokWarung->jumlah < $jumlahJual) {
-                     DB::rollBack();
-                     return back()->with('error', 'Stok ' . $stokWarung->barang->nama . ' tidak mencukupi.');
+                    DB::rollBack();
+                    return back()->with('error', 'Stok ' . $stokWarung->barang->nama . ' tidak mencukupi.');
                 }
                 $stokWarung->decrement('jumlah', $jumlahJual);
-
             }
             DB::commit();
 
             return redirect()->route('kasir.kasir')
                 ->with('success', 'Transaksi penjualan berhasil diproses!');
-
         } catch (\Exception $e) {
             DB::rollBack();
             // Logging error untuk proses debug

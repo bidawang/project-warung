@@ -46,7 +46,7 @@ class HutangControllerAdmin extends Controller
         return view('admin.hutang.index', compact('hutangList', 'status', 'aturanTenggats', 'allWarungs'));
     }
 
-    
+
     /**
      * Menampilkan detail Hutang tertentu dari warung manapun.
      *
