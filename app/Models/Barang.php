@@ -46,4 +46,10 @@ class Barang extends Model
             'id_area_pembelian'     // FK tujuan
         );
     }
+    // Di dalam class Barang
+    public function satuan()
+    {
+        return $this->belongsToMany(Satuan::class, 'satuan_barang', 'id_barang', 'id_satuan')
+            ->withPivot('id'); // Tambahkan ini agar ID tabel pivot terbaca
+    }
 }

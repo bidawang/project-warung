@@ -44,6 +44,8 @@ use App\Http\Controllers\Admin\{
     HutangControllerAdmin,
     AsalBarangControllerAdmin,
     RencanaBelanjaControllerAdmin,
+    SatuanBarangControllerAdmin,
+    SatuanControllerAdmin
 };
 
 use App\Http\Controllers\Kasir\{
@@ -152,6 +154,11 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::get('asalbarang/filter', [AsalBarangControllerAdmin::class, 'filterBarang'])->name('asalbarang.filter');
     // Ubah juga route create Anda jika belum sesuai dengan name()
     Route::get('asalbarang/create', [AsalBarangControllerAdmin::class, 'create'])->name('asalbarang.create');
+
+    //Satuan
+    Route::resource('satuan-barang', SatuanBarangControllerAdmin::class)->except(['create','edit','update']);
+    Route::resource('satuan', SatuanControllerAdmin::class)->except(['create','edit','show']);
+
 });
 // Route::resource('transaksibarang', TransaksiBarangController::class);
 

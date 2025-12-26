@@ -51,16 +51,27 @@ class RencanaBelanjaControllerAdmin extends Controller
     public function index()
     {
         $data = $this->getStockData();
-        $rencana = RencanaBelanja::with(['barang', 'warung'])
+
+        $rencanaCollection = RencanaBelanja::with(['barang', 'warung'])
             ->where('status', 'pending')
-            ->get()
-            ->groupBy('id_warung');
-        // dd($rencana);
+            ->get();
+
+        // 1. Kelompokkan untuk tampilan Blade
+        $rencanaBelanjaByWarung = $rencanaCollection->groupBy('id_warung');
+
+        // 2. Buat mapping ID untuk Alpine.js
+        // Hasilnya: [ '1' => [10, 11, 12], '2' => [15, 16] ]
+        $rencanaMapping = $rencanaCollection->groupBy('id_warung')
+            ->map(function ($items) {
+                return $items->pluck('id')->toArray();
+            });
+
         return view('admin.rencanabelanja.index', [
-            'rencanaBelanjaByWarung' => $rencana,
-            'allTransactionsForJs'   => $data['allTransactions'], // dipakai JS
+            'rencanaBelanjaByWarung' => $rencanaBelanjaByWarung,
+            'rencanaMapping'         => $rencanaMapping, // Tambahkan ini
+            'allTransactionsForJs'   => $data['allTransactions'],
             'stockByBarang'          => $data['stockByBarang'],
-            'warungs' => $data['warungs'],
+            'warungs'                => $data['warungs'],
         ]);
     }
 
@@ -136,6 +147,7 @@ class RencanaBelanjaControllerAdmin extends Controller
 
     public function createByArea()
     {
+        // dd('asu');
         $rencanaBelanjas = RencanaBelanja::with(['barang.areaPembelian', 'warung'])
             ->whereColumn('jumlah_dibeli', '<', 'jumlah_awal')
             ->get();
@@ -175,7 +187,7 @@ class RencanaBelanjaControllerAdmin extends Controller
 
         if (!isset($data[$areaName])) {
             $data[$areaName] = [
-                'area_id' => $areaId,
+                'area_id' => $areaId, // 0 untuk Tanpa Area
                 'items' => []
             ];
         }
@@ -187,7 +199,7 @@ class RencanaBelanjaControllerAdmin extends Controller
                 'total_kebutuhan' => 0,
                 'rencana_ids'     => [],
                 'detail_warung'   => [],
-                'harga_awal'      => $hargaAwal, // Simpan harga referensi
+                'harga_awal'      => $hargaAwal,
             ];
         }
 
@@ -237,7 +249,7 @@ class RencanaBelanjaControllerAdmin extends Controller
             'items.*.purchases.*.harga'             => 'required_without:items.*.skip|numeric|min:0',
             'items.*.purchases.*.tanggal_kadaluarsa' => 'nullable|date',
         ]);
-        dd($validated);
+        // dd($validated,'asuuu');
 
 
         $grandTotal = 0;
@@ -293,7 +305,7 @@ class RencanaBelanjaControllerAdmin extends Controller
             }
 
 
-            dd($rencanaUpdates);
+            // dd($rencanaUpdates,'asu');
             $transaksi->update(['total' => $grandTotal]);
 
             DB::table('dana_utama')->where('jenis_dana', 'wrb_old')->decrement('saldo', $grandTotal);
