@@ -24,7 +24,7 @@ class RencanaBelanjaControllerKasir extends Controller
 {
     $idWarung = session('id_warung');
     $status = $request->query('status', 'pending');
-
+// dd($status);
     // Memuat relasi 'barang' dan 'barangMasuk'
     $query = RencanaBelanja::with(['barang'])
         ->where('id_warung', $idWarung);
@@ -69,14 +69,15 @@ class RencanaBelanjaControllerKasir extends Controller
     {
         $idWarung = session('id_warung');
 
-        // Ambil semua barang, lalu join stok warung berdasarkan id_warung
-        $stokBarang = Barang::with(['stokWarung' => function ($q) use ($idWarung) {
-            $q->where('id_warung', $idWarung);
-        }])
-            ->orderBy('nama_barang', 'asc') // urut sesuai nama barang
+        $stokBarang = Barang::with([
+            'stokWarung' => function ($q) use ($idWarung) {
+                $q->where('id_warung', $idWarung);
+            },
+            'satuan' // Tambahkan ini untuk mengambil list satuan barang
+        ])
+            ->orderBy('nama_barang', 'asc')
             ->get();
 
-        // dd($stokBarang);
         return view('kasir.rencana_belanja.create', compact('stokBarang'));
     }
 

@@ -55,60 +55,74 @@
                     <div class="mb-8 space-y-8">
                         @foreach ($rencanaBelanjaByWarung as $warungId => $items)
                             <div class="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden"
-                                x-data="{ open: false }">
-                                <div class="px-6 py-4 flex items-center justify-between transition-colors"
+                                x-data="{ open: true }">
+                                <div class="px-6 py-4 flex items-center justify-between transition-colors cursor-pointer"
+                                    @click="open = !open"
                                     :class="isWarungChecked('{{ $warungId }}') ? 'bg-indigo-600 text-white' :
                                         'bg-gray-50 text-gray-700'">
                                     <div class="flex items-center gap-3">
                                         <i class="fas fa-store"></i>
                                         <h3 class="font-bold tracking-wide">{{ $items[0]->warung->nama_warung }}</h3>
                                     </div>
-                                    <input type="checkbox" name="selected_warungs[]" value="{{ $warungId }}"
+                                    <input type="checkbox" name="selected_warungs[]" value="{{ $warungId }}" @click.stop
                                         @change="toggleWarung('{{ $warungId }}')" x-model="checkedWarungs"
                                         class="w-6 h-6 rounded-lg cursor-pointer">
                                 </div>
 
-                                <div class="p-6 space-y-4" x-show="isWarungChecked('{{ $warungId }}')" x-transition>
+                                <div class="p-6 space-y-4" x-show="open && isWarungChecked('{{ $warungId }}')"
+                                    x-transition>
                                     @foreach ($items as $i)
-                                        <div
+                                        <div id="item-row-{{ $i->id }}" data-barang-id="{{ $i->barang->id }}"
+                                            data-jumlah-awal="{{ $i->jumlah_awal }}"
                                             class="p-4 rounded-2xl border border-gray-100 bg-gray-50/50 flex flex-col md:flex-row gap-4 items-start">
+
                                             <div class="w-full md:w-1/3">
-                                                <p class="font-bold text-gray-800">{{ $i->barang->nama_barang }}</p>
+                                                <p class="font-bold text-gray-800 uppercase text-sm">
+                                                    {{ $i->barang->nama_barang }}</p>
                                                 <div class="flex gap-2 mt-1">
-                                                    <span class="text-xs font-medium text-gray-500">Butuh: <b
+                                                    <span class="text-[11px] font-medium text-gray-500">Butuh: <b
                                                             class="text-red-500">{{ $i->jumlah_awal }}</b></span>
-                                                    <span class="text-xs font-medium text-gray-500">Sisa: <b
+                                                    <span class="text-[11px] font-medium text-gray-500">Sisa: <b
                                                             x-text="getRemainingNeed('{{ $i->id }}', {{ $i->jumlah_awal }})"></b></span>
                                                 </div>
                                             </div>
 
-                                            <div class="flex-1 space-y-3">
-                                                {{-- 1. KONDISI: BARANG BELUM PERNAH DIBELI / TIDAK ADA DI TRANSAKSI --}}
+                                            <div class="flex-1 space-y-3 w-full">
+                                                {{-- STATUS 1: STOK TIDAK TERSEDIA DI GUDANG (KUNING) --}}
                                                 <template x-if="!hasInitialStock('{{ $i->barang->id }}')">
                                                     <div
-                                                        class="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-3 rounded-xl border border-amber-200">
-                                                        <i class="fas fa-info-circle"></i>
-                                                        <span class="text-xs font-bold uppercase tracking-tight">Stok tidak
-                                                            tersedia atau belum dibeli</span>
+                                                        class="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-3 rounded-xl border border-amber-200 w-full justify-center">
+                                                        <i class="fas fa-exclamation-circle"></i>
+                                                        <span class="text-xs font-bold uppercase">Stok Tidak Tersedia di
+                                                            Gudang</span>
                                                     </div>
                                                 </template>
 
-                                                {{-- 2. KONDISI: BARANG ADA, TAMPILKAN LIST ALOKASI --}}
+                                                {{-- STATUS 2: STOK HABIS / TERPAKAI BARIS ATAS (MERAH) --}}
+                                                <template x-if="isStockTrulyEmpty('{{ $i->barang->id }}')">
+                                                    <div
+                                                        class="flex items-center gap-2 text-white bg-red-500 px-3 py-3 rounded-xl border border-red-600 w-full justify-center shadow-sm">
+                                                        <i class="fas fa-box-open"></i>
+                                                        <span class="text-xs font-bold uppercase tracking-tight">Stok habis
+                                                            terpakai
+                                                        </span>
+                                                    </div>
+                                                </template>
+
+                                                {{-- STATUS 3: ALOKASI AKTIF --}}
                                                 <template x-if="hasInitialStock('{{ $i->barang->id }}')">
                                                     <div>
                                                         <template
                                                             x-for="(alloc, index) in allocations['{{ $i->id }}']"
                                                             :key="index">
-                                                            <div class="flex items-center gap-2 mb-3 animate-fadeIn">
-                                                                <input type="number" min="0" step="1"
-                                                                    :max="getMaxForAllocation('{{ $i->id }}', index)"
+                                                            <div class="flex items-center gap-2 mb-3">
+                                                                <input type="number"
                                                                     :name="'items[{{ $i->id }}][transactions][' + index
                                                                         +
                                                                         '][jumlah]'"
                                                                     x-model.number="alloc.jumlah"
-                                                                    @input="validateJumlah('{{ $i->id }}', index, {{ $i->jumlah_awal }})"
+                                                                    @input="validateJumlah('{{ $i->id }}', index)"
                                                                     class="w-20 px-2 py-1.5 rounded-lg border-gray-200 text-sm font-bold border text-center">
-
 
                                                                 <select
                                                                     :name="'items[{{ $i->id }}][transactions][' + index
@@ -116,12 +130,13 @@
                                                                         '][id_transaksi_barang]'"
                                                                     x-model="alloc.id_transaksi"
                                                                     @change="handleSelectChange('{{ $i->id }}', index, {{ $i->jumlah_awal }})"
-                                                                    class="flex-1 px-3 py-1.5 rounded-lg border-gray-200 text-xs border bg-white outline-none focus:ring-2 focus:ring-indigo-500">
-                                                                    <option value="">Pilih Sumber Stok</option>
+                                                                    :disabled="getOptionsForBarang('{{ $i->barang->id }}', alloc
+                                                                        .id_transaksi).count <= 1"
+                                                                    class="flex-1 px-3 py-1.5 rounded-lg border-gray-200 text-xs border bg-white disabled:bg-gray-100 disabled:text-gray-900 font-semibold shadow-sm">
                                                                     <template
-                                                                        x-for="s in getOptionsForBarang('{{ $i->barang->id }}', alloc.id_transaksi)"
+                                                                        x-for="s in getOptionsForBarang('{{ $i->barang->id }}', alloc.id_transaksi).items"
                                                                         :key="s.id">
-                                                                        <option :value="s.id"
+                                                                        <option :value="s.id.toString()"
                                                                             :disabled="s.disabled"
                                                                             x-text="`TRX-${s.id} (${s.area}) • Sisa: ${s.sisa_display} pcs`">
                                                                         </option>
@@ -130,29 +145,20 @@
 
                                                                 <button type="button"
                                                                     @click="removeAllocation('{{ $i->id }}', index)"
-                                                                    class="w-8 h-8 flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all">
+                                                                    class="w-8 h-8 flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors">
                                                                     <i class="fas fa-times text-xs"></i>
                                                                 </button>
                                                             </div>
                                                         </template>
 
-                                                        {{-- TOMBOL TAMBAH ATAU KETERANGAN HABIS TERPAKAI --}}
-                                                        <div class="mt-2">
-                                                            <template x-if="hasCurrentStock('{{ $i->barang->id }}')">
-                                                                <button type="button"
-                                                                    @click="addAllocation('{{ $i->id }}', getRemainingNeed('{{ $i->id }}', {{ $i->jumlah_awal }}))"
-                                                                    class="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
-                                                                    <i class="fas fa-plus-circle"></i> Tambah Sumber
-                                                                </button>
-                                                            </template>
-                                                            <template x-if="!hasCurrentStock('{{ $i->barang->id }}')">
-                                                                <div
-                                                                    class="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded inline-block border border-red-100">
-                                                                    <i class="fas fa-exclamation-circle mr-1"></i> STOK
-                                                                    HABIS TERPAKAI
-                                                                </div>
-                                                            </template>
-                                                        </div>
+                                                        {{-- Tombol Tambah Sumber (Muncul jika stok global masih sisa) --}}
+                                                        <template x-if="hasCurrentStock('{{ $i->barang->id }}')">
+                                                            <button type="button"
+                                                                @click="addAllocationManually('{{ $i->id }}', '{{ $i->barang->id }}', {{ $i->jumlah_awal }})"
+                                                                class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 mt-1">
+                                                                <i class="fas fa-plus-circle"></i> Tambah Sumber
+                                                            </button>
+                                                        </template>
                                                     </div>
                                                 </template>
                                             </div>
@@ -177,64 +183,124 @@
                 rencanaMapping: @json($rencanaMapping ?? []),
 
                 initData() {
-                    this.allTransactions.forEach(t => {
-                        this.stockSisa[t.id] = t.jumlah;
-                    });
-
+                    this.recalcStok();
                     Object.values(this.rencanaMapping).flat().forEach(id => {
                         this.allocations[id.toString()] = [];
                     });
                 },
 
-                /* ======================
-                   KONDISI STOK
-                ====================== */
-
-                hasInitialStock(barangId) {
-                    return this.allTransactions.some(
-                        t => t.id_barang == barangId && t.jumlah > 0
-                    );
+                isStockTrulyEmpty(barangId) {
+                    return this.hasInitialStock(barangId) && !this.hasCurrentStock(barangId);
                 },
 
-                hasCurrentStock(barangId) {
-                    return this.allTransactions.some(
-                        t => t.id_barang == barangId && this.stockSisa[t.id] > 0
-                    );
-                },
 
-                /* ======================
-                   WARUNG
-                ====================== */
-
+                /* --- LOGIKA AUTO-ALLOCATE --- */
                 toggleWarung(warungId) {
                     const isChecked = this.checkedWarungs.includes(warungId.toString());
-                    const items = this.rencanaMapping[warungId] || [];
+                    const itemIds = this.rencanaMapping[warungId] || [];
 
-                    items.forEach(id => {
-                        if (isChecked) {
-                            if (this.allocations[id].length === 0) {
-                                this.addAllocation(id);
-                            }
-                        } else {
+                    if (isChecked) {
+                        // Sinkronkan stok global
+                        this.recalcStok();
+
+                        itemIds.forEach(id => {
                             this.allocations[id] = [];
-                        }
-                    });
+                            const el = document.getElementById(`item-row-${id}`);
 
+                            if (el) {
+                                const barangId = el.dataset.barangId;
+                                const jumlahAwal = parseInt(el.dataset.jumlahAwal);
+
+                                // Jalankan pengisian otomatis
+                                this.autoFillItem(id, barangId, jumlahAwal);
+
+                                // PERBAIKAN: Pindahkan pengecekan ke dalam loop ini
+                                if (this.allocations[id].length === 0 && this.hasInitialStock(barangId)) {
+                                    this.allocations[id].push({
+                                        id_transaksi: '',
+                                        jumlah: 0
+                                    });
+                                }
+                            }
+                        });
+                    } else {
+                        // Jika uncheck, hapus alokasi
+                        itemIds.forEach(id => {
+                            this.allocations[id] = [];
+                        });
+                    }
                     this.recalcStok();
                 },
 
-                /* ======================
-                   ALOKASI
-                ====================== */
+                autoFillItem(rencanaId, barangId, totalButuh) {
+                    let needed = totalButuh;
 
-                addAllocation(rencanaId) {
+                    // Ambil sumber transaksi yang masih memiliki sisa stok global
+                    const sources = this.allTransactions
+                        .filter(t => t.id_barang == barangId && this.stockSisa[t.id] > 0);
+
+                    sources.forEach(src => {
+                        if (needed <= 0) return;
+
+                        const amountToTake = Math.min(needed, this.stockSisa[src.id]);
+                        if (amountToTake > 0) {
+                            this.allocations[rencanaId].push({
+                                id_transaksi: src.id.toString(), // String agar cocok dengan value option
+                                jumlah: amountToTake
+                            });
+
+                            // KURANGI LANGSUNG sisa stok agar baris berikutnya di kartu yang sama (atau kartu lain)
+                            // mengetahui bahwa stok ini sudah terpakai
+                            this.stockSisa[src.id] -= amountToTake;
+                            needed -= amountToTake;
+                        }
+                    });
+                    // 🔥 AUTO-SELECT JIKA HANYA ADA 1 OPSI STOK TERSISA
+                    if (this.allocations[rencanaId].length === 0) {
+                        const opts = this.getOptionsForBarang(barangId, '');
+
+                        const available = opts.items.filter(o => !o.disabled);
+
+                        if (available.length === 1) {
+                            const trxId = available[0].id.toString();
+                            const qty = Math.min(totalButuh, this.stockSisa[trxId]);
+
+                            if (qty > 0) {
+                                this.allocations[rencanaId].push({
+                                    id_transaksi: trxId,
+                                    jumlah: qty
+                                });
+
+                                this.stockSisa[trxId] -= qty;
+                            }
+                            return; // ⛔ STOP — jangan lanjut ke logic lain
+                        }
+                    }
+
+                },
+
+                /* --- ACTIONS --- */
+                addAllocationManually(rencanaId, barangId, totalButuh) {
                     const id = rencanaId.toString();
-                    if (!this.allocations[id]) this.allocations[id] = [];
+                    this.recalcStok();
+
+                    const opt = this.getOptionsForBarang(barangId, '');
+                    const available = opt.items.filter(o => !o.disabled);
+
+                    let trxId = '';
+                    let qty = 0;
+
+                    if (available.length > 0) {
+                        // Ambil opsi pertama yang tersedia
+                        trxId = available[0].id.toString();
+                        qty = Math.min(this.getRemainingNeed(id, totalButuh), this.stockSisa[trxId]);
+                    }
 
                     this.allocations[id].push({
-                        id_transaksi: '',
-                        jumlah: 0
+                        id_transaksi: trxId,
+                        jumlah: qty
                     });
+                    this.recalcStok();
                 },
 
                 removeAllocation(rencanaId, index) {
@@ -242,138 +308,112 @@
                     this.recalcStok();
                 },
 
-                /* ======================
-                   SAAT PILIH STOK
-                ====================== */
-
                 handleSelectChange(rencanaId, index, totalButuh) {
                     const alloc = this.allocations[rencanaId][index];
-
                     if (!alloc.id_transaksi) {
                         alloc.jumlah = 0;
+                    } else {
                         this.recalcStok();
-                        return;
+                        const currentFilled = this.allocations[rencanaId]
+                            .filter((_, idx) => idx !== index)
+                            .reduce((sum, a) => sum + (parseInt(a.jumlah) || 0), 0);
+
+                        const remainingNeed = Math.max(0, totalButuh - currentFilled);
+                        const availableInTrx = this.stockSisa[alloc.id_transaksi] + (parseInt(alloc.jumlah) || 0);
+
+                        alloc.jumlah = Math.min(remainingNeed, availableInTrx);
                     }
-
-                    const trx = this.allTransactions.find(
-                        t => t.id == alloc.id_transaksi
-                    );
-                    if (!trx) return;
-
-                    // auto set: kebutuhan ATAU stok (mana lebih kecil)
-                    alloc.jumlah = Math.min(totalButuh, trx.jumlah);
-
                     this.recalcStok();
                 },
-
-                /* ======================
-                   VALIDASI INPUT MANUAL
-                ====================== */
 
                 validateJumlah(rencanaId, index) {
                     const alloc = this.allocations[rencanaId][index];
 
-                    // tidak boleh minus
-                    if (alloc.jumlah < 0) alloc.jumlah = 0;
-
-                    if (!alloc.id_transaksi) return;
-
-                    const trx = this.allTransactions.find(
-                        t => t.id == alloc.id_transaksi
-                    );
-                    if (!trx) return;
-
-                    let usedElsewhere = 0;
-                    this.allocations[rencanaId].forEach((a, i) => {
-                        if (i !== index && a.id_transaksi == alloc.id_transaksi) {
-                            usedElsewhere += parseInt(a.jumlah) || 0;
-                        }
-                    });
-
-                    const maxAllowed = trx.jumlah - usedElsewhere;
-
-                    // kunci ke stok transaksi
-                    alloc.jumlah = Math.min(alloc.jumlah, maxAllowed);
+                    if (!alloc.id_transaksi) {
+                        alloc.jumlah = 0;
+                        return;
+                    }
 
                     if (alloc.jumlah < 0) alloc.jumlah = 0;
 
                     this.recalcStok();
+                    const currentAvailable =
+                        this.stockSisa[alloc.id_transaksi] + (parseInt(alloc.jumlah) || 0);
+
+                    if (alloc.jumlah > currentAvailable) alloc.jumlah = currentAvailable;
+                    this.recalcStok();
                 },
 
-                /* ======================
-                   VALIDASI SUBMIT
-                ====================== */
 
-                hasZeroAllocation() {
-                    return this.checkedWarungs.some(wId => {
-                        return (this.rencanaMapping[wId] || []).some(rId => {
-                            return (this.allocations[rId] || []).some(a => a.jumlah === 0);
+                /* --- CORE LOGIC & UTILS --- */
+                recalcStok() {
+                    // Reset stok sisa ke nilai awal database
+                    this.allTransactions.forEach(t => this.stockSisa[t.id] = parseInt(t.jumlah));
+
+                    // Kurangi stok berdasarkan semua baris alokasi yang sudah ada di layar
+                    Object.keys(this.allocations).forEach(rId => {
+                        this.allocations[rId].forEach(a => {
+                            if (a.id_transaksi && a.jumlah) {
+                                this.stockSisa[a.id_transaksi] -= (parseInt(a.jumlah) || 0);
+                            }
                         });
                     });
-                },
-
-                /* ======================
-                   UTIL
-                ====================== */
-
-                getRemainingNeed(rencanaId, totalButuh) {
-                    const id = rencanaId.toString();
-                    if (!this.allocations[id]) return totalButuh;
-
-                    const filled = this.allocations[id].reduce(
-                        (sum, a) => sum + (parseInt(a.jumlah) || 0), 0
-                    );
-
-                    return Math.max(0, totalButuh - filled);
                 },
 
                 getOptionsForBarang(barangId, currentTrxId) {
-                    return this.allTransactions
+                    const items = this.allTransactions
                         .filter(t => t.id_barang == barangId)
-                        .map(t => ({
-                            ...t,
-                            sisa_display: this.stockSisa[t.id],
-                            disabled: this.stockSisa[t.id] <= 0 && t.id != currentTrxId
-                        }));
-                },
-
-                recalcStok() {
-                    this.allTransactions.forEach(
-                        t => this.stockSisa[t.id] = t.jumlah
-                    );
-
-                    this.checkedWarungs.forEach(wId => {
-                        (this.rencanaMapping[wId] || []).forEach(rId => {
-                            (this.allocations[rId] || []).forEach(a => {
-                                if (a.id_transaksi) {
-                                    this.stockSisa[a.id_transaksi] -=
-                                        (parseInt(a.jumlah) || 0);
-                                }
-                            });
+                        .map(t => {
+                            const sisa = this.stockSisa[t.id];
+                            return {
+                                ...t,
+                                sisa_display: sisa,
+                                disabled: sisa <= 0 && currentTrxId && t.id.toString() !== currentTrxId.toString()
+                            };
                         });
-                    });
+
+                    const activeCount = items.filter(i => !i.disabled).length;
+                    return {
+                        items,
+                        count: activeCount
+                    };
                 },
 
-                /* ======================
-                   COMPUTED
-                ====================== */
+                hasInitialStock(barangId) {
+                    return this.allTransactions.some(t => t.id_barang == barangId && parseInt(t.jumlah) > 0);
+                },
 
-                get sortedStock() {
-                    return [...this.allTransactions].sort(
-                        (a, b) => a.nama_barang.localeCompare(b.nama_barang)
-                    );
+                hasCurrentStock(barangId) {
+                    return this.allTransactions.some(t => t.id_barang == barangId && this.stockSisa[t.id] > 0);
+                },
+
+                getRemainingNeed(rencanaId, totalButuh) {
+                    const filled = (this.allocations[rencanaId] || []).reduce((sum, a) => sum + (parseInt(a.jumlah) || 0),
+                        0);
+                    return Math.max(0, totalButuh - filled);
                 },
 
                 isWarungChecked(id) {
                     return this.checkedWarungs.includes(id.toString());
                 },
 
+                get sortedStock() {
+                    return [...this.allTransactions].sort((a, b) => a.nama_barang.localeCompare(b.nama_barang));
+                },
+
                 get canSubmit() {
-                    return this.checkedWarungs.length > 0 && !this.hasZeroAllocation();
+                    if (this.checkedWarungs.length === 0) return false;
+                    return this.checkedWarungs.every(wId => {
+                            const rIds = this.rencanaMapping[wId] || [];
+                            return rIds.some(rId =>
+                                (this.allocations[rId] || []).some(a => a.jumlah > 0)
+                            );
+                        }) && Object.values(this.allocations)
+                        .flat()
+                        .some(a => a.jumlah > 0);
+
                 }
             }
         }
     </script>
-
-
 @endsection

@@ -51,7 +51,7 @@ class RencanaBelanjaControllerAdmin extends Controller
     public function index()
     {
         $data = $this->getStockData();
-
+// dd($data);
         $rencanaCollection = RencanaBelanja::with(['barang', 'warung'])
             ->where('status', 'pending')
             ->get();
@@ -65,7 +65,7 @@ class RencanaBelanjaControllerAdmin extends Controller
             ->map(function ($items) {
                 return $items->pluck('id')->toArray();
             });
-
+// dd($data['warungs']);
         return view('admin.rencanabelanja.index', [
             'rencanaBelanjaByWarung' => $rencanaBelanjaByWarung,
             'rencanaMapping'         => $rencanaMapping, // Tambahkan ini

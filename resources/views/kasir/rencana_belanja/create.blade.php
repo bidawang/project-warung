@@ -3,11 +3,10 @@
 @section('title', 'Buat Rencana Belanja Baru')
 
 @section('content')
-
-<div class="">
-    <div class="card shadow-lg">
-        <div class="card-header bg-success text-white">
-            <h5 class="mb-0">Form Rencana Pembelian Barang</h5>
+<div class="container-fluid">
+    <div class="card shadow-lg border-0">
+        <div class="card-header bg-success text-white py-3">
+            <h5 class="mb-0"><i class="fas fa-cart-plus me-2"></i>Form Rencana Pembelian Barang</h5>
         </div>
         <div class="card-body">
 
@@ -15,12 +14,8 @@
             @if(session('success'))
                 <div class="alert alert-success">{{ session('success') }}</div>
             @endif
-            @if(session('error'))
-                <div class="alert alert-danger">{{ session('error') }}</div>
-            @endif
             @if ($errors->any())
                 <div class="alert alert-danger">
-                    <p class="mb-0">Mohon perbaiki kesalahan input berikut:</p>
                     <ul class="mb-0">
                         @foreach ($errors->all() as $error)
                             <li>{{ $error }}</li>
@@ -32,25 +27,25 @@
             <form id="rencanaBelanjaForm" action="{{ route('kasir.rencanabelanja.store') }}" method="POST">
                 @csrf
 
-                <div class="row">
-                    {{-- ======================================================= --}}
-                    {{-- KOLOM KIRI: DAFTAR BARANG & INPUT (7/12) --}}
-                    {{-- ======================================================= --}}
-                    <div class="col-md-7">
-                        <h6 class="mb-3 text-success">Daftar Stok & Kebutuhan (Warung Anda)</h6>
-
-                        <div class="mb-3">
-                            <input type="text" id="searchInput" class="form-control" placeholder="Cari Nama Barang...">
+                <div class="row g-4">
+                    {{-- KOLOM KIRI: DAFTAR BARANG --}}
+                    <div class="col-md-8">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0 text-success fw-bold">Daftar Stok & Kebutuhan</h6>
+                            <div class="input-group input-group-sm" style="width: 250px;">
+                                <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                                <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Cari barang...">
+                            </div>
                         </div>
 
-                        <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
-                            <table class="table table-striped table-hover align-middle mb-0" id="barangTable">
-                                <thead class="bg-light sticky-top" style="top: -1px; z-index: 10;">
+                        <div class="table-responsive rounded shadow-sm" style="max-height: 70vh; overflow-y: auto; border: 1px solid #dee2e6;">
+                            <table class="table table-hover align-middle mb-0" id="barangTable">
+                                <thead class="bg-light sticky-top" style="z-index: 10;">
                                     <tr>
-                                        <th style="width: 5%;">#</th>
+                                        <th style="width: 40px;" class="text-center">#</th>
+                                        <th style="width: 80px;" class="text-center">Stok</th>
                                         <th>Nama Barang</th>
-                                        <th style="width: 15%;">Stok Saat Ini</th>
-                                        <th style="width: 25%;">Jumlah Rencana Beli</th>
+                                        <th style="width: 250px;">Rencana Beli</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -59,35 +54,49 @@
                                             $stokWarung = $barang->stokWarung->first();
                                             $jumlahStok = $stokWarung ? $stokWarung->jumlah : 0;
                                             $stokKey = $barang->id;
+                                            $hasSatuan = $barang->satuan && $barang->satuan->count() > 0;
                                         @endphp
-                                        <tr data-nama="{{ Str::lower($barang->nama_barang ?? '') }}">
-                                            <td>{{ $loop->iteration }}</td>
-                                            <td>
-                                                <strong>{{ $barang->nama_barang ?? 'Barang Tidak Dikenal' }}</strong>
-                                                <input type="hidden"
-                                                    name="rencana[{{ $stokKey }}][id_barang]"
-                                                    value="{{ $barang->id }}">
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-{{ $jumlahStok < 5 ? 'danger' : ($jumlahStok < 20 ? 'warning text-dark' : 'success') }}" data-stok-saat-ini="{{ $jumlahStok }}">
+                                        <tr data-nama="{{ Str::lower($barang->nama_barang ?? '') }}" class="barang-row">
+                                            <td class="text-center text-muted small">{{ $loop->iteration }}</td>
+                                            <td class="text-center">
+                                                <span class="badge {{ $jumlahStok < 10 ? 'bg-danger' : 'bg-secondary' }}" data-stok-saat-ini="{{ $jumlahStok }}">
                                                     {{ number_format($jumlahStok, 0, ',', '.') }}
                                                 </span>
                                             </td>
                                             <td>
-                                                {{-- Input Kuantitas di Kiri --}}
-                                                <input type="number"
-                                                    name="rencana[{{ $stokKey }}][jumlah_awal]"
-                                                    class="form-control form-control-sm rencana-input"
-                                                    value="{{ old('rencana.' . $stokKey . '.jumlah_awal', 0) }}"
-                                                    min="0"
-                                                    placeholder="0"
-                                                    data-id="{{ $barang->id }}"
-                                                    data-nama="{{ $barang->nama_barang ?? 'Barang Tidak Dikenal' }}">
+                                                <div class="fw-bold text-dark text-truncate" style="max-width: 280px;" title="{{ $barang->nama_barang }}">{{ $barang->nama_barang }}</div>
+                                                <small class="text-muted small">{{ $barang->subKategori->sub_kategori ?? 'Tanpa Kategori' }}</small>
+                                                <input type="hidden" name="rencana[{{ $stokKey }}][id_barang]" value="{{ $barang->id }}">
+                                            </td>
+                                            <td>
+                                                <div class="input-group input-group-sm">
+                                                    {{-- Input Angka User --}}
+                                                    <input type="number" 
+                                                        class="form-control qty-input text-center" 
+                                                        placeholder="0" min="0" value="0"
+                                                        data-id="{{ $barang->id }}"
+                                                        data-nama="{{ $barang->nama_barang }}">
+                                                    
+                                                    {{-- Pilihan Satuan --}}
+                                                    <select class="form-select satuan-select w-50" {{ !$hasSatuan ? 'disabled' : '' }}>
+                                                        <option value="1">Pcs (1)</option>
+                                                        @if($hasSatuan)
+                                                            @foreach($barang->satuan as $s)
+                                                                <option value="{{ $s->jumlah }}">{{ $s->nama_satuan }} ({{ $s->jumlah }})</option>
+                                                            @endforeach
+                                                        @endif
+                                                    </select>
+                                                </div>
+                                                {{-- Hidden Input untuk Total Real (Qty * Satuan) --}}
+                                                <input type="hidden" 
+                                                    name="rencana[{{ $stokKey }}][jumlah_awal]" 
+                                                    class="final-qty-hidden" 
+                                                    value="0">
                                             </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="4" class="text-center text-muted">Tidak ada barang yang terdaftar.</td>
+                                            <td colspan="4" class="text-center py-5 text-muted italic">Data barang tidak ditemukan.</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
@@ -95,45 +104,44 @@
                         </div>
                     </div>
 
-                    {{-- ======================================================= --}}
-                    {{-- KOLOM KANAN: RINGKASAN RENCANA (5/12) --}}
-                    {{-- ======================================================= --}}
-                    <div class="col-md-5">
+                    {{-- KOLOM KANAN: RINGKASAN --}}
+                    <div class="col-md-4">
                         <div class="sticky-top" style="top: 20px;">
-                            <div class="card bg-info text-white shadow">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Ringkasan Rencana Belanja</h5>
+                            <div class="card border-success shadow-sm overflow-hidden">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0 fw-bold"><i class="fas fa-list-ul me-2"></i>Ringkasan Rencana</h6>
                                 </div>
-                                <div class="card-body bg-light text-dark">
-                                    <p class="text-muted">Daftar barang yang akan dipesan (Jumlah > 0).</p>
-
-                                    <div class="table-responsive" style="max-height: 40vh; overflow-y: auto;">
-                                        <table class="table table-bordered table-sm mb-0">
-                                            <thead>
-                                                <tr class="table-primary">
-                                                    <th style="width: 50%;">Barang</th>
-                                                    <th style="width: 25%;" class="text-center">Stok Saat Ini</th>
-                                                    <th style="width: 25%;" class="text-center">Jml Rencana</th>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive" style="max-height: 45vh; overflow-y: auto;">
+                                        <table class="table table-sm mb-0">
+                                            <thead class="bg-light">
+                                                <tr>
+                                                    <th class="ps-3">Barang</th>
+                                                    <th class="text-center">Total (Pcs)</th>
+                                                    <th style="width: 40px;"></th>
                                                 </tr>
                                             </thead>
                                             <tbody id="rencanaListBody">
-                                                <tr><td colspan="3" class="text-center text-muted">Belum ada barang dipilih.</td></tr>
+                                                <tr class="empty-row">
+                                                    <td colspan="3" class="text-center py-5 text-muted">Belum ada barang dipilih.</td>
+                                                </tr>
                                             </tbody>
                                         </table>
                                     </div>
-
-                                    <div id="ringkasanError" class="alert alert-danger d-none mt-3"></div>
-
-                                    <div class="d-grid mt-3">
-                                        <button type="button" class="btn btn-success" id="btnKonfirmasi">
-                                            <i class="fas fa-check-circle"></i> **Konfirmasi & Simpan Rencana**
-                                        </button>
+                                    
+                                    <div class="p-3 border-top bg-light">
+                                        <div id="ringkasanError" class="alert alert-danger d-none py-2 small mb-3"></div>
+                                        <div class="d-grid">
+                                            <button type="button" class="btn btn-success btn-lg fw-bold shadow-sm" id="btnKonfirmasi">
+                                                Konfirmasi & Simpan
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div> {{-- End Row --}}
+                </div>
             </form>
         </div>
     </div>
@@ -144,122 +152,114 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('rencanaBelanjaForm');
     const btnKonfirmasi = document.getElementById('btnKonfirmasi');
     const rencanaListBody = document.getElementById('rencanaListBody');
+    const searchInput = document.getElementById('searchInput');
     const ringkasanError = document.getElementById('ringkasanError');
 
-    const searchInput = document.getElementById('searchInput');
-    const allLeftInputs = document.querySelectorAll('.rencana-input');
-
-    /* =========================
-       SEARCH
-    ========================== */
+    // --- LOGIKA PENCARIAN ---
     searchInput.addEventListener('input', () => {
         const q = searchInput.value.toLowerCase();
-        document.querySelectorAll('#barangTable tbody tr').forEach(tr => {
+        document.querySelectorAll('.barang-row').forEach(tr => {
             tr.style.display = tr.dataset.nama.includes(q) ? '' : 'none';
         });
     });
 
-    /* =========================
-       UPDATE / CREATE ROW RINGKASAN
-    ========================== */
-    const upsertRingkasanRow = (data) => {
-        let row = rencanaListBody.querySelector(`tr[data-id="${data.id}"]`);
+    // --- LOGIKA HITUNG TOTAL ---
+    const updateRowCalculation = (row) => {
+        const qtyInput = row.querySelector('.qty-input');
+        const satuanSelect = row.querySelector('.satuan-select');
+        const finalHidden = row.querySelector('.final-qty-hidden');
+        
+        const qtyValue = parseInt(qtyInput.value) || 0;
+        // multiplier tetap 1 jika select disabled
+        const multiplier = parseInt(satuanSelect.value) || 1;
+        const totalFinal = qtyValue * multiplier;
 
-        if (data.jumlah <= 0) {
-            if (row) row.remove();
+        finalHidden.value = totalFinal;
+        upsertRingkasan(qtyInput.dataset.id, qtyInput.dataset.nama, totalFinal);
+    };
+
+    // --- UPDATE DAFTAR RINGKASAN DI KANAN ---
+    const upsertRingkasan = (id, nama, total) => {
+        let existingRow = rencanaListBody.querySelector(`tr[data-ringkas-id="${id}"]`);
+
+        if (total <= 0) {
+            if (existingRow) existingRow.remove();
+            checkEmpty();
             return;
         }
 
-        if (!row) {
-            row = document.createElement('tr');
-            row.dataset.id = data.id;
+        if (existingRow) {
+            existingRow.querySelector('.total-display').textContent = total.toLocaleString('id-ID');
+        } else {
+            const row = document.createElement('tr');
+            row.dataset.ringkasId = id;
             row.innerHTML = `
-                <td>${data.nama}</td>
-                <td class="text-center">${data.stok.toLocaleString('id-ID')}</td>
-                <td class="text-center">
-                    <input type="number"
-                        class="form-control form-control-sm input-kanan"
-                        min="0"
-                        value="${data.jumlah}"
-                        data-id="${data.id}">
+                <td class="ps-3 py-2">
+                    <div class="fw-bold small text-truncate" style="max-width: 150px;">${nama}</div>
+                </td>
+                <td class="text-center py-2">
+                    <span class="badge bg-primary total-display">${total.toLocaleString('id-ID')}</span>
+                </td>
+                <td class="text-center py-2">
+                    <button type="button" class="btn btn-sm text-danger remove-item" data-id="${id}">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
                 </td>
             `;
             rencanaListBody.appendChild(row);
-        } else {
-            row.querySelector('.input-kanan').value = data.jumlah;
+        }
+        checkEmpty();
+    };
+
+    const checkEmpty = () => {
+        const rows = rencanaListBody.querySelectorAll('tr:not(.empty-row)');
+        const emptyMsg = rencanaListBody.querySelector('.empty-row');
+        if (rows.length === 0) {
+            if (!emptyMsg) {
+                rencanaListBody.innerHTML = '<tr class="empty-row"><td colspan="3" class="text-center py-5 text-muted small">Belum ada barang dipilih.</td></tr>';
+            }
+        } else if (emptyMsg) {
+            emptyMsg.remove();
         }
     };
 
-    /* =========================
-       INPUT KIRI → RINGKASAN
-    ========================== */
-    allLeftInputs.forEach(input => {
-        input.addEventListener('input', () => {
-            const row = input.closest('tr');
-            const stok = parseInt(row.querySelector('[data-stok-saat-ini]').dataset.stokSaatIni) || 0;
-
-            upsertRingkasanRow({
-                id: input.dataset.id,
-                nama: input.dataset.nama,
-                stok,
-                jumlah: parseInt(input.value) || 0
-            });
-
-            toggleEmptyState();
+    // --- EVENT LISTENERS ---
+    document.querySelectorAll('.qty-input, .satuan-select').forEach(el => {
+        el.addEventListener('input', (e) => {
+            const row = e.target.closest('tr');
+            updateRowCalculation(row);
         });
     });
 
-    /* =========================
-       EVENT DELEGATION
-       RINGKASAN → INPUT KIRI
-    ========================== */
-    rencanaListBody.addEventListener('input', (e) => {
-        if (!e.target.classList.contains('input-kanan')) return;
-
-        const id = e.target.dataset.id;
-        const val = parseInt(e.target.value) || 0;
-
-        const leftInput = document.querySelector(`.rencana-input[data-id="${id}"]`);
-        if (leftInput) leftInput.value = val;
-
-        if (val <= 0) {
-            e.target.closest('tr').remove();
+    rencanaListBody.addEventListener('click', (e) => {
+        const btn = e.target.closest('.remove-item');
+        if (btn) {
+            const id = btn.dataset.id;
+            const leftRow = document.querySelector(`.qty-input[data-id="${id}"]`).closest('tr');
+            leftRow.querySelector('.qty-input').value = 0;
+            updateRowCalculation(leftRow);
         }
-
-        toggleEmptyState();
     });
 
-    /* =========================
-       EMPTY STATE
-    ========================== */
-    const toggleEmptyState = () => {
-        if (rencanaListBody.children.length === 0) {
-            rencanaListBody.innerHTML =
-                '<tr class="empty"><td colspan="3" class="text-center text-muted">Belum ada barang dipilih.</td></tr>';
-        } else {
-            const empty = rencanaListBody.querySelector('.empty');
-            if (empty) empty.remove();
-        }
-    };
-
-    /* =========================
-       SUBMIT
-    ========================== */
+    // --- SUBMIT VALIDATION ---
     btnKonfirmasi.addEventListener('click', () => {
-        if (rencanaListBody.children.length === 0) {
+        const finalRows = rencanaListBody.querySelectorAll('tr:not(.empty-row)');
+        
+        if (finalRows.length === 0) {
             ringkasanError.textContent = 'Pilih minimal 1 barang.';
             ringkasanError.classList.remove('d-none');
             return;
         }
 
-        allLeftInputs.forEach(input => {
-            const qty = parseInt(input.value) || 0;
-            const row = input.closest('tr');
-            const hidden = row.querySelector('input[type="hidden"]');
-
-            if (qty <= 0) {
-                input.removeAttribute('name');
-                hidden?.removeAttribute('name');
+        document.querySelectorAll('.barang-row').forEach(row => {
+            const finalQty = parseInt(row.querySelector('.final-qty-hidden').value) || 0;
+            if (finalQty <= 0) {
+                row.querySelectorAll('input, select').forEach(input => input.removeAttribute('name'));
+            } else {
+                // Pastikan select yang disabled tidak dikirim datanya, 
+                // tapi hidden input tetap ada
+                const sel = row.querySelector('.satuan-select');
+                if (sel.disabled) sel.removeAttribute('name');
             }
         });
 
@@ -268,4 +268,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
+<style>
+    .table-responsive::-webkit-scrollbar { width: 4px; }
+    .table-responsive::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 10px; }
+    .barang-row:hover { background-color: #f8fafc; }
+    .qty-input:focus { border-color: #28a745; box-shadow: none; }
+    .qty-input { width: 70px !important; flex: none !important; }
+    .sticky-top { top: -1px; }
+    .text-truncate { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+</style>
 @endsection
