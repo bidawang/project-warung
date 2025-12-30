@@ -266,7 +266,7 @@ Route::post('/laba/import', [LabaController::class, 'import'])->name('laba.impor
 Route::get('/kasir/api/notif-barang-masuk', function () {
     $count = \App\Models\BarangMasuk::whereHas('stokWarung.warung', function ($q) {
         $q->where('id_user', auth()->id());
-    })->where('status', 'kirim')->count();
+    })->where('status', 'kirim')->where('jenis', 'tambahan')->count();
 
     return response()->json(['count' => $count]);
 })->middleware('auth');

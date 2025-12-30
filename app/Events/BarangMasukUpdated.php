@@ -19,11 +19,16 @@ class BarangMasukUpdated implements ShouldBroadcast
     {
         $this->userId = $userId;
 
-        // Hitung jumlah notifikasi pending untuk user ini
         $this->count = \App\Models\BarangMasuk::whereHas('stokWarung.warung', function ($q) use ($userId) {
             $q->where('id_user', $userId);
-        })->where('status', 'pending')->count();
+        })
+            ->where([
+                'status' => 'terima',
+                'jenis'  => 'tambahan',
+            ])
+            ->count();
     }
+
 
     public function broadcastOn()
     {
