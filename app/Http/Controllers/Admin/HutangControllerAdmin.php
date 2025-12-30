@@ -53,7 +53,7 @@ class HutangControllerAdmin extends Controller
      * @param  int  $id ID Hutang
      * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
-    public function detail($id)
+    public function detailAllWarung($id)
     {
         // Mengambil data hutang dengan eager load semua relasi yang diperlukan.
         // Karena ini admin, kita eager load relasi 'warung' untuk mengetahui pemilik hutang.

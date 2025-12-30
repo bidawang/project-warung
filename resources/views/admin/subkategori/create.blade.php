@@ -6,15 +6,7 @@
 
     {{-- Main Content --}}
     <div class="flex-1 flex flex-col overflow-hidden">
-        {{-- Header --}}
-        <header class="flex justify-between items-center p-6 bg-white border-b-2 border-gray-200">
-            <h1 class="text-2xl font-bold text-gray-800">Tambah Sub Kategori</h1>
-            <div class="flex items-center">
-                <span class="mr-4 font-semibold hidden sm:inline">Admin User</span>
-                <div class="w-10 h-10 bg-blue-500 rounded-full"></div>
-            </div>
-        </header>
-
+        
         {{-- Main Content --}}
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6 md:p-10">
             <div class="container mx-auto">

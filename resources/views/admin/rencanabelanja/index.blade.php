@@ -115,14 +115,50 @@
                                                         <template
                                                             x-for="(alloc, index) in allocations['{{ $i->id }}']"
                                                             :key="index">
-                                                            <div class="flex items-center gap-2 mb-3">
-                                                                <input type="number"
-                                                                    :name="'items[{{ $i->id }}][transactions][' + index
-                                                                        +
-                                                                        '][jumlah]'"
-                                                                    x-model.number="alloc.jumlah"
-                                                                    @input="validateJumlah('{{ $i->id }}', index)"
-                                                                    class="w-20 px-2 py-1.5 rounded-lg border-gray-200 text-sm font-bold border text-center">
+                                                            <div class="flex items-center gap-3 mb-3">
+
+                                                                {{-- KOLOM KIRI: KARTU SATUAN (Berbaris ke bawah) --}}
+                                                                <div class="flex flex-col gap-2 min-w-[120px]">
+                                                                    <template
+                                                                        x-for="satuan in getValidSatuans('{{ $i->barang->id }}', alloc.jumlah)"
+                                                                        :key="satuan.nama">
+                                                                        <div
+                                                                            class="bg-indigo-50 border-l-4 border-indigo-500 p-2 rounded-r-lg shadow-sm animate-fade-in">
+                                                                            <p class="text-[10px] text-indigo-400 font-bold uppercase leading-none"
+                                                                                x-text="satuan.nama"></p>
+                                                                            <p class="text-sm font-black text-indigo-800">
+                                                                                <span
+                                                                                    x-text="alloc.jumlah / satuan.jumlah"></span>
+                                                                                <span class="text-[10px]"
+                                                                                    x-text="satuan.nama"></span>
+                                                                            </p>
+                                                                        </div>
+                                                                    </template>
+                                                                    {{-- Jika tidak ada satuan yang pas (modulo) atau cuma ada 1 satuan dasar --}}
+                                                                    <template
+                                                                        x-if="getValidSatuans('{{ $i->barang->id }}', alloc.jumlah).length === 0">
+                                                                        <div
+                                                                            class="bg-gray-50 border-l-4 border-gray-300 p-2 rounded-r-lg">
+                                                                            <p
+                                                                                class="text-[10px] text-gray-400 font-bold uppercase leading-none">
+                                                                                Satuan Dasar</p>
+                                                                            <p class="text-sm font-black text-gray-600"
+                                                                                x-text="alloc.jumlah + ' Pcs'"></p>
+                                                                        </div>
+                                                                    </template>
+                                                                </div>
+                                                                {{-- Input Jumlah Utama --}}
+
+                                                                <div class="relative min-w-[100px]">
+                                                                    <input type="number"
+                                                                        :name="'items[{{ $i->id }}][transactions][' +
+                                                                        index + '][jumlah]'"
+                                                                        x-model.number="alloc.jumlah"
+                                                                        @input="validateJumlah('{{ $i->id }}', index)"
+                                                                        class="w-full px-3 py-2 rounded-xl border-gray-300 text-sm font-bold border text-center focus:ring-2 focus:ring-indigo-500">
+                                                                    
+                                                                </div>
+
 
                                                                 <select
                                                                     :name="'items[{{ $i->id }}][transactions][' + index
@@ -186,6 +222,22 @@
                     this.recalcStok();
                     Object.values(this.rencanaMapping).flat().forEach(id => {
                         this.allocations[id.toString()] = [];
+                    });
+                },
+
+                // Di dalam return function rencanaBelanja()
+
+                getValidSatuans(barangId, inputJumlah) {
+                    if (!inputJumlah || inputJumlah <= 0) return [];
+
+                    const item = this.allTransactions.find(t => t.id_barang == barangId);
+                    if (!item || !item.satuans) return [];
+
+                    // Logika:
+                    // 1. Ambil satuan yang "jumlah konversi"-nya > 1 (bukan satuan dasar seperti pcs)
+                    // 2. Cek apakah inputJumlah habis dibagi (modulo 0) dengan jumlah konversi satuan tersebut
+                    return item.satuans.filter(s => {
+                        return s.jumlah > 1 && (inputJumlah % s.jumlah === 0);
                     });
                 },
 
@@ -368,16 +420,21 @@
                             return {
                                 ...t,
                                 sisa_display: sisa,
-                                disabled: sisa <= 0 && currentTrxId && t.id.toString() !== currentTrxId.toString()
+                                isZero: sisa <= 0,
+                                disabled: sisa <= 0 && (!currentTrxId || t.id.toString() !== currentTrxId.toString())
                             };
-                        });
+                        })
+                        // 🔥 PINDAHKAN sisa 0 ke bawah TANPA sort stok
+                        .sort((a, b) => a.isZero - b.isZero);
 
                     const activeCount = items.filter(i => !i.disabled).length;
+
                     return {
                         items,
                         count: activeCount
                     };
                 },
+
 
                 hasInitialStock(barangId) {
                     return this.allTransactions.some(t => t.id_barang == barangId && parseInt(t.jumlah) > 0);

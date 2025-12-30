@@ -13,13 +13,13 @@ class SatuanBarangControllerAdmin extends Controller
 {
     public function index()
     {
-        // Mengambil barang dengan subKategori dan satuan yang sudah mereka miliki
-        $barang = Barang::with(['subKategori', 'satuan'])->get();
-        $kategoris = \App\Models\Kategori::all(); // Sesuaikan namespace kategori Anda
+        $barang = Barang::with(['subKategori.kategori', 'satuan'])->get();
+        $kategoris = \App\Models\Kategori::all();
+        $subkategoris = \App\Models\SubKategori::all(); // Tambahkan ini
         $list_satuan = Satuan::orderBy('nama_satuan', 'asc')->get();
-// dd($barang, $list_satuan, $kategoris);
-        return view('admin.satuanbarang.index', compact('barang', 'list_satuan', 'kategoris'));
-    }    
+
+        return view('admin.satuanbarang.index', compact('barang', 'list_satuan', 'kategoris', 'subkategoris'));
+    }
 
     public function store(Request $request)
     {
@@ -37,7 +37,7 @@ class SatuanBarangControllerAdmin extends Controller
         ], [
             'id_satuan.unique' => 'Barang ini sudah memiliki satuan tersebut.'
         ]);
-// dd($cek);
+        // dd($cek);
         SatuanBarang::create($request->all());
 
         return redirect()->back()->with('success', 'Satuan berhasil ditambahkan ke barang');

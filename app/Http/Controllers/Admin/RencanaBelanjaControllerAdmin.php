@@ -26,32 +26,53 @@ class RencanaBelanjaControllerAdmin extends Controller
 {
     protected function getStockData()
     {
-        $allTransactions = TransaksiBarang::with(['barang', 'areaPembelian'])->where('jenis', 'rencana')
+        $allTransactions = TransaksiBarang::with(['barang.satuan', 'areaPembelian'])
+            ->where('jenis', 'rencana')
             ->whereColumn('jumlah', '>', 'jumlah_terpakai')
             ->get()
             ->map(function ($trx) {
+                // 1. Ambil semua satuan milik barang ini
+                // Kita ambil nama_satuan dan jumlah (konversi)
+                $listSatuan = [];
+                if ($trx->barang && $trx->barang->satuan) {
+                    $listSatuan = $trx->barang->satuan->map(function ($s) {
+                        return [
+                            'nama'   => $s->nama_satuan,
+                            'jumlah' => (int) $s->jumlah,
+                        ];
+                    })
+                        ->sortBy('jumlah') // Urutkan dari yang terkecil (biasanya pcs/isi 1)
+                        ->values()
+                        ->toArray();
+                }
+
+                // 2. Identifikasi satuan dasar (paling kecil) untuk label sisa stok
+                $satuanDasar = !empty($listSatuan) ? $listSatuan[0]['nama'] : 'pcs';
+
                 return [
-                    'id'        => $trx->id,
-                    'id_barang' => $trx->id_barang,
-                    'nama_barang' => $trx->barang->nama_barang ?? '-',
-                    'jumlah'    => $trx->jumlah - $trx->jumlah_terpakai, // stok real
-                    'harga'     => $trx->harga,
-                    'area'      => $trx->areaPembelian->area ?? '-',
+                    'id'            => $trx->id,
+                    'id_barang'     => $trx->id_barang,
+                    'nama_barang'   => $trx->barang->nama_barang ?? '-',
+                    'jumlah'        => (int) ($trx->jumlah - $trx->jumlah_terpakai), // Stok riil
+                    'harga'         => $trx->harga,
+                    'area'          => $trx->areaPembelian->area ?? '-',
+                    'satuans'       => $listSatuan, // Semua daftar satuan untuk cek modulo di JS
+                    'satuan_dasar'  => $satuanDasar, // Digunakan untuk teks sisa stok
                 ];
             });
 
         return [
             'stockByBarang'     => $allTransactions->groupBy('id_barang'),
-            'allTransactions'   => $allTransactions->values(),   // penting
-            'warungs'           => Warung::all(),
-            'areaPembelians'    => AreaPembelian::all()
+            'allTransactions'   => $allTransactions->values(),
+            'warungs'           => \App\Models\Warung::all(),
+            'areaPembelians'    => \App\Models\AreaPembelian::all()
         ];
     }
 
     public function index()
     {
         $data = $this->getStockData();
-// dd($data);
+        // dd($data);
         $rencanaCollection = RencanaBelanja::with(['barang', 'warung'])
             ->where('status', 'pending')
             ->get();
@@ -65,7 +86,7 @@ class RencanaBelanjaControllerAdmin extends Controller
             ->map(function ($items) {
                 return $items->pluck('id')->toArray();
             });
-// dd($data['warungs']);
+        // dd($data['warungs']);
         return view('admin.rencanabelanja.index', [
             'rencanaBelanjaByWarung' => $rencanaBelanjaByWarung,
             'rencanaMapping'         => $rencanaMapping, // Tambahkan ini

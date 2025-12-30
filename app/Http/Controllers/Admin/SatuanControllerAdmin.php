@@ -10,8 +10,10 @@ class SatuanControllerAdmin extends Controller
 {
     public function index()
     {
-        // withCount akan menghasilkan kolom 'barang_count'
-        $satuan = Satuan::withCount('barang')->get();
+        // Mengambil satuan beserta jumlah barang dan daftar nama barangnya
+        $satuan = Satuan::withCount('barang')
+            ->with(['barang:id,nama_barang']) // Ambil kolom yang diperlukan saja
+            ->get();
         return view('admin.satuan.index', compact('satuan'));
     }
 

@@ -29,7 +29,7 @@
     </div>
 
     {{-- Tabel --}}
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-visible"> {{-- Ubah ke overflow-visible agar card tidak terpotong --}}
         <table class="w-full text-left border-collapse">
             <thead class="bg-gray-50 border-b border-gray-200">
                 <tr>
@@ -48,11 +48,44 @@
                         </td>
                         <td class="px-6 py-4 font-bold text-gray-800">{{ $s->nama_satuan }}</td>
                         <td class="px-6 py-4 text-center font-mono text-sm text-gray-600">{{ number_format($s->jumlah) }}</td>
-                        <td class="px-6 py-4 text-center">
-                            <span class="text-xs font-bold {{ $s->barang_count > 0 ? 'text-blue-600' : 'text-gray-400' }}">
-                                {{ $s->barang_count }} Barang
-                            </span>
+                        
+                        {{-- Kolom Digunakan dengan Popover Card --}}
+                        <td class="px-6 py-4 text-center relative">
+                            @if($s->barang_count > 0)
+                                <button @click="toggleBarangList({{ $s->id }})" 
+                                    class="text-xs font-bold px-3 py-1 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition inline-flex items-center gap-1">
+                                    {{ $s->barang_count }} Barang
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path d="M19 9l-7 7-7-7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+
+                                {{-- Popover Card --}}
+                                <div x-show="openBarangId === {{ $s->id }}" 
+                                     @click.away="openBarangId = null"
+                                     x-transition:enter="transition ease-out duration-200"
+                                     x-transition:enter-start="opacity-0 translate-y-2"
+                                     x-transition:enter-end="opacity-100 translate-y-0"
+                                     class="absolute z-40 left-1/2 -translate-x-1/2 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 p-4 text-left"
+                                     x-cloak>
+                                    <div class="flex justify-between items-center mb-2 pb-2 border-b">
+                                        <span class="text-[10px] font-black uppercase text-gray-400">Daftar Barang</span>
+                                        <button @click="openBarangId = null" class="text-gray-400 hover:text-gray-600">×</button>
+                                    </div>
+                                    <ul class="max-h-40 overflow-y-auto space-y-2">
+                                        @foreach($s->barang as $b)
+                                            <li class="text-xs font-medium text-gray-700 flex items-start gap-2">
+                                                <span class="mt-1 h-1.5 w-1.5 rounded-full bg-blue-500 shrink-0"></span>
+                                                {{ $b->nama_barang }}
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @else
+                                <span class="text-xs font-bold text-gray-400">0 Barang</span>
+                            @endif
                         </td>
+
                         <td class="px-6 py-4 text-right flex justify-end gap-2">
                             <button @click="openEditModal({{ json_encode($s) }})" class="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -78,7 +111,7 @@
         </table>
     </div>
 
-    {{-- MODAL --}}
+    {{-- MODAL CRUD --}}
     <div x-show="isOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm" x-cloak x-transition>
         <div class="bg-white rounded-2xl w-full max-w-md p-8 shadow-2xl relative" @click.away="isOpen = false">
             <h2 class="text-xl font-bold text-gray-800 mb-6" x-text="editMode ? 'Edit Satuan' : 'Tambah Satuan'"></h2>
@@ -88,7 +121,6 @@
                 <template x-if="editMode"><input type="hidden" name="_method" value="PUT"></template>
 
                 <div class="space-y-4">
-                    {{-- Input Kategori --}}
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">Kategori Satuan</label>
                         <input type="text" name="kategori_satuan" x-model="formData.kategori_satuan" required list="list-kategori"
@@ -101,7 +133,6 @@
                         </datalist>
                     </div>
 
-                    {{-- Input Nama --}}
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">Nama Satuan (Label)</label>
                         <input type="text" name="nama_satuan" x-model="formData.nama_satuan" required
@@ -109,7 +140,6 @@
                                class="w-full border-gray-300 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 shadow-sm">
                     </div>
 
-                    {{-- Input Jumlah --}}
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">Jumlah Isi</label>
                         <input type="number" name="jumlah" x-model="formData.jumlah" required min="1"
@@ -132,11 +162,16 @@ function satuanCrud() {
         isOpen: false,
         editMode: false,
         search: '',
+        openBarangId: null, // Untuk melacak card barang mana yang terbuka
         formUrl: '{{ route("admin.satuan.store") }}',
         formData: { kategori_satuan: '', nama_satuan: '', jumlah: '1' },
 
         matchesSearch(text) {
             return text.includes(this.search.toLowerCase());
+        },
+
+        toggleBarangList(id) {
+            this.openBarangId = this.openBarangId === id ? null : id;
         },
 
         openAddModal() {
@@ -159,4 +194,9 @@ function satuanCrud() {
     }
 }
 </script>
+
+<style>
+    /* Agar modal atau card tidak tersembunyi jika tabel ditaruh dalam kontainer kecil */
+    [x-cloak] { display: none !important; }
+</style>
 @endsection

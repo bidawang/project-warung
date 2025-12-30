@@ -82,7 +82,7 @@
                                                         <option value="1">Pcs (1)</option>
                                                         @if($hasSatuan)
                                                             @foreach($barang->satuan as $s)
-                                                                <option value="{{ $s->jumlah }}">{{ $s->nama_satuan }} ({{ $s->jumlah }})</option>
+                                                                <option value="{{ $s->jumlah }}">{{ $s->nama_satuan }}</option>
                                                             @endforeach
                                                         @endif
                                                     </select>

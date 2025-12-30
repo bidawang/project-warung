@@ -3,332 +3,227 @@
 @section('title', 'Riwayat Transaksi Semua Warung')
 
 @section('content')
-@php
-    // Ambil mode tampilan dari request (jika ada), jika tidak, default ke 'compact'
-    // JS di bawah akan mencoba membaca dari Local Storage terlebih dahulu
-    $viewMode = request('view', 'compact');
-    $isCompact = $viewMode === 'compact';
-@endphp
 
-<div class="flex-1 flex flex-col overflow-hidden bg-gray-100">
+{{-- 
+    Alpine.js State:
+    - viewMode: 'detail' (default) atau 'compact'
+    - searchGlobal: teks pencarian untuk tabel detail
+    - searchCompact: objek untuk menyimpan teks pencarian per warung
+--}}
+<div class="flex-1 flex flex-col overflow-hidden bg-gray-100" 
+     x-data="{ 
+        viewMode: localStorage.getItem('transaksi_view') || 'detail', 
+        searchGlobal: '',
+        searchCompact: {},
+        init() {
+            $watch('viewMode', value => localStorage.setItem('transaksi_view', value))
+        }
+     }">
 
     {{-- Header --}}
     <header class="flex justify-between items-center p-6 bg-white border-b sticky top-0 z-10">
         <h1 class="text-2xl font-bold text-gray-800">
-            <i class="fas fa-chart-line mr-2 text-indigo-600"></i> Laporan Transaksi Kas Warung
+            <i class="fas fa-history mr-2 text-indigo-600"></i> Riwayat Transaksi Global
         </h1>
 
         {{-- Opsi Tampilan (Button Toggle) --}}
         <div class="flex space-x-2 p-1 bg-gray-200 rounded-lg">
-            <button id="toggle-compact" data-mode="compact"
-               class="px-3 py-1 text-sm font-semibold rounded-lg transition duration-150 view-toggle">
-                <i class="fas fa-arrows-alt-h mr-1"></i> Compact (Horizontal)
-            </button>
-            <button id="toggle-detail" data-mode="detail"
-               class="px-3 py-1 text-sm font-semibold rounded-lg transition duration-150 view-toggle">
+            <button @click="viewMode = 'detail'"
+                :class="viewMode === 'detail' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-700 hover:bg-gray-300'"
+                class="px-4 py-1.5 text-sm font-semibold rounded-lg transition duration-150">
                 <i class="fas fa-list-ul mr-1"></i> Detail (Vertikal)
+            </button>
+            <button @click="viewMode = 'compact'"
+                :class="viewMode === 'compact' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-700 hover:bg-gray-300'"
+                class="px-4 py-1.5 text-sm font-semibold rounded-lg transition duration-150">
+                <i class="fas fa-arrows-alt-h mr-1"></i> Compact (Horizontal)
             </button>
         </div>
     </header>
 
     <main class="flex-1 overflow-y-auto p-6 space-y-6">
 
-        {{-- ========================================= --}}
         {{-- FILTER TANGGAL --}}
-        {{-- ========================================= --}}
-        <div class="bg-white shadow-md rounded-lg p-4">
-            <form action="{{ route('admin.riwayat_transaksi.index') }}" method="GET" id="filter-form" class="flex items-end space-x-4">
-                {{-- Hidden input untuk mempertahankan mode tampilan saat filter dikirim --}}
-                <input type="hidden" name="view" value="{{ $viewMode }}" id="view-mode-input">
+        <div class="bg-white shadow-sm border border-gray-200 rounded-xl p-4">
+            <form action="{{ route('admin.riwayat_transaksi.index') }}" method="GET" class="flex flex-wrap items-end gap-4">
+                {{-- Input tersembunyi agar mode view tetap terjaga saat submit form --}}
+                <input type="hidden" name="view" :value="viewMode">
 
-                <div class="flex-1">
-                    <label for="start_date" class="block text-sm font-medium text-gray-700">Periode Awal</label>
-                    <input type="date" name="start_date" id="start_date" value="{{ request('start_date') }}"
-                           class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                <div class="flex-1 min-w-[200px]">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Periode Awal</label>
+                    <input type="date" name="start_date" value="{{ request('start_date') }}"
+                           class="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                 </div>
-                <div class="flex-1">
-                    <label for="end_date" class="block text-sm font-medium text-gray-700">Periode Akhir</label>
-                    <input type="date" name="end_date" id="end_date" value="{{ request('end_date') }}"
-                           class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                <div class="flex-1 min-w-[200px]">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Periode Akhir</label>
+                    <input type="date" name="end_date" value="{{ request('end_date') }}"
+                           class="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                 </div>
-                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition duration-150">
-                    <i class="fas fa-filter mr-1"></i> Terapkan Filter
-                </button>
-                <a href="{{ route('admin.riwayat_transaksi.index') }}" class="text-gray-500 hover:text-red-600 px-4 py-2">
-                    Reset
-                </a>
+                <div class="flex gap-2">
+                    <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">
+                        <i class="fas fa-filter mr-1"></i> Filter
+                    </button>
+                    <a href="{{ route('admin.riwayat_transaksi.index') }}" class="bg-white border border-gray-300 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 transition">
+                        Reset
+                    </a>
+                </div>
             </form>
         </div>
 
-        {{-- ========================================= --}}
-        {{-- KONTEN UTAMA DENGAN DUA TIPE DISPLAY --}}
-        {{-- ========================================= --}}
-
         @if ($dataTransaksiPerWarung->isEmpty())
-            <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4" role="alert">
-                <p class="font-bold">Info</p>
-                <p>Tidak ada warung atau transaksi yang ditemukan dalam periode ini.</p>
+            <div class="bg-white p-12 rounded-xl border border-dashed border-gray-300 text-center">
+                <i class="fas fa-folder-open text-gray-300 text-5xl mb-4"></i>
+                <p class="text-gray-500">Tidak ada data transaksi ditemukan.</p>
             </div>
         @else
 
-            {{-- Container untuk Mode Compact (Horizontal Scroll) --}}
-            <div id="container-compact" class="flex overflow-x-auto pb-4 -mx-6 px-6 space-x-6" style="{{ $isCompact ? '' : 'display: none;' }}">
-                @foreach ($dataTransaksiPerWarung as $dataWarung)
-                    <div class="warung-container flex-shrink-0 w-80 bg-white shadow-xl border border-gray-200 rounded-lg flex flex-col"
-                         data-warung-id="{{ $dataWarung['id'] }}">
+            {{-- ========================================= --}}
+            {{-- MODE DETAIL (DEFAULT / VERTIKAL) --}}
+            {{-- ========================================= --}}
+            <div x-show="viewMode === 'detail'" x-transition class="space-y-4">
+                @php
+                    $allTransactions = collect();
+                    foreach ($dataTransaksiPerWarung as $dataWarung) {
+                        $dataWarung['riwayat_transaksi']->each(function ($t) use ($dataWarung) {
+                            $t->nama_warung = $dataWarung['nama_warung'];
+                            // Buat string search_blob untuk mempermudah Alpine mencari
+                            $t->search_blob = strtolower($t->deskripsi . ' ' . $t->jenis_transaksi . ' ' . $t->metode_pembayaran . ' ' . $dataWarung['nama_warung']);
+                        });
+                        $allTransactions = $allTransactions->merge($dataWarung['riwayat_transaksi']);
+                    }
+                    $allTransactions = $allTransactions->sortByDesc('tanggal');
+                @endphp
 
-                        {{-- Header Warung & Pencarian JS --}}
-                        <div class="p-4 border-b">
-                            <h2 class="text-lg font-bold text-gray-800 flex items-center mb-2">
-                                <i class="fas fa-store mr-2 text-green-600"></i>
-                                **{{ $dataWarung['nama_warung'] }}**
-                            </h2>
-                            <div class="text-sm font-semibold mb-3">
-                                Kas:
-                                <span class="ml-1 {{ $dataWarung['total_kas_warung'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
-                                    Rp. {{ number_format($dataWarung['total_kas_warung'], 2, ',', '.') }}
-                                </span>
-                            </div>
-
-                            <input type="text" placeholder="Cari di warung ini (JS Search)"
-                                   class="search-input w-full border border-gray-300 rounded-md px-3 py-1 text-sm focus:ring-blue-500 focus:border-blue-500"
-                                   data-target="#transaksi-list-{{ $dataWarung['id'] }}" data-mode="compact">
-                        </div>
-
-                        {{-- List Transaksi (Scroll Vertikal) --}}
-                        <div class="p-4 flex-1 overflow-y-auto max-h-[600px] space-y-3" id="transaksi-list-{{ $dataWarung['id'] }}">
-                            {{-- Item Transaksi Compact --}}
-                            @forelse ($dataWarung['riwayat_transaksi'] as $transaksi)
-                                <div class="transaksi-item border-l-4 p-3 rounded-md shadow-sm text-sm transition duration-150 ease-in-out
-                                    @if ((float)$transaksi->total >= 0)
-                                        border-green-500 bg-green-50 hover:bg-green-100
-                                    @else
-                                        border-red-500 bg-red-50 hover:bg-red-100
-                                    @endif"
-                                    data-search-term="{{ strtolower($transaksi->deskripsi . ' ' . $transaksi->jenis_transaksi . ' ' . $transaksi->metode_pembayaran) }}">
-
-                                    <div class="flex justify-between items-center mb-1">
-                                        <span class="font-semibold {{ (float)$transaksi->total >= 0 ? 'text-green-700' : 'text-red-700' }}">
-                                            Rp. {{ number_format((float)$transaksi->total, 2, ',', '.') }}
-                                        </span>
-                                        <span class="text-xs text-gray-500">{{ $transaksi->tanggal->translatedFormat('d/m H:i') }}</span>
-                                    </div>
-                                    <p class="font-medium text-gray-800">{{ $transaksi->deskripsi }}</p>
-                                    <div class="mt-1 text-xs space-x-2">
-                                        <span class="px-2 py-0.5 rounded-full bg-gray-200 text-gray-600">{{ $transaksi->jenis_transaksi }}</span>
-                                        <span class="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600">{{ $transaksi->metode_pembayaran }}</span>
-                                    </div>
-                                </div>
-                            @empty
-                                <div class="empty-row text-center py-6 text-gray-500">
-                                    <i class="fas fa-box-open mb-2"></i>
-                                    <p>Tidak ada transaksi dalam periode ini.</p>
-                                </div>
-                            @endforelse
-                            <div class="not-found-message" style="display: none; text-align: center; padding: 1.5rem; color: #f59e0b; font-weight: 600;">
-                                <i class="fas fa-exclamation-circle mb-2"></i>
-                                <p>Transaksi tidak ditemukan.</p>
-                            </div>
+                <div class="bg-white shadow-xl rounded-xl border border-gray-200 overflow-hidden">
+                    <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                        <h2 class="font-bold text-gray-700 uppercase tracking-wider text-sm">Tabel Transaksi Global</h2>
+                        <div class="relative w-64">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                                <i class="fas fa-search text-xs"></i>
+                            </span>
+                            <input type="text" x-model="searchGlobal" placeholder="Cari transaksi..." 
+                                   class="pl-9 w-full border-gray-300 rounded-full text-sm focus:ring-indigo-500 focus:border-indigo-500">
                         </div>
                     </div>
-                @endforeach
-            </div>
 
-            {{-- Container untuk Mode DETAIL (Vertikal List Penuh) --}}
-        <div id="container-detail" class="space-y-8" style="{{ $isCompact ? 'display: none;' : '' }}">
-
-            {{-- Gabungkan Semua Transaksi dari Semua Warung menjadi Satu List --}}
-            @php
-                $allTransactions = collect();
-                foreach ($dataTransaksiPerWarung as $dataWarung) {
-                    // Tambahkan nama warung ke setiap objek transaksi
-                    $dataWarung['riwayat_transaksi']->each(function ($transaksi) use ($dataWarung) {
-                        $transaksi->nama_warung = $dataWarung['nama_warung'];
-                    });
-                    $allTransactions = $allTransactions->merge($dataWarung['riwayat_transaksi']);
-                }
-
-                // Urutkan ulang berdasarkan tanggal/waktu transaksi terbaru (Descending)
-                $allTransactions = $allTransactions->sortByDesc('tanggal');
-
-                // Jika ada filter pencarian, terapkan pada koleksi ini juga
-                $searchTerm = strtolower(request('search')); // Jika Anda menambahkan search utama
-
-                /*
-                // Jika Anda ingin mengaktifkan search utama (tidak hanya JS), gunakan kode ini:
-                if (!empty($searchTerm)) {
-                     $allTransactions = $allTransactions->filter(function($transaksi) use ($searchTerm) {
-                        return str_contains(strtolower($transaksi->deskripsi), $searchTerm) ||
-                               str_contains(strtolower($transaksi->jenis_transaksi), $searchTerm) ||
-                               str_contains(strtolower($transaksi->metode_pembayaran), $searchTerm) ||
-                               str_contains(strtolower($transaksi->nama_warung), $searchTerm);
-                    });
-                }
-                */
-            @endphp
-
-            <div class="bg-white shadow-xl border border-gray-200 rounded-lg p-6">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4 pb-2 border-b">
-                    <i class="fas fa-list-alt mr-3 text-indigo-600"></i> Riwayat Transaksi Global (Semua Warung)
-                </h2>
-
-                {{-- Input Pencarian Global (Opsional, jika ingin diaktifkan di Controller/Form Filter) --}}
-                <input type="text" placeholder="Cari di semua transaksi (JS Search Global)"
-                       class="search-input w-full border border-gray-300 rounded-md px-4 py-2 mb-4 focus:ring-blue-500 focus:border-blue-500"
-                       data-target="#global-transaksi-table" data-mode="detail-global">
-
-                {{-- Tabel Detail Transaksi --}}
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm text-gray-600 border rounded-lg overflow-hidden" id="global-transaksi-table">
-                        <thead class="bg-gray-100 text-gray-700 uppercase text-xs sticky top-0">
-                            <tr>
-                                <th class="py-3 px-4 text-left">Tanggal/Waktu</th>
-                                <th class="py-3 px-4 text-left">Nama Warung</th> {{-- Kolom Baru --}}
-                                <th class="py-3 px-4 text-left">Jenis Transaksi</th>
-                                <th class="py-3 px-4 text-left">Deskripsi / Keterangan</th>
-                                <th class="py-3 px-4 text-center">Metode</th>
-                                <th class="py-3 px-4 text-right">Total (Rp)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($allTransactions as $transaksi)
-                                <tr class="transaksi-item border-b hover:bg-gray-50"
-                                    data-search-term="{{ strtolower($transaksi->deskripsi . ' ' . $transaksi->jenis_transaksi . ' ' . $transaksi->metode_pembayaran . ' ' . $transaksi->nama_warung) }}">
-                                    <td class="py-3 px-4 text-xs font-semibold">{{ $transaksi->tanggal->translatedFormat('d M Y H:i') }}</td>
-                                    <td class="py-3 px-4 font-bold text-gray-700">{{ $transaksi->nama_warung }}</td> {{-- Nilai Warung --}}
-                                    <td class="py-3 px-4">
-                                        <span class="px-2 py-0.5 text-xs rounded-full font-medium bg-indigo-100 text-indigo-700">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-100 font-bold text-gray-600">
+                                <tr>
+                                    <th class="px-4 py-3 text-left">Waktu</th>
+                                    <th class="px-4 py-3 text-left">Warung</th>
+                                    <th class="px-4 py-3 text-left">Tipe</th>
+                                    <th class="px-4 py-3 text-left">Deskripsi</th>
+                                    <th class="px-4 py-3 text-center">Metode</th>
+                                    <th class="px-4 py-3 text-right">Nominal</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                @foreach ($allTransactions as $transaksi)
+                                <tr x-show="'{{ $transaksi->search_blob }}'.includes(searchGlobal.toLowerCase())"
+                                    class="hover:bg-indigo-50/30 transition">
+                                    <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-500">{{ $transaksi->tanggal->translatedFormat('d M Y, H:i') }}</td>
+                                    <td class="px-4 py-3 font-bold text-gray-800">{{ $transaksi->nama_warung }}</td>
+                                    <td class="px-4 py-3">
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase {{ $transaksi->jenis_transaksi == 'Pemasukan' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
                                             {{ $transaksi->jenis_transaksi }}
                                         </span>
                                     </td>
-                                    <td class="py-3 px-4 max-w-lg overflow-hidden text-ellipsis">{{ $transaksi->deskripsi }}</td>
-                                    <td class="py-3 px-4 text-center">{{ $transaksi->metode_pembayaran }}</td>
-                                    <td class="py-3 px-4 text-right font-bold {{ (float)$transaksi->total >= 0 ? 'text-green-600' : 'text-red-600' }}">
-                                        {{ number_format((float)$transaksi->total, 2, ',', '.') }}
+                                    <td class="px-4 py-3 text-gray-600 italic">"{{ $transaksi->deskripsi }}"</td>
+                                    <td class="px-4 py-3 text-center text-xs text-indigo-600 font-semibold">{{ $transaksi->metode_pembayaran }}</td>
+                                    <td class="px-4 py-3 text-right font-bold {{ (float)$transaksi->total >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                                        Rp {{ number_format((float)$transaksi->total, 0, ',', '.') }}
                                     </td>
                                 </tr>
-                            @empty
-                                <tr class="empty-row"><td colspan="6" class="text-center py-4 text-gray-500">Tidak ada transaksi dalam periode ini.</td></tr>
-                            @endforelse
-                            <tr class="not-found-message" style="display: none;"><td colspan="6" class="text-center py-4 text-yellow-500 font-semibold">Transaksi tidak ditemukan.</td></tr>
-                        </tbody>
-                    </table>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-        </div>
+
+            {{-- ========================================= --}}
+            {{-- MODE COMPACT (HORIZONTAL SCROLL) --}}
+            {{-- ========================================= --}}
+            <div x-show="viewMode === 'compact'" x-transition class="flex overflow-x-auto pb-6 -mx-6 px-6 space-x-6">
+                @foreach ($dataTransaksiPerWarung as $dataWarung)
+                <div class="flex-shrink-0 w-85 bg-white shadow-lg rounded-xl border border-gray-200 flex flex-col overflow-hidden h-[650px]">
+                    {{-- Warung Header --}}
+                    <div class="p-4 bg-gradient-to-br from-indigo-50 to-white border-b">
+                        <h3 class="font-black text-gray-800 flex items-center truncate">
+                            <i class="fas fa-store text-indigo-500 mr-2"></i> {{ $dataWarung['nama_warung'] }}
+                        </h3>
+                        <div class="flex justify-between items-center mt-2">
+                            <span class="text-[10px] text-gray-400 font-bold uppercase">Saldo Kas</span>
+                            <span class="font-bold {{ $dataWarung['total_kas_warung'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                                Rp {{ number_format($dataWarung['total_kas_warung'], 0, ',', '.') }}
+                            </span>
+                        </div>
+                        {{-- Search per Warung --}}
+                        <div class="mt-3 relative">
+                            <input type="text" 
+                                   x-model="searchCompact['{{ $dataWarung['id'] }}']" 
+                                   placeholder="Filter transaksi..."
+                                   class="w-full pl-8 pr-4 py-1.5 text-xs border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                            <i class="fas fa-search absolute left-3 top-2.5 text-gray-300 text-[10px]"></i>
+                        </div>
+                    </div>
+
+                    {{-- Scrollable List --}}
+                    <div class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/50">
+                        @foreach ($dataWarung['riwayat_transaksi'] as $transaksi)
+                        @php
+                            $blob = strtolower($transaksi->deskripsi . ' ' . $transaksi->jenis_transaksi . ' ' . $transaksi->metode_pembayaran);
+                        @endphp
+                        <div x-show="!searchCompact['{{ $dataWarung['id'] }}'] || '{{ $blob }}'.includes(searchCompact['{{ $dataWarung['id'] }}'].toLowerCase())"
+                             class="bg-white p-3 rounded-lg border-l-4 shadow-sm transition hover:shadow-md
+                             {{ (float)$transaksi->total >= 0 ? 'border-green-500' : 'border-red-500' }}">
+                            
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                                    {{ $transaksi->tanggal->translatedFormat('d M, H:i') }}
+                                </span>
+                                <span class="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded">
+                                    {{ $transaksi->metode_pembayaran }}
+                                </span>
+                            </div>
+                            <p class="text-xs font-semibold text-gray-700 line-clamp-2 leading-relaxed mb-2 capitalize">
+                                {{ $transaksi->deskripsi }}
+                            </p>
+                            <div class="text-right">
+                                <span class="font-black text-sm {{ (float)$transaksi->total >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                                    {{ (float)$transaksi->total >= 0 ? '+' : '' }} Rp {{ number_format((float)$transaksi->total, 0, ',', '.') }}
+                                </span>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endforeach
+            </div>
+
         @endif
     </main>
 </div>
 
-{{-- ========================================= --}}
-{{-- SCRIPT JS UNTUK PENCARIAN DAN TOGGLE VIEW --}}
-{{-- ========================================= --}}
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const compactContainer = document.getElementById('container-compact');
-        const detailContainer = document.getElementById('container-detail');
-        const viewToggles = document.querySelectorAll('.view-toggle');
-        const viewModeInput = document.getElementById('view-mode-input');
-        const filterForm = document.getElementById('filter-form');
-        const LS_KEY = 'riwayat_transaksi_view_mode';
-
-        /**
-         * 1. Logic Toggle View dan Local Storage
-         */
-
-        function updateView(mode) {
-            // Update tampilan container
-            compactContainer.style.display = mode === 'compact' ? 'flex' : 'none';
-            detailContainer.style.display = mode === 'detail' ? 'block' : 'none';
-
-            // Update button active state
-            viewToggles.forEach(btn => {
-                const isCurrent = btn.getAttribute('data-mode') === mode;
-                btn.classList.toggle('bg-indigo-600', isCurrent);
-                btn.classList.toggle('text-white', isCurrent);
-                btn.classList.toggle('shadow-md', isCurrent);
-                btn.classList.toggle('text-gray-700', !isCurrent);
-                btn.classList.toggle('hover:bg-gray-300', !isCurrent);
-            });
-
-            // Simpan mode ke Local Storage dan update form input hidden
-            localStorage.setItem(LS_KEY, mode);
-            viewModeInput.value = mode;
-
-            // Pastikan input pencarian yang tidak aktif direset/dikosongkan
-            document.querySelectorAll('.search-input').forEach(input => {
-                if (input.getAttribute('data-mode') !== mode) {
-                    input.value = ''; // Reset input di mode yang tidak aktif
-                }
-            });
-        }
-
-        viewToggles.forEach(btn => {
-            btn.addEventListener('click', function() {
-                const mode = this.getAttribute('data-mode');
-                // Mengganti view tanpa reload (kecuali saat filter)
-                updateView(mode);
-            });
-        });
-
-        // Inisialisasi: Baca dari Local Storage atau parameter URL
-        let initialMode = viewModeInput.value;
-        const storedMode = localStorage.getItem(LS_KEY);
-
-        if (!initialMode && storedMode) {
-            // Jika tidak ada parameter URL tapi ada di LS
-            initialMode = storedMode;
-        } else if (!initialMode) {
-            // Default jika tidak ada keduanya
-            initialMode = 'compact';
-        }
-
-        updateView(initialMode);
-
-
-        /**
-         * 2. Logic Pencarian JS Per Warung
-         */
-        const searchInputs = document.querySelectorAll('.search-input');
-
-        searchInputs.forEach(input => {
-            input.addEventListener('keyup', function() {
-                const searchTerm = this.value.toLowerCase().trim();
-                const targetId = this.getAttribute('data-target');
-                const targetList = document.querySelector(targetId);
-
-                // Cari item transaksi yang visibility-nya saat ini 'block' atau 'table-row'
-                const items = targetList.querySelectorAll('.transaksi-item');
-                let foundCount = 0;
-
-                items.forEach(item => {
-                    const itemText = item.getAttribute('data-search-term');
-                    const isVisible = itemText && itemText.includes(searchTerm);
-
-                    if (isVisible) {
-                        // Tentukan display style: 'block' untuk compact, 'table-row' untuk detail
-                        item.style.display = targetList.tagName === 'TABLE' ? 'table-row' : 'block';
-                        foundCount++;
-                    } else {
-                        item.style.display = 'none';
-                    }
-                });
-
-                // Handle pesan "Not Found"
-                let notFoundMessage = targetList.querySelector('.not-found-message');
-                const emptyRow = targetList.querySelector('.empty-row');
-
-                if (emptyRow) emptyRow.style.display = 'none'; // Sembunyikan pesan empty saat searching
-
-                if (notFoundMessage) {
-                    if (foundCount === 0 && items.length > 0) {
-                        notFoundMessage.style.display = targetList.tagName === 'TABLE' ? 'table-row' : 'block';
-                    } else {
-                        notFoundMessage.style.display = 'none';
-                    }
-                }
-            });
-        });
-    });
-</script>
 @endsection
+
+@push('styles')
+<style>
+    /* Custom Scrollbar untuk mode horizontal agar lebih cantik */
+    .overflow-x-auto::-webkit-scrollbar {
+        height: 8px;
+    }
+    .overflow-x-auto::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    .overflow-x-auto::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+    }
+    .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+</style>
+@endpush
