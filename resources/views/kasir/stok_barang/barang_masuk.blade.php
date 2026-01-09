@@ -61,7 +61,7 @@
                                 </td>
                                 <th scope="row">{{ $loop->iteration + ($barangMasuk->currentPage() - 1) * $barangMasuk->perPage() }}</th>
                                 <td>{{ $bm->stokWarung->barang->nama_barang ?? '-' }}</td>
-                                <td>{{ $bm->jumlah }} {{ $bm->stokWarung->barang->satuan ?? 'pcs' }}</td>
+                                <td>{{ $bm->jumlah }}</td>
                                 <td>{{ $bm->created_at?->format('d M Y') ?? '-' }}</td>
                                 <td>{{ $bm->keterangan ?? '-' }}</td>
                             </tr>

@@ -41,7 +41,7 @@ class KasControllerKasir extends Controller
         $totalPengeluaran = TransaksiKas::where('id_kas_warung', $idKasWarung)
             ->whereIn('jenis', ['expayet', 'hilang', 'keluar', 'hutang barang', 'hutang pulsa']) // 'pengeluaran' untuk kas manual
             ->sum('total');
-
+// dd('totalPengeluaran',$totalPengeluaran);
         // Hitung Saldo Bersih
         $saldoBersih = $totalPendapatan - $totalPengeluaran;
 

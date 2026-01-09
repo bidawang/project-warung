@@ -12,6 +12,8 @@ use App\Models\Laba;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log; // tambahkan log
 use Illuminate\Http\Request;
+use App\Models\HargaJual;
+use App\Models\HutangBarangMasuk;
 
 class MutasiBarangController extends Controller
 {
@@ -215,63 +217,120 @@ class MutasiBarangController extends Controller
         }
     }
 
-
-
-    /**
-     * Form edit mutasi
-     */
-    public function edit($id)
+    public function konfirmasiMasal(Request $request)
     {
-        $mutasi = MutasiBarang::findOrFail($id);
-        $stokWarung = StokWarung::with('barang', 'warung')->get();
-        $warung = Warung::all();
+        $ids = $request->ids;
+        $action = $request->action;
+        $idWarungTujuan = session('id_warung');
 
-        return view('mutasibarang.edit', compact('mutasi', 'stokWarung', 'warung'));
-    }
+        if (!$ids || empty($ids)) {
+            return back()->with('error', 'Pilih minimal satu item untuk dikonfirmasi.');
+        }
 
-    /**
-     * Update mutasi
-     */
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'id_stok_warung' => 'required|exists:stok_warung,id',
-            'warung_asal'    => 'required|exists:warung,id',
-            'warung_tujuan'  => 'required|exists:warung,id|different:warung_asal',
-            'jumlah'         => 'required|integer|min:1',
-            'status'         => 'required|in:pending,disetujui,ditolak',
-            'keterangan'     => 'nullable|string'
-        ]);
+        DB::beginTransaction();
+        try {
+            foreach ($ids as $id) {
+                // 1. Ambil data mutasi dengan relasi stok dan barang
+                $mutasi = MutasiBarang::with(['stokWarung.barang'])
+                    ->where('id', $id)
+                    ->where('warung_tujuan', $idWarungTujuan)
+                    ->where('status', 'pending')
+                    ->first();
 
-        $mutasi = MutasiBarang::findOrFail($id);
-        $mutasi->update($request->all());
+                if (!$mutasi) continue;
 
-        return redirect()->route('mutasibarang.index')->with('success', 'Mutasi berhasil diperbarui.');
-    }
+                if ($action === 'terima') {
+                    // --- LOGIKA HARGA & HUTANG ---
 
-    public function updateStatus(Request $request)
-    {
-        $request->validate([
-            'mutasiBarang' => 'required|array',
-            'mutasiBarang.*' => 'exists:mutasi_barang,id',
-            'status_baru' => 'required|string|in:terima,tolak',
-        ]);
-        $ids = $request->input('mutasiBarang');
-        $statusBaru = $request->input('status_baru');
-        // Update status untuk semua mutasi barang yang dipilih
-        MutasiBarang::whereIn('id', $ids)->update(['status' => $statusBaru]);
-        return redirect()->route('mutasibarang.index')
-            ->with('success', 'Status mutasi barang berhasil diperbarui.');
-    }
+                    // 2. Ambil Harga Modal dari Warung Pengirim (Asal)
+                    $hargaJualAsal = HargaJual::where('id_warung', $mutasi->warung_asal)
+                        ->where('id_barang', $mutasi->stokWarung->id_barang)
+                        ->latest()
+                        ->first();
 
-    /**
-     * Hapus mutasi
-     */
-    public function destroy($id)
-    {
-        $mutasi = MutasiBarang::findOrFail($id);
-        $mutasi->delete();
+                    $hargaModalUnit = $hargaJualAsal ? $hargaJualAsal->harga_modal : 0;
+                    $totalNilaiMutasi = $hargaModalUnit * $mutasi->jumlah;
 
-        return redirect()->route('mutasibarang.index')->with('success', 'Mutasi berhasil dihapus.');
+                    // 3. Update Status Mutasi
+                    $mutasi->update(['status' => 'terima']);
+
+                    // --- LOGIKA STOK WARUNG TUJUAN ---
+
+                    // 4. Tambah Stok di Warung Penerima (Tujuan)
+                    // (Catatan: Stok Warung Asal sudah dipotong di fungsi store)
+                    $stokTujuan = StokWarung::firstOrCreate(
+                        [
+                            'id_warung' => $idWarungTujuan,
+                            'id_barang' => $mutasi->stokWarung->id_barang
+                        ],
+                        ['jumlah' => 0]
+                    );
+                    $stokTujuan->increment('jumlah', $mutasi->jumlah);
+
+                    // --- LOGIKA HUTANG (PIUTANG PENGIRIM & HUTANG PENERIMA) ---
+
+                    // 5. Catat Piutang untuk Warung Pengirim (Asal)
+                    // Nilai NEGATIF pada HutangBarangMasuk berarti mengurangi kewajiban / menambah piutang
+                    HutangBarangMasuk::create([
+                        'id_warung' => $mutasi->warung_asal,
+                        'id_mutasi_barang' => $mutasi->id,
+                        'total' => round($totalNilaiMutasi) * -1,
+                        'jumlah_unit' => $mutasi->jumlah,
+                        'status' => 'lunas',
+                        'keterangan' => 'Mutasi Keluar ke Warung ID: ' . $idWarungTujuan
+                    ]);
+
+                    // 6. Catat Hutang untuk Warung Penerima (Tujuan)
+                    // Nilai POSITIF pada HutangBarangMasuk berarti menambah kewajiban
+                    HutangBarangMasuk::create([
+                        'id_warung' => $idWarungTujuan,
+                        'id_mutasi_barang' => $mutasi->id,
+                        'total' => round($totalNilaiMutasi),
+                        'jumlah_unit' => $mutasi->jumlah,
+                        'status' => 'belum lunas',
+                        'keterangan' => 'Hutang Mutasi Masuk dari Warung ID: ' . $mutasi->warung_asal
+                    ]);
+
+                    // --- LOGIKA UPDATE HARGA JUAL TUJUAN ---
+
+                    // 7. Ambil Area dan Laba Warung Tujuan untuk menentukan Harga Jual baru
+                    $warungTujuanInfo = Warung::with('area.laba')->find($idWarungTujuan);
+                    $laba = optional($warungTujuanInfo->area)->laba()
+                        ->where('input_minimal', '<=', $hargaModalUnit)
+                        ->where('input_maksimal', '>=', $hargaModalUnit)
+                        ->first();
+
+                    $hargaJualBaru = optional($laba)->harga_jual ?? 0;
+
+                    HargaJual::create([
+                        'id_warung' => $idWarungTujuan,
+                        'id_barang' => $mutasi->stokWarung->id_barang,
+                        'harga_sebelum_markup' => $hargaJualAsal->harga_sebelum_markup ?? 0,
+                        'harga_modal' => round($hargaModalUnit),
+                        'harga_jual_range_awal' => $hargaJualBaru,
+                        'harga_jual_range_akhir' => $hargaJualBaru,
+                        'periode_awal' => now(),
+                    ]);
+                } else if ($action === 'tolak') {
+                    // --- LOGIKA PEMBATALAN ---
+
+                    // 8. Update status mutasi
+                    $mutasi->update(['status' => 'tolak']);
+
+                    // 9. Kembalikan stok ke Warung Asal 
+                    // Karena stok sudah dikurangi di fungsi store() sebelumnya
+                    StokWarung::where('id', $mutasi->id_stok_warung)
+                        ->increment('jumlah', $mutasi->jumlah);
+                }
+            }
+// dd('Reached here');
+            DB::commit();
+            return redirect()->route('mutasibarang.index')
+                ->with('success', 'Proses mutasi ' . $action . ' berhasil diselesaikan.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Konfirmasi Mutasi Error: ' . $e->getMessage());
+            return back()->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
+        }
     }
 }

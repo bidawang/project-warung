@@ -85,6 +85,10 @@
                                     </td>
                                     <td class="px-5 py-5 border-b border-gray-200 text-sm">
                                         <p class="text-gray-600 whitespace-no-wrap">{{ $pulsa->updated_at->diffForHumans() }}</p>
+    <a href="{{ route('admin.saldo-pulsa.show', $pulsa->id) }}" 
+       class="text-blue-600 hover:text-blue-900 font-semibold">
+        Lihat Riwayat
+    </a>
                                     </td>
 
                                 </tr>

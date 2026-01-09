@@ -46,7 +46,6 @@
                     <thead class="bg-light">
                         <tr>
                             <th scope="col">No</th>
-                            <th scope="col">Kode Barang Masuk</th> {{-- Tambahan untuk referensi --}}
                             <th scope="col">Jumlah Hutang</th>
                             <th scope="col">Tanggal Hutang</th>
                             <th scope="col">Status</th> {{-- Kolom Status --}}
@@ -57,7 +56,6 @@
                         @forelse($hutangList as $index => $hutang)
                             <tr class="align-middle">
                                 <td>{{ $loop->iteration + ($hutangList->firstItem() - 1) }}</td>
-                                <td>{{ $hutang->barangMasuk->kode_barang_masuk ?? '-' }}</td>
                                 <td>Rp {{ number_format($hutang->total, 0, ',', '.') }}</td>
                                 <td>{{ \Carbon\Carbon::parse($hutang->created_at)->format('d-m-Y') }}</td>
                                 <td>

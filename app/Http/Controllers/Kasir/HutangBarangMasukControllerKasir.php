@@ -53,34 +53,46 @@ class HutangBarangMasukControllerKasir extends Controller
     public function showDetailPembayaran($id)
     {
         $idWarung = session('id_warung');
-        // Pastikan ID Warung ada
+
         if (!$idWarung) {
             return redirect()->route('kasir.kas.index')->with('error', 'ID warung tidak ditemukan di sesi.');
         }
 
-        // Cari hutang berdasarkan ID dan ID Warung (untuk kasir)
+        // 1. Cari hutang
         $hutang = HutangBarangMasuk::with('barangMasuk')
             ->where('id', $id)
             ->where('id_warung', $idWarung)
             ->first();
 
-        // Cek jika hutang tidak ditemukan atau sudah lunas
-        if (!$hutang || $hutang->barangMasuk->status_pembayaran === 'lunas') {
-            return redirect()->route('kasir.hutang.index')->with('error', 'Hutang tidak ditemukan atau sudah lunas.');
+        // 2. Logika Validasi Baru
+        if (!$hutang) {
+            return redirect()->route('kasir.hutang.index')->with('error', 'Hutang tidak ditemukan.');
         }
 
-        // Ambil id_kas_warung 'cash'
+        // Cek status lunas berdasarkan kondisi id_barang_masuk
+        if ($hutang->id_barang_masuk != null) {
+            // Jika ini hutang barang fisik, cek status di tabel barang_masuk
+            if ($hutang->barangMasuk->status_pembayaran === 'lunas') {
+                return redirect()->route('kasir.hutang.index')->with('error', 'Hutang barang ini sudah lunas.');
+            }
+        } else {
+            // Jika ini hutang non-fisik (Top-Up Pulsa), cek status di tabel hutang_barang_masuk itu sendiri
+            if ($hutang->status_pembayaran === 'lunas') {
+                return redirect()->route('kasir.hutang.index')->with('error', 'Hutang pulsa ini sudah lunas.');
+            }
+        }
+
+        // 3. Ambil kas warung 'cash'
         $kasWarung = KasWarung::where('id_warung', $idWarung)
             ->where('jenis_kas', 'cash')
             ->first();
 
         if (!$kasWarung) {
-            return redirect()->route('kasir.hutang.index')->with('error', 'Kas warung cash tidak ditemukan. Pembayaran hutang tidak dapat diproses.');
+            return redirect()->route('kasir.hutang.index')->with('error', 'Kas warung cash tidak ditemukan.');
         }
 
         $idKasWarung = $kasWarung->id;
 
-        // Mengembalikan view dengan data hutang
         return view('kasir.hutang_barang_masuk.detail', compact('hutang', 'idKasWarung'));
     }
 
@@ -111,10 +123,27 @@ class HutangBarangMasukControllerKasir extends Controller
                 ->where('id_warung', $idWarung)
                 ->first();
 
-            // Cek jika hutang tidak ditemukan atau sudah lunas
-            if (!$hutang || $hutang->barangMasuk->status_pembayaran === 'lunas') {
+            // 1. Cek keberadaan data hutang
+            if (!$hutang) {
                 DB::rollBack();
-                return redirect()->route('kasir.hutang.index')->with('error', 'Hutang tidak valid atau sudah lunas.');
+                return redirect()->route('kasir.hutang.index')->with('error', 'Data hutang tidak ditemukan.');
+            }
+
+            // 2. Cek status lunas dengan pengkondisian null check
+            $isLunas = false;
+
+            if ($hutang->id_barang_masuk !== null) {
+                // Jika hutang barang fisik, cek status melalui relasi barangMasuk
+                $isLunas = ($hutang->barangMasuk && $hutang->barangMasuk->status_pembayaran === 'lunas');
+            } else {
+                // Jika hutang pulsa (id_barang_masuk null), cek status langsung di tabel hutang_barang_masuk
+                $isLunas = ($hutang->status_pembayaran === 'lunas');
+            }
+
+            // 3. Eksekusi pengecekan akhir
+            if ($isLunas) {
+                DB::rollBack();
+                return redirect()->route('kasir.hutang.index')->with('error', 'Transaksi gagal: Hutang ini sudah lunas sebelumnya.');
             }
 
             $totalHutang = $hutang->total;
@@ -126,6 +155,7 @@ class HutangBarangMasukControllerKasir extends Controller
                 return back()->with('error', 'Jumlah pembayaran harus sama persis dengan total hutang: Rp ' . number_format($totalHutang, 0, ',', '.'))->withInput();
             }
 
+            // dd('TransaksiKas created');
             // 3. Catat Transaksi Kas (Pengeluaran)
             TransaksiKas::create([
                 'id_kas_warung' => $request->id_kas_warung,
@@ -148,7 +178,7 @@ class HutangBarangMasukControllerKasir extends Controller
             // Commit transaksi
             DB::commit();
 
-            return redirect()->route('kasir.hutang.index')->with('success', 'Pembayaran hutang barang masuk berhasil dan status diubah menjadi LUNAS!');
+            return redirect()->route('kasir.hutang.barangmasuk.index')->with('success', 'Pembayaran hutang barang masuk berhasil dan status diubah menjadi LUNAS!');
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Gagal memproses pembayaran hutang: ' . $e->getMessage());

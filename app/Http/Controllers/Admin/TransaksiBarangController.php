@@ -370,8 +370,7 @@ class TransaksiBarangController extends Controller
                     'id_barang_masuk' => $barangMasuk->id,
                     'total' => round($hargaTotalHutang),
                     'jumlah_unit' => $jumlahKirim,
-                    'status_pembayaran' => 'belum lunas',
-                    'tanggal_hutang' => now(),
+                    'status' => 'belum lunas',
                 ]);
 
                 // 4. Logika INSERT KE HARGAJUAL

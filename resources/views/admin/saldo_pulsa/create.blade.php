@@ -35,7 +35,6 @@
                                 class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('id_warung') border-red-500 @enderror"
                                 required>
                                 <option value="">-- Pilih Warung --</option>
-                                {{-- Variabel $warungs diasumsikan berisi semua data warung yang dilewatkan dari controller --}}
                                 @foreach ($warungs as $warung)
                                     <option value="{{ $warung->id }}" {{ old('id_warung') == $warung->id ? 'selected' : '' }}>
                                         {{ $warung->nama_warung }}
@@ -64,14 +63,26 @@
 
                         {{-- Input Nominal Saldo --}}
                         <div class="mb-5">
-                            <label for="nominal" class="block text-sm font-medium text-gray-700 mb-2">Nominal Saldo yang Ditambahkan (Rp)</label>
+                            <label for="nominal" class="block text-sm font-medium text-gray-700 mb-2">Nominal Saldo (Rp)</label>
                             <input type="number" name="nominal" id="nominal" value="{{ old('nominal') }}"
                                 class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('nominal') border-red-500 @enderror"
-                                placeholder="Masukkan jumlah saldo yang ditambahkan (misal: 100000)" required min="1">
+                                placeholder="Masukkan nominal saldo (misal: 100000)" required min="1">
                             @error('nominal')
                                 <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                             @enderror
-                            <p class="mt-1 text-xs text-gray-500">Nilai ini akan ditambahkan ke saldo pulsa yang sudah ada di warung.</p>
+                            <p class="mt-1 text-xs text-gray-500">Nilai saldo yang akan masuk ke sistem warung.</p>
+                        </div>
+
+                        {{-- Input Harga Beli (MODAL) --}}
+                        <div class="mb-5">
+                            <label for="harga_beli" class="block text-sm font-medium text-gray-700 mb-2">Harga Beli / Modal (Rp)</label>
+                            <input type="number" name="harga_beli" id="harga_beli" value="{{ old('harga_beli') }}"
+                                class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-green-500 @error('harga_beli') border-red-500 @enderror"
+                                placeholder="Masukkan harga beli (misal: 98500)" required min="1">
+                            @error('harga_beli')
+                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                            <p class="mt-1 text-xs text-gray-500">Biaya riil yang dibayarkan untuk mendapatkan saldo ini.</p>
                         </div>
 
                         {{-- Tombol Submit --}}
@@ -82,7 +93,7 @@
                                     xmlns="http://www.w3.org/2000/svg">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                                 </svg>
-                                Top-Up Saldo
+                                Simpan Top-Up
                             </button>
                         </div>
                     </form>

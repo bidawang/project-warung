@@ -203,6 +203,8 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::post('kasir/stok-barang/barang-masuk/konfirmasi', [BarangMasukControllerKasir::class, 'updateStatus'])->name('barang-masuk.konfirmasi');
     Route::post('rencana-belanja/konfirmasi', [RencanaBelanjaControllerKasir::class, 'konfirmasiSelesai'])->name('rencanabelanja.konfirmasi');
     Route::get('/mutasibarang', [MutasiBarangController::class, 'index'])->name('mutasibarang.index');
+    Route::patch('mutasibarang/konfirmasi', [MutasiBarangController::class, 'konfirmasiMasal'])->name('mutasibarang.konfirmasi-masal');
+
 
     Route::get('/member', [MemberControllerKasir::class, 'index'])->name('member.index');
     Route::get('/member/detail/{id}', [MemberControllerKasir::class, 'detail'])->name('member.detail');

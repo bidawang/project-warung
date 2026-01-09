@@ -59,7 +59,7 @@
                 </div>
 
                 <div class="d-flex justify-content-between mt-4">
-                    <a href="{{ route('kasir.hutang.index') }}" class="btn btn-secondary rounded-pill px-3">
+                    <a href="{{ route('kasir.hutang.barangmasuk.index') }}" class="btn btn-secondary rounded-pill px-3">
                         <i class="fas fa-arrow-left me-2"></i> Kembali ke Daftar
                     </a>
                     <button type="submit" class="btn btn-success rounded-pill px-4">
