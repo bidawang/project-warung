@@ -21,6 +21,10 @@ use App\Http\Controllers\{
     TargetPencapaianController,
     StokBarangController,
     AuthController,
+};
+
+use App\Http\Controllers\Pendukung\{
+    InsertBarangController,
     LabaController
 };
 
@@ -103,7 +107,8 @@ Route::post('/forgot-password', function (Request $request) {
 Route::prefix('/admin')->name('admin.')->group(function () {
 
     Route::get('/dashboard', [DashboardControllerAdmin::class, 'index'])->name('dashboard');
-    Route::get('/user', [UserControllerAdmin::class, 'index'])->name('user.index');
+    
+    Route::resource('/user', UserControllerAdmin::class);
 
     // Ganti route area manual menjadi resource
     Route::resource('/area', AreaControllerAdmin::class);
@@ -228,6 +233,22 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::get('/profil', [ProfilControllerKasir::class, 'index'])->name('profil.index');
 });
 
+//Pendukung
+
+//insert barang
+Route::get('/import-barang', [InsertBarangController::class, 'index']);
+Route::post('/import-barang', [InsertBarangController::class, 'import'])->name('import.barang');
+
+//Harga Jual (Laba)
+Route::get('/laba/import', [LabaController::class, 'formImport'])->name('laba.formImport');
+Route::post('/laba/import', [LabaController::class, 'import'])->name('laba.import');
+
+
+
+
+
+
+
 
 Route::resource('kategori', KategoriController::class);
 Route::resource('subkategori', SubKategoriController::class);
@@ -260,10 +281,7 @@ Route::post('barangmasuk/update-status', [BarangMasukController::class, 'updateS
 //Mutasi Barang dari kasir
 Route::post('mutasibarang/update_status', [MutasiBarangController::class, 'updateStatus'])->name('mutasibarang.update_status');
 
-Route::resource('laba', LabaController::class);
-//Harga Jual
-Route::get('/laba/import', [LabaController::class, 'formImport'])->name('laba.formImport');
-Route::post('/laba/import', [LabaController::class, 'import'])->name('laba.import');
+Route::resource('laba', LabaController::class)->except(['show']);
 
 Route::get('/kasir/api/notif-barang-masuk', function () {
     $count = \App\Models\BarangMasuk::whereHas('stokWarung.warung', function ($q) {

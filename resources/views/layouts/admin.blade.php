@@ -63,7 +63,7 @@
                 {{-- Group: Produk & Stok --}}
                 <div class="pt-4 pb-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest px-4">Inventaris & Barang</div>
                 
-                <div x-data="{ open: {{ request()->is('admin/barang*', 'admin/satuan*', 'admin/kategori*', 'admin/subkategori*', 'admin/asalbarang*') ? 'true' : 'false' }} }">
+                <div x-data="{ open: {{ request()->is('admin/barang*', 'admin/satuan*', 'admin/kategori*', 'admin/subkategori*', 'admin/asalbarang*', 'admin/areapembelian*') ? 'true' : 'false' }} }">
                     <button @click="open = !open" class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg hover:bg-gray-800 hover:text-white transition group">
                         <div class="flex items-center">
                             <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7l8 4"/></svg>
@@ -76,6 +76,7 @@
                         <a href="/admin/satuan" class="block px-4 py-2 text-sm {{ request()->is('admin/satuan*') ? 'text-blue-400' : 'hover:text-white' }}">Satuan</a>
                         <a href="/admin/kategori" class="block px-4 py-2 text-sm {{ request()->is('admin/kategori*') ? 'text-blue-400' : 'hover:text-white' }}">Kategori</a>
                         <a href="/admin/subkategori" class="block px-4 py-2 text-sm {{ request()->is('admin/subkategori*') ? 'text-blue-400' : 'hover:text-white' }}">Sub Kategori</a>
+                        <a href="/admin/areapembelian" class="block px-4 py-2 text-sm {{ request()->is('admin/areapembelian*') ? 'text-blue-400' : 'hover:text-white' }}">Area Pembelian</a>
                         <a href="/admin/asalbarang" class="block px-4 py-2 text-sm {{ request()->is('admin/asalbarang*') ? 'text-blue-400' : 'hover:text-white' }}">Asal Barang</a>
                     </div>
                 </div>

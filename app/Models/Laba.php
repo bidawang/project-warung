@@ -16,8 +16,6 @@ class Laba extends Model
         'input_minimal',
         'input_maksimal',
         'harga_jual',
-        'jenis',
-        'keterangan'
     ];
 
     public function area()
