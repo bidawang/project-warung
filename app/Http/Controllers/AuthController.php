@@ -29,6 +29,7 @@ class AuthController extends Controller
             'email'    => 'required|email',
             'password' => 'required',
         ]);
+        // dd($request->all());
         $credentials = $request->only('email', 'password');
         // tambahkan filter status aktif
         $credentials['status'] = 'aktif';

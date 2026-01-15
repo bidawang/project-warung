@@ -19,7 +19,7 @@ class RiwayatTransaksiControllerAdmin extends Controller
 
         // 1. Dapatkan SEMUA Warung
         $warungs = Warung::with(['kasWarung'])->get();
-// dd($warungs);
+        // dd($warungs);
         $dataTransaksiPerWarung = collect();
 
         // 2. Loop setiap Warung untuk mengambil transaksi mereka
@@ -71,7 +71,6 @@ class RiwayatTransaksiControllerAdmin extends Controller
 
             // Hitung Total Kas Warung (Bisa dari tabel KasWarung atau hitungan transaksi)
             $totalKasWarung = $kasWarung->total_kas ?? $riwayatTransaksi->sum(fn($t) => (float)$t->total);
-
             // Simpan data per Warung
             $dataTransaksiPerWarung->push([
                 'id' => $warung->id,
@@ -81,9 +80,10 @@ class RiwayatTransaksiControllerAdmin extends Controller
             ]);
         }
 
+        // dd($totalKasWarung);
         // Kita tidak bisa menggunakan LengthAwarePaginator di sini karena strukturnya.
         // Data yang dikirim: $dataTransaksiPerWarung (Collection of Arrays)
-// dd($dataTransaksiPerWarung);
+        // dd($dataTransaksiPerWarung);
         return view('admin.riwayat_transaksi.index', compact(
             'dataTransaksiPerWarung',
             'startDate',

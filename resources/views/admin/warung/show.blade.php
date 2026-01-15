@@ -109,7 +109,7 @@
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Barang</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stok</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga Beli Awal</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga Modal</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga Modal Warung</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga Jual</th>
                                                 {{-- KOLOM BARU UNTUK PERSENTASE LABA --}}
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Persentase Laba & Laba</th>

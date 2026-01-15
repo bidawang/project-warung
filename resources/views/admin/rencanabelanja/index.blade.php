@@ -178,14 +178,16 @@
                                                                         '][id_transaksi_barang]'"
                                                                     x-model="alloc.id_transaksi"
                                                                     @change="handleSelectChange('{{ $i->id }}', index, {{ $i->jumlah_awal }})"
-                                                                    class="...">
-                                                                    <option value="">-- Pilih Sumber --</option>
+                                                                    class="w-full px-3 py-2 rounded-xl border-gray-300 text-xs font-semibold border focus:ring-2 focus:ring-indigo-500 bg-white">
+
+
                                                                     <template
                                                                         x-for="s in getOptionsForBarang('{{ $i->barang->id }}', alloc.id_transaksi).items"
                                                                         :key="s.id">
                                                                         <option :value="s.id.toString()"
                                                                             :disabled="s.disabled"
-                                                                            x-text="`TRX-${s.id} (${s.area}) • Sisa: ${s.sisa_display} pcs`">
+                                                                            x-text="`TRX-${s.id} (${s.area}) • Sisa: ${s.sisa_display} pcs`"
+                                                                            :selected="alloc.id_transaksi == s.id">
                                                                         </option>
                                                                     </template>
                                                                 </select>
@@ -297,36 +299,38 @@
 
                 autoFillItem(rencanaId, barangId, totalButuh) {
                     let needed = totalButuh;
+                    // Ambil semua sumber transaksi untuk barang ini yang masih punya stok
                     const sources = this.allTransactions
                         .filter(t => t.id_barang == barangId && this.stockSisa[t.id] > 0);
 
-                    // Reset alokasi untuk item ini sebelum mengisi ulang
+                    // Reset alokasi untuk item ini
                     this.allocations[rencanaId] = [];
 
                     sources.forEach(src => {
                         if (needed <= 0) return;
+
                         const amountToTake = Math.min(needed, this.stockSisa[src.id]);
+
                         if (amountToTake > 0) {
+                            // Push ke array allocations - Alpine.js akan otomatis memilih option yang value-nya sama dengan id_transaksi
                             this.allocations[rencanaId].push({
-                                id_transaksi: src.id.toString(), // Pastikan ini String
+                                id_transaksi: src.id.toString(),
                                 jumlah: amountToTake
                             });
+
+                            // Update stok sisa di memori (agar tidak diambil warung lain dalam loop yang sama)
                             this.stockSisa[src.id] -= amountToTake;
                             needed -= amountToTake;
                         }
                     });
 
-                    // JIKA stok global ada tapi autoFill tidak berjalan (misal hanya 1 sumber)
+                    // Jika setelah dicek stok global memang kosong sejak awal (needed masih utuh)
+                    // Berikan baris kosong hanya jika barang tersebut memang ada di gudang tapi habis
                     if (this.allocations[rencanaId].length === 0 && this.hasInitialStock(barangId)) {
-                        const opts = this.getOptionsForBarang(barangId, '');
-                        const available = opts.items.filter(o => !o.disabled);
-
-                        if (available.length > 0) {
-                            this.allocations[rencanaId].push({
-                                id_transaksi: available[0].id.toString(), // AUTO-PICK sumber pertama jika tersedia
-                                jumlah: Math.min(totalButuh, this.stockSisa[available[0].id])
-                            });
-                        }
+                        this.allocations[rencanaId].push({
+                            id_transaksi: '',
+                            jumlah: 0
+                        });
                     }
                 },
 
