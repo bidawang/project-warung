@@ -344,7 +344,7 @@ class RencanaBelanjaControllerAdmin extends Controller
     {
         // 1. Filtering dan Sanitasi Input Awal (TIDAK BERUBAH)
         $allData = $request->all();
-        // dd($allData);
+        dd($allData);
         $itemsFiltered = collect($allData['items'] ?? [])
             ->filter(function ($item) {
                 return !empty($item['transactions']);
@@ -459,7 +459,7 @@ class RencanaBelanjaControllerAdmin extends Controller
                         'id_barang' => $barangId,
                         'jumlah' => $jumlahKirim,
                         'status' => 'kirim',
-                        'jenis' => 'tambahan', // Jenis wajib 'tambahan'
+                        'jenis' => 'rencana', // Jenis wajib 'tambahan'
                         'tanggal_kadaluarsa' => $trxBarang->tanggal_kadaluarsa,
                     ]);
 

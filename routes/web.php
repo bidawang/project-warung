@@ -107,7 +107,7 @@ Route::post('/forgot-password', function (Request $request) {
 Route::prefix('/admin')->name('admin.')->group(function () {
 
     Route::get('/dashboard', [DashboardControllerAdmin::class, 'index'])->name('dashboard');
-    
+
     Route::resource('/user', UserControllerAdmin::class);
 
     // Ganti route area manual menjadi resource
@@ -161,9 +161,8 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::get('asalbarang/create', [AsalBarangControllerAdmin::class, 'create'])->name('asalbarang.create');
 
     //Satuan
-    Route::resource('satuan-barang', SatuanBarangControllerAdmin::class)->except(['create','edit','update']);
-    Route::resource('satuan', SatuanControllerAdmin::class)->except(['create','edit','show']);
-
+    Route::resource('satuan-barang', SatuanBarangControllerAdmin::class)->except(['create', 'edit', 'update']);
+    Route::resource('satuan', SatuanControllerAdmin::class)->except(['create', 'edit', 'show']);
 });
 // Route::resource('transaksibarang', TransaksiBarangController::class);
 
@@ -199,6 +198,7 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::get('/rencana-belanja', [RencanaBelanjaControllerKasir::class, 'rencanaBelanja'])->name('rencanabelanja.index');
     Route::get('/rencana-belanja-list', [RencanaBelanjaControllerKasir::class, 'rencanaBelanja'])->name('rencanabelanja.list');
     Route::get('/rencana-belanja/history', [RencanaBelanjaControllerKasir::class, 'history'])->name('rencanabelanja.history');
+    Route::get('/rencana-belanja/barang/search', [RencanaBelanjaControllerKasir::class, 'searchBarang'])->name('rencanabelanja.barang.search');
 
     // Rute BARU untuk CREATE dan STORE
     Route::get('/rencana-belanja/create', [RencanaBelanjaControllerKasir::class, 'create'])->name('rencanabelanja.create');

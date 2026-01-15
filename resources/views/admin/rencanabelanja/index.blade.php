@@ -19,7 +19,19 @@
                 </button>
             </div>
         </header>
-
+        @if ($errors->any())
+            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 px-6 py-4 rounded-md m-8 mb-0 shadow-sm">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <strong>Terjadi Kesalahan:</strong>
+                </div>
+                <ul class="list-disc ml-5 text-sm">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
         <main class="flex-1 overflow-hidden flex flex-row">
             {{-- SIDEBAR: STOK GLOBAL --}}
             <aside class="w-80 bg-white border-r flex flex-col shadow-inner">
@@ -156,19 +168,18 @@
                                                                         x-model.number="alloc.jumlah"
                                                                         @input="validateJumlah('{{ $i->id }}', index)"
                                                                         class="w-full px-3 py-2 rounded-xl border-gray-300 text-sm font-bold border text-center focus:ring-2 focus:ring-indigo-500">
-                                                                    
+
                                                                 </div>
 
 
                                                                 <select
-                                                                    :name="'items[{{ $i->id }}][transactions][' + index
-                                                                        +
+                                                                    :name="'items[' + {{ $i->id }} +
+                                                                        '][transactions][' + index +
                                                                         '][id_transaksi_barang]'"
                                                                     x-model="alloc.id_transaksi"
                                                                     @change="handleSelectChange('{{ $i->id }}', index, {{ $i->jumlah_awal }})"
-                                                                    :disabled="getOptionsForBarang('{{ $i->barang->id }}', alloc
-                                                                        .id_transaksi).count <= 1"
-                                                                    class="flex-1 px-3 py-1.5 rounded-lg border-gray-200 text-xs border bg-white disabled:bg-gray-100 disabled:text-gray-900 font-semibold shadow-sm">
+                                                                    class="...">
+                                                                    <option value="">-- Pilih Sumber --</option>
                                                                     <template
                                                                         x-for="s in getOptionsForBarang('{{ $i->barang->id }}', alloc.id_transaksi).items"
                                                                         :key="s.id">
@@ -286,49 +297,37 @@
 
                 autoFillItem(rencanaId, barangId, totalButuh) {
                     let needed = totalButuh;
-
-                    // Ambil sumber transaksi yang masih memiliki sisa stok global
                     const sources = this.allTransactions
                         .filter(t => t.id_barang == barangId && this.stockSisa[t.id] > 0);
 
+                    // Reset alokasi untuk item ini sebelum mengisi ulang
+                    this.allocations[rencanaId] = [];
+
                     sources.forEach(src => {
                         if (needed <= 0) return;
-
                         const amountToTake = Math.min(needed, this.stockSisa[src.id]);
                         if (amountToTake > 0) {
                             this.allocations[rencanaId].push({
-                                id_transaksi: src.id.toString(), // String agar cocok dengan value option
+                                id_transaksi: src.id.toString(), // Pastikan ini String
                                 jumlah: amountToTake
                             });
-
-                            // KURANGI LANGSUNG sisa stok agar baris berikutnya di kartu yang sama (atau kartu lain)
-                            // mengetahui bahwa stok ini sudah terpakai
                             this.stockSisa[src.id] -= amountToTake;
                             needed -= amountToTake;
                         }
                     });
-                    // 🔥 AUTO-SELECT JIKA HANYA ADA 1 OPSI STOK TERSISA
-                    if (this.allocations[rencanaId].length === 0) {
-                        const opts = this.getOptionsForBarang(barangId, '');
 
+                    // JIKA stok global ada tapi autoFill tidak berjalan (misal hanya 1 sumber)
+                    if (this.allocations[rencanaId].length === 0 && this.hasInitialStock(barangId)) {
+                        const opts = this.getOptionsForBarang(barangId, '');
                         const available = opts.items.filter(o => !o.disabled);
 
-                        if (available.length === 1) {
-                            const trxId = available[0].id.toString();
-                            const qty = Math.min(totalButuh, this.stockSisa[trxId]);
-
-                            if (qty > 0) {
-                                this.allocations[rencanaId].push({
-                                    id_transaksi: trxId,
-                                    jumlah: qty
-                                });
-
-                                this.stockSisa[trxId] -= qty;
-                            }
-                            return; // ⛔ STOP — jangan lanjut ke logic lain
+                        if (available.length > 0) {
+                            this.allocations[rencanaId].push({
+                                id_transaksi: available[0].id.toString(), // AUTO-PICK sumber pertama jika tersedia
+                                jumlah: Math.min(totalButuh, this.stockSisa[available[0].id])
+                            });
                         }
                     }
-
                 },
 
                 /* --- ACTIONS --- */
