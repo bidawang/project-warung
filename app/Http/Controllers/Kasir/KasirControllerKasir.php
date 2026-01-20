@@ -133,7 +133,7 @@ class KasirControllerKasir extends Controller
         $totalBayar = $request->input('total_bayar');
         $idMember = $request->input('id_member');
         $jenisPembayaran = $request->input('jenis_pembayaran', 'tunai'); // 'tunai' atau 'hutang'
-
+// dd($request->all());
         if (!$idWarung) {
             return back()->with('error', 'ID warung tidak ditemukan di sesi.');
         }

@@ -113,14 +113,14 @@ class BarangKeluarController extends Controller
             'items.*.id_stok_warung' => 'required|exists:stok_warung,id',
             'items.*.jumlah' => 'required|integer|min:1',
             'items.*.harga' => 'required|numeric|min:0',
-            'jenis' => 'required|in:penjualan,hutang',
+            'jenis' => 'required|in:penjualan barang,hutang barang',
             'id_user_member' => 'nullable|exists:users,id',
             'bayar' => 'nullable|numeric|min:0',
             'total_harga' => 'required|numeric|min:0',
             'keterangan' => 'nullable|string',
             'tenggat' => 'nullable|date',
         ]);
-
+// dd($request->all());
         $idWarung = session('id_warung');
         if (! $idWarung) {
             return redirect()->route('kasir.kasir')->with('error', 'ID warung tidak ditemukan di sesi.');
@@ -141,9 +141,9 @@ class BarangKeluarController extends Controller
             return "{$namaBarang} ({$jumlah} Pcs)";
         })->implode(', ');
 
-        // Sesuaikan jenis menjadi penjualan / hutang
+        // Sesuaikan jenis menjadi penjualan barang / hutang
         $jenisTransaksi = $validated['jenis'];
-        $tipe = $jenisTransaksi === 'penjualan' ? 'penjualan' : 'hutang';
+        $tipe = $jenisTransaksi === 'penjualan barang' ? 'penjualan barang' : 'hutang barang';
         $defaultKeterangan = "{$tipe} Barang: {$itemDescriptions}";
 
         $finalKeterangan = $validated['keterangan'] ?? $defaultKeterangan;
@@ -162,7 +162,7 @@ class BarangKeluarController extends Controller
             $transaksiKas = TransaksiKas::create([
                 'id_kas_warung'     => $kasWarung->id,
                 'total'             => $validated['total_harga'],
-                'metode_pembayaran' => $validated['jenis'] === 'penjualan' ? 'cash' : null,
+                'metode_pembayaran' => $validated['jenis'] === 'penjualan barang' ? 'cash' : null,
                 'jenis'             => $validated['jenis'],
                 'keterangan'        => $finalKeterangan,
             ]);
@@ -172,7 +172,7 @@ class BarangKeluarController extends Controller
             // =============================
             $hutang = null;
 
-            if ($validated['jenis'] === 'hutang' && !empty($validated['id_user_member'])) {
+            if ($validated['jenis'] === 'hutang barang' && !empty($validated['id_user_member'])) {
 
                 $hariIni = now()->day;
 
@@ -196,7 +196,7 @@ class BarangKeluarController extends Controller
                     'jumlah_hutang_awal' => $validated['total_harga'],
                     'jumlah_sisa_hutang' => $validated['total_harga'],
                     'tenggat'            => $tenggatOtomatis,
-                    'status'             => 'belum_lunas',
+                    'status'             => 'belum lunas',
                     'keterangan'         => $finalKeterangan,
                 ]);
             }
@@ -244,22 +244,5 @@ class BarangKeluarController extends Controller
 
             return back()->withInput()->with('error', 'Terjadi kesalahan saat menyimpan transaksi: ' . $e->getMessage());
         }
-    }
-
-
-    public function show(BarangKeluar $barangKeluar)
-    {
-        return view('barangkeluar.show', compact('barangKeluar'));
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(BarangKeluar $barangKeluar)
-    {
-        $barangKeluar->delete();
-
-        return redirect()->route('barangkeluar.index')
-            ->with('success', 'Transaksi barang keluar berhasil dihapus!');
     }
 }
