@@ -12,7 +12,6 @@
 
     <style>
         [x-cloak] { display: none !important; }
-        /* Custom scrollbar untuk sidebar */
         .sidebar-scroll::-webkit-scrollbar { width: 4px; }
         .sidebar-scroll::-webkit-scrollbar-track { background: #1f2937; }
         .sidebar-scroll::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
@@ -55,7 +54,7 @@
             <nav class="flex-1 px-4 py-6 overflow-y-auto sidebar-scroll space-y-2">
                 
                 {{-- Dashboard --}}
-                <a href="/admin/dashboard" class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->is('admin/dashboard') ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'hover:bg-gray-800 hover:text-white' }}">
+                <a href="{{ route('admin.dashboard') }}" class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->routeIs('admin.dashboard') ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'hover:bg-gray-800 hover:text-white' }}">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1V10a1 1 0 00-1-1H7a1 1 0 00-1 1v10a1 1 0 001 1h3z"/></svg>
                     <span class="text-sm font-medium">Dashboard</span>
                 </a>
@@ -72,18 +71,24 @@
                         <svg class="w-4 h-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
                     <div x-show="open" x-cloak class="mt-1 space-y-1 ml-9 border-l border-gray-700">
-                        <a href="/admin/barang" class="block px-4 py-2 text-sm {{ request()->is('admin/barang') ? 'text-blue-400' : 'hover:text-white' }}">Daftar Barang</a>
-                        <a href="/admin/satuan" class="block px-4 py-2 text-sm {{ request()->is('admin/satuan*') ? 'text-blue-400' : 'hover:text-white' }}">Satuan</a>
-                        <a href="/admin/kategori" class="block px-4 py-2 text-sm {{ request()->is('admin/kategori*') ? 'text-blue-400' : 'hover:text-white' }}">Kategori</a>
-                        <a href="/admin/subkategori" class="block px-4 py-2 text-sm {{ request()->is('admin/subkategori*') ? 'text-blue-400' : 'hover:text-white' }}">Sub Kategori</a>
-                        <a href="/admin/areapembelian" class="block px-4 py-2 text-sm {{ request()->is('admin/areapembelian*') ? 'text-blue-400' : 'hover:text-white' }}">Area Pembelian</a>
-                        <a href="/admin/asalbarang" class="block px-4 py-2 text-sm {{ request()->is('admin/asalbarang*') ? 'text-blue-400' : 'hover:text-white' }}">Asal Barang</a>
+                        <a href="{{ route('admin.barang.index') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('admin.barang.*') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">Daftar Barang</a>
+                        <a href="{{ route('admin.satuan.index') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('admin.satuan.*') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">Satuan Utama</a>
+                        <a href="{{ route('admin.satuan-barang.index') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('admin.satuan-barang.*') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">Satuan Barang</a>
+                        <a href="{{ route('admin.kategori.index') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('admin.kategori.*') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">Kategori</a>
+                        <a href="{{ route('admin.subkategori.index') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('admin.subkategori.*') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">Sub Kategori</a>
+                        <a href="{{ route('admin.areapembelian.index') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('admin.areapembelian.*') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">Area Pembelian</a>
+                        <a href="{{ route('admin.asalbarang.index') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('admin.asalbarang.*') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">Asal Barang</a>
                     </div>
                 </div>
 
-                <a href="/admin/stokopname" class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->is('admin/stokopname*') ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'hover:bg-gray-800 hover:text-white' }}">
+                <a href="{{ route('admin.stokopname.index') }}" class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->routeIs('admin.stokopname.*') ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-gray-800 hover:text-white' }}">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                     <span class="text-sm font-medium">Stok Opname</span>
+                </a>
+
+                <a href="{{ route('admin.kuantitas.index') }}" class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->routeIs('admin.kuantitas.*') ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-gray-800 hover:text-white' }}">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                    <span class="text-sm font-medium">Kuantitas Barang</span>
                 </a>
 
                 {{-- Group: Transaksi & Keuangan --}}
@@ -98,10 +103,10 @@
                         <svg class="w-4 h-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
                     <div x-show="open" x-cloak class="mt-1 space-y-1 ml-9 border-l border-gray-700">
-                        <a href="/admin/rencana/create" class="block px-4 py-2 text-sm {{ request()->is('admin/rencana/create') ? 'text-blue-400' : 'hover:text-white' }}">Lihat Permintaan</a>
-                        <a href="/admin/rencana" class="block px-4 py-2 text-sm {{ request()->is('admin/rencana') ? 'text-blue-400' : 'hover:text-white' }}">Kirim Rencana</a>
-                        <a href="/admin/transaksibarang" class="block px-4 py-2 text-sm {{ request()->is('admin/transaksibarang*') ? 'text-blue-400' : 'hover:text-white' }}">Belanja Tambahan</a>
-                        <a href="/admin/riwayat-transaksi" class="block px-4 py-2 text-sm {{ request()->is('admin/riwayat-transaksi*') ? 'text-blue-400' : 'hover:text-white' }}">Riwayat Transaksi</a>
+                        <a href="{{ route('admin.createrencanabelanja') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('admin.createrencanabelanja') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">Lihat Permintaan</a>
+                        <a href="{{ route('admin.rencana.index') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('admin.rencana.index') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">Kirim Rencana</a>
+                        <a href="{{ route('admin.transaksibarang.index') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('admin.transaksibarang.*') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">Belanja Tambahan</a>
+                        <a href="{{ route('admin.riwayat_transaksi.index') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('admin.riwayat_transaksi.*') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">Riwayat Transaksi</a>
                     </div>
                 </div>
 
@@ -114,12 +119,28 @@
                         <svg class="w-4 h-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
                     <div x-show="open" x-cloak class="mt-1 space-y-1 ml-9 border-l border-gray-700">
-                        <a href="/admin/harga-pulsa" class="block px-4 py-2 text-sm {{ request()->is('admin/harga-pulsa*') ? 'text-blue-400' : 'hover:text-white' }}">Harga Pulsa</a>
-                        <a href="/admin/saldo-pulsa" class="block px-4 py-2 text-sm {{ request()->is('admin/saldo-pulsa*') ? 'text-blue-400' : 'hover:text-white' }}">Saldo Pulsa</a>
+                        <a href="{{ route('admin.harga-pulsa.index') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('admin.harga-pulsa.*') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">Harga Pulsa</a>
+                        <a href="{{ route('admin.saldo-pulsa.index') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('admin.saldo-pulsa.*') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">Saldo Pulsa</a>
                     </div>
                 </div>
 
-                <a href="/admin/hutang" class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->is('admin/hutang*') ? 'bg-red-600 text-white' : 'hover:bg-gray-800 hover:text-white' }}">
+                {{-- Pricing & Laba --}}
+                <div x-data="{ open: {{ request()->is('admin/barang/prices*', 'admin/laba*') ? 'true' : 'false' }} }">
+                    <button @click="open = !open" class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg hover:bg-gray-800 hover:text-white transition group">
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                            <span class="text-sm font-medium">Harga & Laba</span>
+                        </div>
+                        <svg class="w-4 h-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                    <div x-show="open" x-cloak class="mt-1 space-y-1 ml-9 border-l border-gray-700">
+                        <a href="{{ route('admin.harga_jual.monitor_all_prices') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('admin.harga_jual.*') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">Monitor Harga</a>
+                        {{-- <a href="{{ route('admin.laba.index') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('admin.laba.index') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">Aturan Laba</a>
+                        <a href="{{ route('laba.formImport') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('laba.formImport') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">Import Laba</a> --}}
+                    </div>
+                </div>
+
+                <a href="{{ route('admin.hutang.index') }}" class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->routeIs('admin.hutang.*') ? 'bg-red-600 text-white shadow-lg' : 'hover:bg-gray-800 hover:text-white' }}">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                     <span class="text-sm font-medium">Hutang Pelanggan</span>
                 </a>
@@ -127,22 +148,28 @@
                 {{-- Group: Wilayah & Warung --}}
                 <div class="pt-4 pb-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest px-4">Manajemen Area</div>
                 
-                <a href="/admin/area" class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->is('admin/area*') ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 hover:text-white' }}">
+                <a href="{{ route('admin.area.index') }}" class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->routeIs('admin.area.*') ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 hover:text-white' }}">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                     <span class="text-sm font-medium">Data Area</span>
                 </a>
-                <a href="/admin/warung" class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->is('admin/warung*') ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 hover:text-white' }}">
+                <a href="{{ route('admin.warung.index') }}" class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->routeIs('admin.warung.*') ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 hover:text-white' }}">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                     <span class="text-sm font-medium">Data Warung</span>
                 </a>
-                <a href="/admin/targetpencapaian" class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->is('admin/target*') ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 hover:text-white' }}">
+                <a href="{{ route('admin.targetpencapaian.index') }}" class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->routeIs('admin.targetpencapaian.*') ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 hover:text-white' }}">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                     <span class="text-sm font-medium">Target & Capaian</span>
                 </a>
 
                 {{-- System --}}
                 <div class="pt-4 pb-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest px-4">Pengaturan Sistem</div>
-                <a href="/admin/user" class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->is('admin/user*') ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 hover:text-white' }}">
+                
+                {{-- <a href="{{ url('/import-barang') }}" class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->is('import-barang*') ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 hover:text-white' }}">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    <span class="text-sm font-medium">Import Master Barang</span>
+                </a> --}}
+
+                <a href="{{ route('admin.user.index') }}" class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->routeIs('admin.user.*') ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 hover:text-white' }}">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                     <span class="text-sm font-medium">Manajemen User</span>
                 </a>

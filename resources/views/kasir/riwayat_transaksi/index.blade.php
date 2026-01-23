@@ -1,129 +1,200 @@
 @extends('layouts.app')
 
-@section('title', 'Riwayat Transaksi Keuangan')
+@section('title', 'Riwayat Transaksi')
 
 @section('content')
-<div class="row justify-content-center">
-    <div class="col-md-12">
-        <div class="card shadow-lg border-0 rounded-3">
-            <div class="card-header bg-primary text-white py-3 rounded-top-3">
-                <h5 class="mb-0"><i class="fas fa-history me-2"></i>Histori Semua Transaksi Warung</h5>
+<div class="container-fluid">
+    <div class="card border border-dark shadow-sm">
+
+        {{-- HEADER --}}
+        <div class="card-header bg-white border-bottom border-dark d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold text-dark">
+                RIWAYAT TRANSAKSI KEUANGAN
+            </h5>
+
+            {{-- SEARCH --}}
+            <form method="GET" class="d-flex gap-2">
+                <input type="text"
+                       name="search"
+                       class="form-control form-control-sm border-dark"
+                       placeholder="Cari transaksi / barang"
+                       value="{{ request('search') }}">
+                <button class="btn btn-sm btn-dark">Cari</button>
+                @if(request('search'))
+                    <a href="{{ route('kasir.riwayat-transaksi.index') }}"
+                       class="btn btn-sm btn-outline-dark">Reset</a>
+                @endif
+            </form>
+        </div>
+
+        {{-- BODY --}}
+        <div class="card-body p-0">
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover mb-0 align-middle">
+                    <thead class="table-dark text-center">
+                        <tr>
+                            <th style="width:110px">REF</th>
+                            <th style="width:160px">WAKTU</th>
+                            <th style="width:160px">JENIS</th>
+                            <th>DESKRIPSI</th>
+                            <th style="width:150px">TOTAL</th>
+                            <th style="width:120px">METODE</th>
+                            <th style="width:90px">AKSI</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @forelse($riwayatTransaksi as $trx)
+                        <tr>
+                            <td class="text-center fw-bold text-muted">
+                                {{ $trx->id_ref }}
+                            </td>
+
+                            <td>
+                                <div class="small text-muted">
+                                    {{ $trx->tanggal->format('d M Y') }}
+                                </div>
+                                <div class="fw-bold">
+                                    {{ $trx->tanggal->format('H:i') }}
+                                </div>
+                            </td>
+
+                            <td class="text-center">
+                                <span class="badge px-3 py-2
+                                    @if(str_contains($trx->jenis_transaksi,'Penjualan') || str_contains($trx->jenis_transaksi,'Masuk')) bg-success
+                                    @elseif(str_contains($trx->jenis_transaksi,'Piutang')) bg-warning text-dark
+                                    @elseif(str_contains($trx->jenis_transaksi,'Keluar') || str_contains($trx->jenis_transaksi,'Kerugian')) bg-danger
+                                    @else bg-secondary @endif">
+                                    {{ $trx->jenis_transaksi }}
+                                </span>
+                            </td>
+
+                            <td class="small">
+                                {{ $trx->deskripsi }}
+                            </td>
+
+                            <td class="text-end fw-bold {{ $trx->total >= 0 ? 'text-success' : 'text-danger' }}">
+                                {{ $trx->total >= 0 ? '+' : '-' }}
+                                Rp {{ number_format(abs($trx->total),0,',','.') }}
+                            </td>
+
+                            <td class="text-center">
+                                <span class="badge bg-dark">
+                                    {{ strtoupper($trx->metode_pembayaran ?? 'N/A') }}
+                                </span>
+                            </td>
+
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-outline-dark"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#struk{{ $trx->id_ref }}">
+                                    DETAIL
+                                </button>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                Tidak ada data transaksi
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
 
-            <div class="card-body p-4">
-                {{-- Search Form --}}
-                <form method="GET"
-                    action="{{ url('/kasir/riwayat-transaksi') }}"
-                    class="input-group mb-4 rounded-pill overflow-hidden shadow-sm">
-                    <input type="text"
-                            name="search"
-                            class="form-control border-0 ps-3"
-                            placeholder="Cari deskripsi, barang, pulsa, atau metode pembayaran..."
-                            value="{{ $search }}">
-                    <button class="btn btn-primary" type="submit">
-                        <i class="fas fa-search me-1"></i> Cari
-                    </button>
-                    @if($search)
-                        <a href="{{ url('/kasir/riwayat-transaksi') }}" class="btn btn-outline-secondary">
-                            Reset
-                        </a>
-                    @endif
-                </form>
+        </div>
 
-                <hr>
+        {{-- FOOTER --}}
+        <div class="card-footer bg-white border-top border-dark">
+            {{ $riwayatTransaksi->links() }}
+        </div>
 
-                {{-- Table Riwayat Transaksi --}}
-                <div class="table-responsive">
-                    <table class="table table-hover table-striped table-sm align-middle">
-                        <thead class="bg-light">
-                            <tr>
-                                <th scope="col" class="text-center">Ref.</th>
-                                <th scope="col" style="min-width: 150px;">Waktu Transaksi</th>
-                                <th scope="col" style="min-width: 150px;">Jenis Transaksi</th>
-                                <th scope="col">Deskripsi / Detail</th>
-                                <th scope="col" class="text-end" style="min-width: 100px;">Total (Rp)</th>
-                                <th scope="col" style="min-width: 130px;">Metode Bayar</th>
-                                <th scope="col">Sumber</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($riwayatTransaksi as $transaksi)
-                            <tr>
-                                <th scope="row" class="text-center fw-normal text-muted small">
-                                    {{-- Menggunakan id_ref untuk identifikasi unik --}}
-                                    {{ $transaksi->id_ref }}
-                                </th>
-                                <td>
-                                    <span class="text-muted">{{ \Carbon\Carbon::parse($transaksi->tanggal)->format('d M Y') }}</span>
-                                    <br>
-                                    <span class="fw-bold small">{{ \Carbon\Carbon::parse($transaksi->tanggal)->format('H:i') }}</span>
-                                </td>
-                                <td>
-                                    {{-- Menggunakan badge untuk Jenis Transaksi --}}
-                                    {{-- Disesuaikan agar mencakup 'Piutang', 'Penjualan', 'Pelunasan', 'Masuk', 'Keluar', 'Kerugian' --}}
-                                    <span class="badge
-                                        @if(str_contains($transaksi->jenis_transaksi, 'Penjualan') || str_contains($transaksi->jenis_transaksi, 'Pelunasan') || str_contains($transaksi->jenis_transaksi, 'Masuk'))
-                                            bg-success
-                                        @elseif(str_contains($transaksi->jenis_transaksi, 'Piutang') || str_contains($transaksi->jenis_transaksi, 'Hutang'))
-                                            bg-warning text-dark
-                                        @elseif(str_contains($transaksi->jenis_transaksi, 'Keluar') || str_contains($transaksi->jenis_transaksi, 'Kerugian'))
-                                            bg-danger
-                                        @else
-                                            bg-secondary
-                                        @endif
-                                    ">
-                                        {{ $transaksi->jenis_transaksi }}
-                                    </span>
-                                </td>
-                                <td class="small">{{ $transaksi->deskripsi }}</td>
+    </div>
+</div>
 
-                                {{-- Kolom Total dengan format warna --}}
-                                <td class="text-end fw-bold
-                                    @if ($transaksi->total >= 0)
-                                        text-success
-                                    @else
-                                        text-danger
-                                    @endif">
-                                    {{ ($transaksi->total < 0 ? '-' : '+') . number_format(abs($transaksi->total), 0, ',', '.') }}
-                                </td>
+{{-- =======================
+     MODAL STRUK
+======================= --}}
+@foreach($riwayatTransaksi as $trx)
+<div class="modal fade" id="struk{{ $trx->id_ref }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border border-dark">
 
-                                <td>
-                                    {{-- Menggunakan badge untuk Metode Pembayaran --}}
-                                    <span class="badge
-                                        @if(str_contains(strtolower($transaksi->metode_pembayaran), 'tunai') || str_contains(strtolower($transaksi->metode_pembayaran), 'cash'))
-                                            bg-primary
-                                        @elseif(str_contains(strtolower($transaksi->metode_pembayaran), 'piutang') || str_contains(strtolower($transaksi->metode_pembayaran), 'hutang'))
-                                            bg-info text-dark
-                                        @elseif(str_contains(strtolower($transaksi->metode_pembayaran), 'transfer'))
-                                            bg-dark
-                                        @else
-                                            bg-secondary
-                                        @endif
-                                    ">
-                                        {{ ucfirst(str_replace('_', ' ', $transaksi->metode_pembayaran ?? 'N/A')) }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="badge bg-secondary">{{ $transaksi->tipe_sumber }}</span>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="7" class="text-center text-muted py-4">
-                                    Tidak ada riwayat transaksi yang ditemukan.
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+            <div class="modal-body p-4">
+
+                {{-- HEADER --}}
+                <div class="text-center border-bottom border-dark pb-2 mb-3">
+                    <h6 class="fw-bold mb-0 text-uppercase">WARUNG DIGITAL</h6>
+                    <small class="text-muted">STRUK TRANSAKSI</small>
                 </div>
 
-                {{-- Pagination --}}
-                <div class="d-flex justify-content-center mt-3">
-                    {{ $riwayatTransaksi->links() }}
+                {{-- INFO --}}
+                <div class="d-flex justify-content-between small mb-2">
+                    <span>{{ $trx->id_ref }}</span>
+                    <span>{{ $trx->tanggal->format('d M Y H:i') }}</span>
                 </div>
+
+                <hr class="border-dark border-dashed">
+
+                {{-- ITEM --}}
+                @foreach($trx->items ?? [] as $item)
+                <div class="d-flex justify-content-between mb-1">
+                    <div>
+                        <strong>{{ $item->nama_barang }}</strong><br>
+                        <small>{{ $item->jumlah }} x Rp {{ number_format($item->harga,0,',','.') }}</small>
+                    </div>
+                    <div class="fw-bold">
+                        Rp {{ number_format($item->subtotal,0,',','.') }}
+                    </div>
+                </div>
+                @endforeach
+
+                <hr class="border-dark border-dashed">
+
+                {{-- TOTAL --}}
+                <div class="d-flex justify-content-between fw-bold mb-1">
+                    <span>Total</span>
+                    <span>Rp {{ number_format($trx->total,0,',','.') }}</span>
+                </div>
+
+                {{-- CASH --}}
+                @if($trx->uang_dibayar !== null)
+                <div class="d-flex justify-content-between small">
+                    <span>Bayar</span>
+                    <span>Rp {{ number_format($trx->uang_dibayar,0,',','.') }}</span>
+                </div>
+                <div class="d-flex justify-content-between fw-bold">
+                    <span>Kembalian</span>
+                    <span>Rp {{ number_format($trx->uang_kembalian,0,',','.') }}</span>
+                </div>
+                @endif
+
+                {{-- PIUTANG --}}
+                @if($trx->metode_pembayaran === 'Piutang')
+                <div class="mt-3 p-2 border border-danger text-center fw-bold text-danger">
+                    TRANSAKSI PIUTANG
+                </div>
+                @endif
+
+                <hr class="border-dark">
+
+                <p class="text-center small text-muted mb-0">
+                    Terima kasih telah berbelanja
+                </p>
+
             </div>
+
+            <div class="modal-footer border-top border-dark">
+                <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                <button class="btn btn-sm btn-dark">
+                    Cetak
+                </button>
+            </div>
+
         </div>
     </div>
 </div>
+@endforeach
 @endsection

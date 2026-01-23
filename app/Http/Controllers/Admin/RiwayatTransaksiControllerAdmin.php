@@ -5,30 +5,24 @@ namespace App\Http\Controllers\admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\TransaksiKas;
-use App\Models\Warung; // Perlu model Warung untuk relasi di view
+use App\Models\Warung;
 use Carbon\Carbon;
 
 class RiwayatTransaksiControllerAdmin extends Controller
 {
     public function index(Request $request)
     {
-        // Parameter Filter
         $startDate = $request->get('start_date');
-        $endDate = $request->get('end_date');
-        $search = $request->get('search'); // Tetap di-pass, tapi search di DB dinonaktifkan
+        $endDate   = $request->get('end_date');
+        $search    = $request->get('search');
 
-        // 1. Dapatkan SEMUA Warung
-        $warungs = Warung::with(['kasWarung'])->get();
-        // dd($warungs);
+        $warungs = Warung::with('kasWarung')->get();
         $dataTransaksiPerWarung = collect();
 
-        // 2. Loop setiap Warung untuk mengambil transaksi mereka
         foreach ($warungs as $warung) {
-            // Cek apakah warung punya kas warung yang terhubung
             $kasWarung = $warung->kasWarung->first();
 
             if (!$kasWarung) {
-                // Jika tidak ada Kas Warung, lewati atau tambahkan data kosong
                 $dataTransaksiPerWarung->push([
                     'id' => $warung->id,
                     'nama_warung' => $warung->nama_warung,
@@ -38,40 +32,43 @@ class RiwayatTransaksiControllerAdmin extends Controller
                 continue;
             }
 
-            // Query TransaksiKas untuk warung ini
             $query = TransaksiKas::with([
                 'transaksiBarangKeluar.barangKeluar.stokWarung.barang',
                 'hutang',
+                'uangPelanggan',
             ])
                 ->where('id_kas_warung', $kasWarung->id)
-                ->latest(); // Urutkan berdasarkan created_at (tanggal) terbaru
+                ->latest();
 
-            // Terapkan Filter Tanggal jika ada
             if ($startDate) {
                 $query->whereDate('created_at', '>=', $startDate);
             }
+
             if ($endDate) {
-                // Tambahkan 1 hari untuk mencakup seluruh hari terakhir
-                $endOfDay = Carbon::parse($endDate)->endOfDay();
-                $query->where('created_at', '<=', $endOfDay);
+                $query->where('created_at', '<=', Carbon::parse($endDate)->endOfDay());
             }
 
-            // Ambil SEMUA data (tanpa paginasi di level ini) untuk ditampilkan per warung.
-            // PENTING: Jika data transaksi sangat banyak, model ini tidak disarankan karena boros memori.
-            $transaksiWarung = $query->get();
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('keterangan', 'like', "%{$search}%")
+                        ->orWhere('metode_pembayaran', 'like', "%{$search}%")
+                        ->orWhereHas(
+                            'transaksiBarangKeluar.barangKeluar.stokWarung.barang',
+                            fn($qb) => $qb->where('nama_barang', 'like', "%{$search}%")
+                        );
+                });
+            }
 
-            // Transformasi Data
-            $riwayatTransaksi = $transaksiWarung->map(function ($transaksi) use ($warung) {
-                // Panggil fungsi transform yang sama
-                $transformed = $this->transformTransaksi($transaksi);
-                $transformed->id_warung = $warung->id;
-                $transformed->nama_warung = $warung->nama_warung;
-                return $transformed;
+            $riwayatTransaksi = $query->get()->map(function ($trx) use ($warung) {
+                $data = $this->transformTransaksi($trx);
+                $data->id_warung   = $warung->id;
+                $data->nama_warung = $warung->nama_warung;
+                return $data;
             });
 
-            // Hitung Total Kas Warung (Bisa dari tabel KasWarung atau hitungan transaksi)
-            $totalKasWarung = $kasWarung->total_kas ?? $riwayatTransaksi->sum(fn($t) => (float)$t->total);
-            // Simpan data per Warung
+            $totalKasWarung = $kasWarung->total_kas
+                ?? $riwayatTransaksi->sum(fn($t) => (float) $t->total);
+
             $dataTransaksiPerWarung->push([
                 'id' => $warung->id,
                 'nama_warung' => $warung->nama_warung,
@@ -80,10 +77,6 @@ class RiwayatTransaksiControllerAdmin extends Controller
             ]);
         }
 
-        // dd($totalKasWarung);
-        // Kita tidak bisa menggunakan LengthAwarePaginator di sini karena strukturnya.
-        // Data yang dikirim: $dataTransaksiPerWarung (Collection of Arrays)
-        // dd($dataTransaksiPerWarung);
         return view('admin.riwayat_transaksi.index', compact(
             'dataTransaksiPerWarung',
             'startDate',
@@ -92,80 +85,94 @@ class RiwayatTransaksiControllerAdmin extends Controller
         ));
     }
 
-    // (Fungsi transformTransaksi TIDAK BERUBAH, tetap sama seperti di jawaban sebelumnya)
-    protected function transformTransaksi($transaksi)
+    /**
+     * Transform transaksi (SAMA DENGAN KASIR)
+     */
+    protected function transformTransaksi(TransaksiKas $trx)
     {
-        // ... (Isi fungsi transformTransaksi sama persis seperti di jawaban sebelumnya)
-        // Nilai Default
-        $detail = $transaksi->keterangan ?? 'Transaksi Kas Umum';
-        $jenis_transaksi = 'Kas Umum'; // Default
-        $metode_pembayaran = $transaksi->metode_pembayaran ?? 'N/A';
+        // LABEL DEFAULT
+        $jenisLabel = 'Kas Umum';
+        $metode     = $trx->metode_pembayaran ?? 'N/A';
+        $deskripsi  = $trx->keterangan ?? '-';
 
-        // --- Logika Penentuan Jenis Transaksi Berdasarkan Nilai $transaksi->jenis ---
-        switch ($transaksi->jenis) {
+        // JENIS TRANSAKSI
+        switch ($trx->jenis) {
             case 'penjualan barang':
-                if ($transaksi->transaksiBarangKeluar->isNotEmpty()) {
-                    $barangKeluar = $transaksi->transaksiBarangKeluar->first()->barangKeluar;
-                    $barang = optional(optional($barangKeluar->stokWarung))->barang;
-                    $nama_barang = optional($barang)->nama_barang ?? 'Barang Tidak Dikenal';
-                    $count = count($transaksi->transaksiBarangKeluar);
-                    $detail = "Penjualan Barang: $nama_barang" . ($count > 1 ? ' (+ ' . ($count - 1) . ' item lain)' : '');
-                }
-                $jenis_transaksi = 'Penjualan Barang';
-                $metode_pembayaran = $transaksi->metode_pembayaran ?? 'Cash/Transfer';
+                $jenisLabel = 'Penjualan Barang';
+                $metode     = $trx->metode_pembayaran ?? 'Cash';
                 break;
-            case 'penjualan pulsa':
-                $jenis_transaksi = 'Penjualan Pulsa';
-                $metode_pembayaran = $transaksi->metode_pembayaran ?? 'Cash/Transfer';
-                break;
+
             case 'hutang barang':
-                if ($transaksi->transaksiBarangKeluar->isNotEmpty()) {
-                    $barangKeluar = $transaksi->transaksiBarangKeluar->first()->barangKeluar;
-                    $barang = optional(optional($barangKeluar->stokWarung))->barang;
-                    $nama_barang = optional($barang)->nama_barang ?? 'Barang Tidak Dikenal';
-                    $detail = "Piutang Barang: $nama_barang";
-                }
-                $jenis_transaksi = 'Piutang Barang';
-                $metode_pembayaran = 'Piutang';
+                $jenisLabel = 'Piutang Barang';
+                $metode     = 'Piutang';
                 break;
-            case 'hutang pulsa':
-                $jenis_transaksi = 'Piutang Pulsa';
-                $metode_pembayaran = 'Piutang';
-                break;
+
             case 'masuk':
-                if ($transaksi->hutang) {
-                    $detail = 'Pelunasan Hutang (ID Hutang: ' . $transaksi->hutang->id . ')';
-                    $jenis_transaksi = 'Pelunasan Piutang';
-                    $metode_pembayaran = 'Pelunasan';
+                if ($trx->hutang) {
+                    $jenisLabel = 'Pelunasan Piutang';
+                    $metode     = 'Pelunasan';
                 } else {
-                    $jenis_transaksi = 'Kas Masuk';
-                    $metode_pembayaran = $transaksi->metode_pembayaran ?? 'Cash';
+                    $jenisLabel = 'Kas Masuk';
                 }
                 break;
+
             case 'keluar':
-                $jenis_transaksi = 'Kas Keluar';
+                $jenisLabel = 'Kas Keluar';
                 break;
+
             case 'expayet':
             case 'hilang':
-                $jenis_transaksi = 'Kerugian Stok';
+                $jenisLabel = 'Kerugian Stok';
                 break;
         }
 
-        // --- Penyesuaian Nilai Total (Tanda Positif/Negatif) ---
-        $is_pengeluaran = in_array($transaksi->jenis, ['keluar', 'expayet', 'hilang']);
-        $total = $is_pengeluaran ? -$transaksi->total : $transaksi->total;
+        // TOTAL (+ / -)
+        $isKeluar = in_array($trx->jenis, ['keluar', 'expayet', 'hilang']);
+        $total    = $isKeluar ? -$trx->total : $trx->total;
 
-        // Pastikan format total berupa string dengan dua desimal.
-        $formatted_total = number_format((float)$total, 2, '.', '');
+        // ITEMS STRUK
+        $items = [];
+
+        foreach ($trx->transaksiBarangKeluar as $tbk) {
+            $bk     = $tbk->barangKeluar;
+            $barang = optional(optional($bk->stokWarung)->barang);
+
+            $qty   = $bk->jumlah ?? 1;
+            $harga = $bk->harga_jual ?? 0;
+
+            $items[] = (object) [
+                'nama_barang' => $barang->nama_barang ?? '-',
+                'jumlah'      => $qty,
+                'harga'       => $harga,
+                'subtotal'    => $qty * $harga,
+            ];
+        }
+
+        // DESKRIPSI OTOMATIS
+        if (empty($trx->keterangan) && count($items)) {
+            $namaBarang = collect($items)->pluck('nama_barang')->implode(', ');
+            $deskripsi  = "{$jenisLabel}: {$namaBarang}";
+        }
+
+        // UANG PELANGGAN
+        $uangDibayar   = optional($trx->uangPelanggan)->uang_dibayar;
+        $uangKembalian = optional($trx->uangPelanggan)->uang_kembalian;
 
         return (object) [
-            'id_ref' => 'TK-' . $transaksi->id,
-            'tanggal' => $transaksi->created_at,
-            'jenis_transaksi' => $jenis_transaksi,
-            'deskripsi' => $detail,
-            'total' => $formatted_total,
-            'metode_pembayaran' => $metode_pembayaran,
-            'tipe_sumber' => 'TransaksiKas'
+            'id_ref'            => 'TK-' . $trx->id,
+            'tanggal'           => $trx->created_at,
+            'jenis_transaksi'   => $jenisLabel,
+            'deskripsi'         => $deskripsi,
+            'items'             => $items,
+            'total'             => number_format($total, 2, '.', ''),
+            'uang_dibayar'      => $uangDibayar !== null
+                ? number_format($uangDibayar, 2, '.', '')
+                : null,
+            'uang_kembalian'    => $uangKembalian !== null
+                ? number_format($uangKembalian, 2, '.', '')
+                : null,
+            'metode_pembayaran' => $metode,
+            'tipe_sumber'       => 'TransaksiKas',
         ];
     }
 }

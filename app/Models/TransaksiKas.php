@@ -38,6 +38,10 @@ class TransaksiKas extends Model
         return $this->hasMany(transaksiBarangKeluar::class, 'id_transaksi_kas');
     }
 
+    public function uangPelanggan()
+    {
+        return $this->hasOne(UangPelanggan::class, 'transaksi_id');
+    }
 }
 
 // enum JenisTransaksiEnum: string

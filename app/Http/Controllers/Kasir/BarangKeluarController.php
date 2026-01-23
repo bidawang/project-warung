@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\KasWarung;
 use App\Models\TransaksiKas;
 use App\Models\Hutang;
+use App\Models\UangPelanggan;
 use App\Models\TransaksiBarangKeluar;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -107,58 +108,68 @@ class BarangKeluarController extends Controller
      */
     public function store(Request $request)
     {
-        // Validasi data input
         $validated = $request->validate([
-            'items' => 'required|array|min:1',
-            'items.*.id_stok_warung' => 'required|exists:stok_warung,id',
-            'items.*.jumlah' => 'required|integer|min:1',
-            'items.*.harga' => 'required|numeric|min:0',
-            'jenis' => 'required|in:penjualan barang,hutang barang',
-            'id_user_member' => 'nullable|exists:users,id',
-            'bayar' => 'nullable|numeric|min:0',
-            'total_harga' => 'required|numeric|min:0',
-            'keterangan' => 'nullable|string',
-            'tenggat' => 'nullable|date',
+            'items'                     => 'required|array|min:1',
+            'items.*.id_stok_warung'     => 'required|exists:stok_warung,id',
+            'items.*.jumlah'            => 'required|integer|min:1',
+            'items.*.harga'             => 'required|numeric|min:0',
+
+            'jenis'                     => 'required|in:penjualan barang,hutang barang',
+            'id_user_member'            => 'nullable|exists:users,id',
+
+            'total_harga'               => 'required|numeric|min:0',
+            'uang_dibayar'              => 'nullable|numeric|min:0',
+            'uang_kembalian'            => 'nullable|numeric|min:0',
+
+            'keterangan'                => 'nullable|string',
+            'tenggat'                   => 'nullable|date',
         ]);
-// dd($request->all());
+
         $idWarung = session('id_warung');
         if (! $idWarung) {
-            return redirect()->route('kasir.kasir')->with('error', 'ID warung tidak ditemukan di sesi.');
+            return redirect()->route('kasir.kasir')
+                ->with('error', 'ID warung tidak ditemukan di sesi.');
         }
 
-        // --- LOGIKA GENERASI KETERANGAN OTOMATIS ---
+        /**
+         * ==========================================
+         * GENERATE KETERANGAN OTOMATIS
+         * ==========================================
+         */
+        $stokIds = collect($validated['items'])->pluck('id_stok_warung');
 
-        $stokWarungIds = collect($validated['items'])->pluck('id_stok_warung')->all();
-
-        $stokDetails = StokWarung::whereIn('id', $stokWarungIds)
-            ->with('barang')
+        $stokDetails = StokWarung::with('barang')
+            ->whereIn('id', $stokIds)
             ->get();
 
         $itemDescriptions = $stokDetails->map(function ($stok) use ($validated) {
-            $itemData = collect($validated['items'])->firstWhere('id_stok_warung', $stok->id);
-            $jumlah = $itemData['jumlah'];
-            $namaBarang = optional($stok->barang)->nama_barang ?? 'Barang ID: ' . $stok->id;
-            return "{$namaBarang} ({$jumlah} Pcs)";
+            $item = collect($validated['items'])
+                ->firstWhere('id_stok_warung', $stok->id);
+
+            $nama = optional($stok->barang)->nama_barang ?? 'Barang';
+            return "{$nama} ({$item['jumlah']} pcs)";
         })->implode(', ');
 
-        // Sesuaikan jenis menjadi penjualan barang / hutang
-        $jenisTransaksi = $validated['jenis'];
-        $tipe = $jenisTransaksi === 'penjualan barang' ? 'penjualan barang' : 'hutang barang';
-        $defaultKeterangan = "{$tipe} Barang: {$itemDescriptions}";
+        $defaultKeterangan = ($validated['jenis'] === 'penjualan barang'
+            ? 'Penjualan Barang'
+            : 'Hutang Barang') . ': ' . $itemDescriptions;
 
         $finalKeterangan = $validated['keterangan'] ?? $defaultKeterangan;
 
-        // ------------------------------------------------------------------
-
+        /**
+         * ==========================================
+         * TRANSAKSI DATABASE
+         * ==========================================
+         */
         try {
             DB::beginTransaction();
 
-            // Ambil kas warung jenis cash
+            // Ambil kas warung CASH
             $kasWarung = KasWarung::where('id_warung', $idWarung)
                 ->where('jenis_kas', 'cash')
                 ->firstOrFail();
 
-            // Buat transaksi kas
+            // Simpan transaksi kas
             $transaksiKas = TransaksiKas::create([
                 'id_kas_warung'     => $kasWarung->id,
                 'total'             => $validated['total_harga'],
@@ -167,48 +178,63 @@ class BarangKeluarController extends Controller
                 'keterangan'        => $finalKeterangan,
             ]);
 
-            // =============================
-            //   KHUSUS HUTANG → ATURAN TENGGAT
-            // =============================
+            /**
+             * ==========================================
+             * SIMPAN UANG PELANGGAN (KHUSUS PENJUALAN)
+             * ==========================================
+             */
+            if ($validated['jenis'] === 'penjualan barang') {
+                UangPelanggan::create([
+                    'transaksi_id'   => $transaksiKas->id,
+                    'uang_dibayar'   => $validated['uang_dibayar'] ?? 0,
+                    'uang_kembalian' => $validated['uang_kembalian'] ?? 0,
+                ]);
+            }
+
+            /**
+             * ==========================================
+             * HUTANG (JIKA ADA)
+             * ==========================================
+             */
             $hutang = null;
 
-            if ($validated['jenis'] === 'hutang barang' && !empty($validated['id_user_member'])) {
-
+            if (
+                $validated['jenis'] === 'hutang barang' &&
+                !empty($validated['id_user_member'])
+            ) {
                 $hariIni = now()->day;
 
-                // Cari aturan sesuai tanggal awal–akhir
                 $aturan = \App\Models\AturanTenggat::where('id_warung', $idWarung)
                     ->where('tanggal_awal', '<=', $hariIni)
                     ->where('tanggal_akhir', '>=', $hariIni)
                     ->first();
 
-                // Tentukan tenggat otomatis
-                if ($aturan) {
-                    $tenggatOtomatis = now()->addDays($aturan->jatuh_tempo_hari);
-                } else {
-                    $tenggatOtomatis = now()->addDays(7); // fallback default
-                }
+                $tenggat = $aturan
+                    ? now()->addDays($aturan->jatuh_tempo_hari)
+                    : now()->addDays(7);
 
-                // Buat record hutang
                 $hutang = Hutang::create([
                     'id_warung'          => $idWarung,
                     'id_user'            => $validated['id_user_member'],
                     'jumlah_hutang_awal' => $validated['total_harga'],
                     'jumlah_sisa_hutang' => $validated['total_harga'],
-                    'tenggat'            => $tenggatOtomatis,
+                    'tenggat'            => $tenggat,
                     'status'             => 'belum lunas',
                     'keterangan'         => $finalKeterangan,
                 ]);
             }
 
-            // =============================
-            //   SIMPAN BARANG KELUAR
-            // =============================
-
+            /**
+             * ==========================================
+             * BARANG KELUAR (SIMPAN HARGA JUAL 🔑)
+             * ==========================================
+             */
             foreach ($validated['items'] as $item) {
+
                 $barangKeluar = BarangKeluar::create([
                     'id_stok_warung' => $item['id_stok_warung'],
                     'jumlah'         => $item['jumlah'],
+                    'harga_jual'     => $item['harga'], // 🔥 PENTING
                     'jenis'          => $validated['jenis'],
                     'keterangan'     => $validated['keterangan'] ?? null,
                 ]);
@@ -224,7 +250,7 @@ class BarangKeluarController extends Controller
                     ->where('id_warung', $idWarung)
                     ->decrement('jumlah', $item['jumlah']);
 
-                // Catat barang terkait hutang
+                // Relasi ke hutang (jika ada)
                 if ($hutang) {
                     \App\Models\BarangHutang::create([
                         'id_hutang'        => $hutang->id,
@@ -234,15 +260,18 @@ class BarangKeluarController extends Controller
             }
 
             DB::commit();
-            return redirect()->route('kasir.kasir')->with('success', 'Transaksi berhasil disimpan!');
+            return redirect()->route('kasir.kasir')
+                ->with('success', 'Transaksi berhasil disimpan!');
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error('Error menyimpan transaksi kasir: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-                'request' => $request->all()
+
+            \Log::error('Error transaksi kasir', [
+                'message' => $e->getMessage(),
+                'trace'   => $e->getTraceAsString(),
             ]);
 
-            return back()->withInput()->with('error', 'Terjadi kesalahan saat menyimpan transaksi: ' . $e->getMessage());
+            return back()->withInput()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 }
