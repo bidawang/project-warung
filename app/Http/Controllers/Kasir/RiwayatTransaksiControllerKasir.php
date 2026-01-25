@@ -34,6 +34,7 @@ class RiwayatTransaksiControllerKasir extends Controller
             'uangPelanggan',
         ])
             ->whereIn('id_kas_warung', $kasWarungIds)
+            ->whereNotIn('jenis', ['opname +', 'opname -'])
             ->latest();
 
         // Pencarian

@@ -34,19 +34,20 @@ class KasControllerKasir extends Controller
 
         // Hitung Total Pendapatan (Kas Masuk)
         $totalPendapatan = TransaksiKas::where('id_kas_warung', $idKasWarung)
-            ->whereIn('jenis', ['penjualan barang', 'penjualan pulsa', 'masuk']) // 'masuk' untuk kas manual
+            ->whereIn('jenis', ['penjualan barang', 'penjualan pulsa', 'masuk'])
             ->sum('total');
 
         // Hitung Total Pengeluaran (Kas Keluar)
         $totalPengeluaran = TransaksiKas::where('id_kas_warung', $idKasWarung)
-            ->whereIn('jenis', ['expayet', 'hilang', 'keluar', 'hutang barang', 'hutang pulsa']) // 'pengeluaran' untuk kas manual
+            ->whereIn('jenis', ['expayet', 'hilang', 'keluar', 'hutang barang', 'hutang pulsa'])
             ->sum('total');
-// dd('totalPengeluaran',$totalPengeluaran);
+
         // Hitung Saldo Bersih
         $saldoBersih = $totalPendapatan - $totalPengeluaran;
 
-        // Ambil riwayat transaksi
+        // Ambil riwayat transaksi (DENGAN FILTER EXCLUDE OPNAME)
         $riwayatTransaksi = TransaksiKas::where('id_kas_warung', $idKasWarung)
+            ->whereNotIn('jenis', ['opname +', 'opname -']) // Menambahkan syarat ini
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -64,7 +65,7 @@ class KasControllerKasir extends Controller
     public function create()
     {
         $idWarung = session('id_warung');
-// dd($idWarung);
+        // dd($idWarung);
         if (!$idWarung) {
             return redirect()->route('kasir.kas.index')->with('error', 'ID warung tidak ditemukan di sesi.');
         }

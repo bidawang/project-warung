@@ -41,8 +41,8 @@ class HargaPulsa extends Model
     ];
 
     // Jika Anda ingin mendefinisikan relasi (misalnya ke Model Pulsa)
-    // public function pulsas()
-    // {
-    //     return $this->hasMany(Pulsa::class, 'id_harga_pulsa');
-    // }
+    public function pulsas()
+    {
+        return $this->hasMany(Pulsa::class, 'id_harga_pulsa', 'id');
+    }
 }
