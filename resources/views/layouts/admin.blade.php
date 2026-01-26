@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Dashboard') - Admin Panel</title>
-    
+
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -20,10 +20,10 @@
 
 <body class="bg-gray-100 font-sans antialiased">
     <div class="flex h-screen overflow-hidden">
-        
+
         {{-- Sidebar Overlay (Mobile) --}}
-        <div x-show="sidebarOpen" 
-             @click="sidebarOpen = false" 
+        <div x-show="sidebarOpen"
+             @click="sidebarOpen = false"
              class="fixed inset-0 z-40 bg-black/50 transition-opacity lg:hidden"
              x-transition:enter="transition-opacity ease-linear duration-300"
              x-transition:enter-start="opacity-0"
@@ -36,7 +36,7 @@
         {{-- Sidebar --}}
         <aside class="fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 text-gray-300 transform transition-transform duration-300 lg:static lg:inset-0 lg:translate-x-0"
                :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
-            
+
             {{-- Logo Section --}}
             <div class="flex items-center justify-between px-6 py-5 bg-gray-900 border-b border-gray-800">
                 <div class="flex items-center gap-3">
@@ -52,7 +52,7 @@
 
             {{-- Menu Navigation --}}
             <nav class="flex-1 px-4 py-6 overflow-y-auto sidebar-scroll space-y-2">
-                
+
                 {{-- Dashboard --}}
                 <a href="{{ route('admin.dashboard') }}" class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->routeIs('admin.dashboard') ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'hover:bg-gray-800 hover:text-white' }}">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1V10a1 1 0 00-1-1H7a1 1 0 00-1 1v10a1 1 0 001 1h3z"/></svg>
@@ -61,7 +61,7 @@
 
                 {{-- Group: Produk & Stok --}}
                 <div class="pt-4 pb-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest px-4">Inventaris & Barang</div>
-                
+
                 <div x-data="{ open: {{ request()->is('admin/barang*', 'admin/satuan*', 'admin/kategori*', 'admin/subkategori*', 'admin/asalbarang*', 'admin/areapembelian*') ? 'true' : 'false' }} }">
                     <button @click="open = !open" class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg hover:bg-gray-800 hover:text-white transition group">
                         <div class="flex items-center">
@@ -121,6 +121,7 @@
                     <div x-show="open" x-cloak class="mt-1 space-y-1 ml-9 border-l border-gray-700">
                         <a href="{{ route('admin.harga-pulsa.index') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('admin.harga-pulsa.*') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">Harga Pulsa</a>
                         <a href="{{ route('admin.saldo-pulsa.index') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('admin.saldo-pulsa.*') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">Saldo Pulsa</a>
+                        <a href="{{ route('admin.jenis-pulsa.index') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('admin.jenis-pulsa.*') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">Jenis Pulsa</a>
                     </div>
                 </div>
 
@@ -147,7 +148,7 @@
 
                 {{-- Group: Wilayah & Warung --}}
                 <div class="pt-4 pb-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest px-4">Manajemen Area</div>
-                
+
                 <a href="{{ route('admin.area.index') }}" class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->routeIs('admin.area.*') ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 hover:text-white' }}">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                     <span class="text-sm font-medium">Data Area</span>
@@ -163,7 +164,7 @@
 
                 {{-- System --}}
                 <div class="pt-4 pb-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest px-4">Pengaturan Sistem</div>
-                
+
                 {{-- <a href="{{ url('/import-barang') }}" class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->is('import-barang*') ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 hover:text-white' }}">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                     <span class="text-sm font-medium">Import Master Barang</span>
@@ -173,7 +174,7 @@
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                     <span class="text-sm font-medium">Manajemen User</span>
                 </a>
-                
+
                 <a href="{{ route('logout') }}"
                    onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
                    class="flex items-center px-4 py-2.5 rounded-lg text-red-400 hover:bg-red-500/10 hover:text-red-500 transition">
@@ -187,7 +188,7 @@
 
         {{-- Main Content Wrapper --}}
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-            
+
             {{-- Top Navbar --}}
             <header class="bg-white border-b border-gray-200">
                 <div class="flex items-center justify-between px-4 py-3 lg:px-6">
