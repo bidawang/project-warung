@@ -26,6 +26,7 @@ class HargaPulsa extends Model
     protected $fillable = [
         'jumlah_pulsa',
         'harga',
+        'jenis_pulsa_id',
     ];
 
     /**
@@ -44,5 +45,10 @@ class HargaPulsa extends Model
     public function pulsas()
     {
         return $this->hasMany(Pulsa::class, 'id_harga_pulsa', 'id');
+    }
+
+    public function jenisPulsa()
+    {
+        return $this->belongsTo(JenisPulsa::class, 'jenis_pulsa_id');
     }
 }

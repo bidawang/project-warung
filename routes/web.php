@@ -49,7 +49,8 @@ use App\Http\Controllers\Admin\{
     AsalBarangControllerAdmin,
     RencanaBelanjaControllerAdmin,
     SatuanBarangControllerAdmin,
-    SatuanControllerAdmin
+    SatuanControllerAdmin,
+    JenisPulsaController
 };
 
 use App\Http\Controllers\Kasir\{
@@ -142,6 +143,7 @@ Route::prefix('/admin')->name('admin.')->group(function () {
 
     Route::resource('harga-pulsa', HargaPulsaControllerAdmin::class);
     Route::resource('saldo-pulsa', SaldoPulsaControllerAdmin::class);
+    Route::resource('jenis-pulsa', JenisPulsaController::class)->except('show');
 
     Route::get('barang/prices/monitor', [HargaJualControllerAdmin::class, 'indexAllBarangPrices'])->name('harga_jual.monitor_all_prices');
     // Rute detail per barang (Jika Anda ingin mempertahankan kemampuan drill-down)

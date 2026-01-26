@@ -8,7 +8,12 @@ class Pulsa extends Model
 {
     use HasFactory;
     protected $table = 'pulsa';
-    protected $fillable = ['id_warung', 'id_harga_pulsa', 'saldo', 'jenis'];
+    protected $fillable = ['id_warung', 'id_harga_pulsa', 'saldo', 'jenis_pulsa_id'];
+
+    public function jenisPulsa()
+    {
+        return $this->belongsTo(JenisPulsa::class, 'jenis_pulsa_id');
+    }
 
     // Relasi: Satu Pulsa dimiliki oleh satu HargaPulsa
     public function hargaPulsa()

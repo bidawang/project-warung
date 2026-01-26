@@ -18,15 +18,17 @@
             <div class="col-lg-8 col-xl-7">
                 <div class="card shadow-lg border-0 h-100">
                     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fas fa-list me-2"></i>Daftar Harga Jual Pulsa</h5>
-                        {{-- <a href="{{ route('kasir.pulsa.harga-pulsa.create') }}" class="btn btn-sm btn-light text-primary fw-bold">
-                            <i class="fas fa-plus me-1"></i> Atur Harga Baru
-                        </a> --}}
+                        <h5 class="mb-0">
+                            <i class="fas fa-list me-2"></i>Daftar Harga Jual Pulsa
+                        </h5>
+
+
                     </div>
+
                     <div class="card-body p-3">
                         {{-- Search & Filter --}}
                         <div class="input-group mb-3 sticky-top p-0 bg-white" style="top: -16px; z-index: 10;">
-                            <span class="input-group-text bg-light"><i class="fas fa-search"></i></span>
+                            <span class="nput-group-text bg-light"><i class="fas fa-search"></i></span>
                             <input type="text" id="searchInputHarga" class="form-control form-control-lg"
                                 placeholder="Cari harga berdasarkan nominal atau operator...">
                         </div>
@@ -39,39 +41,35 @@
                                         <th>Nominal / Produk</th>
                                         <th>Harga Jual</th>
                                         <th>Operator</th>
-                                        <th class="text-center">Aksi</th>
+                                        <th class="text-center">Jenis Pulsa</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @forelse ($harga_pulsas as $harga)
-                                    <tr class="harga-item" data-nominal="{{ $harga->jumlah_pulsa }}" data-operator="{{ strtolower($harga->operator ?? '-') }}">
-                                        <td class="fw-bold text-success">
-                                            Pulsa {{ number_format($harga->jumlah_pulsa, 0, ',', '.') }}
-                                        </td>
-                                        <td class="fw-bold">
-                                            Rp. {{ number_format($harga->harga, 0, ',', '.') }}
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-secondary">{{ strtoupper($harga->operator ?? 'UMUM') }}</span>
-                                        </td>
-                                        <td class="text-center">
-                                            <a href="{{ route('kasir.pulsa.harga-pulsa.edit', $harga->id) }}" class="btn btn-sm btn-warning p-1" title="Edit Harga">
-                                                <i class="fas fa-pencil-alt"></i>
-                                            </a>
-                                            {{-- Tombol Hapus (Opsional, pastikan ada url destroy) --}}
-                                            {{-- <form action="{{ url('kasir.pulsa.harga-pulsa.destroy', $harga->id) }}" method="POST" class="d-inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger p-1" onclick="return confirm('Hapus harga ini?')" title="Hapus Harga">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </form> --}}
-                                        </td>
-                                    </tr>
+                                        <tr class="harga-item" data-nominal="{{ $harga->jumlah_pulsa }}"
+                                            data-operator="{{ strtolower($harga->operator ?? '-') }}">
+                                            <td class="fw-bold text-success">
+                                                Pulsa {{ number_format($harga->jumlah_pulsa, 0, ',', '.') }}
+                                            </td>
+                                            <td class="fw-bold">
+                                                Rp. {{ number_format($harga->harga, 0, ',', '.') }}
+                                            </td>
+                                            <td>
+                                                <span
+                                                    class="badge bg-secondary">{{ strtoupper($harga->operator ?? 'UMUM') }}</span>
+                                            </td>
+                                            <td class="text-center">
+
+                                                <span
+                                                    class="badge bg-info">{{ ucfirst(str_replace('_', ' ', $harga->nama_jenis)) }}</span>
+
+                                            </td>
+                                        </tr>
                                     @empty
-                                    <tr>
-                                        <td colspan="4" class="text-center py-4 text-muted">Belum ada daftar harga pulsa yang diatur.</td>
-                                    </tr>
+                                        <tr>
+                                            <td colspan="4" class="text-center py-4 text-muted">Belum ada daftar harga
+                                                pulsa yang diatur.</td>
+                                        </tr>
                                     @endforelse
                                 </tbody>
                             </table>
@@ -84,17 +82,36 @@
             <div class="col-lg-4 col-xl-5">
 
                 {{-- CARD SALDO KAS PULSA --}}
-                <div class="card shadow-lg border-0 mb-4">
-                    <div class="card-header bg-success text-white">
-                        <h6 class="mb-0 fw-bold"><i class="fas fa-wallet me-2"></i>Saldo Kas Pulsa</h6>
+               {{-- CARD SALDO PULSA PER JENIS --}}
+<div class="card shadow-lg border-0 mb-4">
+    <div class="card-header bg-success text-white">
+        <h6 class="mb-0 fw-bold">
+            <i class="fas fa-wallet me-2"></i>Saldo Pulsa Warung
+        </h6>
+    </div>
+
+    <div class="card-body p-3">
+        @forelse ($saldoPulsas as $pulsa)
+            <div class="d-flex justify-content-between align-items-center border rounded p-3 mb-2">
+                <div>
+                    <div class="fw-bold text-uppercase text-secondary">
+                        {{ $pulsa->jenisPulsa->nama_jenis }}
                     </div>
-                    <div class="card-body p-3 text-center">
-                        <div class="h3 mb-0 fw-bold text-success">
-                            Rp. {{ number_format($pulsa->saldo ?? 0, 0, ',', '.') }}
-                        </div>
-                        <small class="text-muted">Modal warung untuk transaksi pulsa.</small>
-                    </div>
+                    <small class="text-muted">Saldo tersedia</small>
                 </div>
+
+                <div class="fw-bold text-success fs-5">
+                    Rp {{ number_format($pulsa->saldo, 0, ',', '.') }}
+                </div>
+            </div>
+        @empty
+            <div class="text-center text-muted py-3">
+                Belum ada saldo pulsa
+            </div>
+        @endforelse
+    </div>
+</div>
+
 
                 {{-- CARD TOMBOL AKSI UTAMA (DIPISAHKAN) --}}
                 <div class="card shadow-lg border-0 mb-4">
@@ -103,7 +120,8 @@
                     </div>
                     <div class="card-body d-flex gap-2 p-3">
                         {{-- 1. Tombol JUAL PULSA (Primary Action) --}}
-                        <a href="{{ route('kasir.pulsa.jual.create') }}" class="btn btn-primary flex-fill d-flex align-items-center justify-content-center fw-bold p-2">
+                        <a href="{{ route('kasir.pulsa.jual.create') }}"
+                            class="btn btn-primary flex-fill d-flex align-items-center justify-content-center fw-bold p-2">
                             <i class="fas fa-mobile-alt me-1"></i> Jual Pulsa
                         </a>
 
@@ -132,22 +150,23 @@
                                 </thead>
                                 <tbody>
                                     @forelse ($transaksi_pulsa as $pulsa)
-                                    <tr>
-                                        <td class="fw-bold">
-                                            Pulsa {{ number_format($pulsa->jumlah, 0, ',', '.') }}
-                                        </td>
-                                        <td class="text-danger">
-                                            Rp. {{ number_format($pulsa->total, 0, ',', '.') }}
-                                        </td>
-                                        <td class="text-danger">
-                                            {{ ucfirst(str_replace('_', ' ', $pulsa->tipe)) }}
-                                        </td>
-                                        <td>{{ $pulsa->created_at->diffForHumans() }}</td>
-                                    </tr>
+                                        <tr>
+                                            <td class="fw-bold">
+                                                Pulsa {{ number_format($pulsa->jumlah, 0, ',', '.') }}
+                                            </td>
+                                            <td class="text-danger">
+                                                Rp. {{ number_format($pulsa->total, 0, ',', '.') }}
+                                            </td>
+                                            <td class="text-danger">
+                                                {{ ucfirst(str_replace('_', ' ', $pulsa->tipe)) }}
+                                            </td>
+                                            <td>{{ $pulsa->created_at->diffForHumans() }}</td>
+                                        </tr>
                                     @empty
-                                    <tr>
-                                        <td colspan="4" class="text-center py-3 text-muted">Belum ada transaksi pulsa.</td>
-                                    </tr>
+                                        <tr>
+                                            <td colspan="4" class="text-center py-3 text-muted">Belum ada transaksi
+                                                pulsa.</td>
+                                        </tr>
                                     @endforelse
                                 </tbody>
                             </table>
