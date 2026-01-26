@@ -2,14 +2,14 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class DetailKasWarung extends Model
+class LaporanKasWarung extends Model
 {
     use HasFactory;
 
-    protected $table = 'detail_kas_warung';
+    protected $table = 'laporan_kas_warung';
 
     protected $fillable = [
         'id_kas_warung',

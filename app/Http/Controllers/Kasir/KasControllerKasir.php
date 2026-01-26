@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\TransaksiKas;
 use App\Models\KasWarung;
+use App\Models\DetailKasWarung;
 
 class KasControllerKasir extends Controller
 {
@@ -17,45 +18,68 @@ class KasControllerKasir extends Controller
     {
         $idWarung = session('id_warung');
 
+
         if (!$idWarung) {
             return redirect()->route('dashboard')->with('error', 'ID warung tidak ditemukan di sesi.');
         }
 
-        // Ambil kas warung 'cash'
+
+        // Kas warung CASH
         $kasWarung = KasWarung::where('id_warung', $idWarung)
             ->where('jenis_kas', 'cash')
             ->first();
+
 
         if (!$kasWarung) {
             return redirect()->route('dashboard')->with('error', 'Kas warung cash tidak ditemukan.');
         }
 
+
         $idKasWarung = $kasWarung->id;
 
-        // Hitung Total Pendapatan (Kas Masuk)
+
+        // Total pendapatan
         $totalPendapatan = TransaksiKas::where('id_kas_warung', $idKasWarung)
             ->whereIn('jenis', ['penjualan barang', 'penjualan pulsa', 'masuk'])
             ->sum('total');
 
-        // Hitung Total Pengeluaran (Kas Keluar)
+
+        // Total pengeluaran
         $totalPengeluaran = TransaksiKas::where('id_kas_warung', $idKasWarung)
             ->whereIn('jenis', ['expayet', 'hilang', 'keluar', 'hutang barang', 'hutang pulsa'])
             ->sum('total');
 
-        // Hitung Saldo Bersih
+
         $saldoBersih = $totalPendapatan - $totalPengeluaran;
 
-        // Ambil riwayat transaksi (DENGAN FILTER EXCLUDE OPNAME)
+
+        // Riwayat transaksi (exclude opname)
         $riwayatTransaksi = TransaksiKas::where('id_kas_warung', $idKasWarung)
-            ->whereNotIn('jenis', ['opname +', 'opname -']) // Menambahkan syarat ini
+            ->whereNotIn('jenis', ['opname +', 'opname -'])
             ->orderBy('created_at', 'desc')
+            ->whereDate('created_at', today())
             ->get();
+
+
+        // 👉 Pecahan kas (uang fisik)
+        $pecahanKas = DetailKasWarung::where('id_kas_warung', $idKasWarung)
+            ->orderBy('pecahan', 'asc')
+            ->get();
+
+
+        // Total uang fisik
+        $totalUangFisik = $pecahanKas->sum(function ($item) {
+            return $item->pecahan * $item->jumlah;
+        });
+
 
         return view('kasir.kas.index', compact(
             'totalPendapatan',
             'totalPengeluaran',
             'saldoBersih',
-            'riwayatTransaksi'
+            'riwayatTransaksi',
+            'pecahanKas',
+            'totalUangFisik'
         ));
     }
 
@@ -96,6 +120,7 @@ class KasControllerKasir extends Controller
             'keterangan' => 'required|string|max:255',
             'id_kas_warung' => 'required|exists:kas_warung,id', // Harus ada dan valid
         ]);
+        // dd($validator);
 
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
