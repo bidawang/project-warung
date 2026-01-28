@@ -70,7 +70,8 @@ use App\Http\Controllers\Kasir\{
     StokBarangControllerKasir,
     MemberControllerKasir,
     PulsaControllerKasir,
-    RiwayatTransaksiControllerKasir
+    RiwayatTransaksiControllerKasir,
+    LaporanKasControllerKasir
 };
 
 use Illuminate\Support\Facades\{Route, Password};
@@ -181,6 +182,9 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::delete('kuantitas/{id}', [KuantitasController::class, 'destroy'])->name('kuantitas.destroy');
 
     Route::resource('riwayat-transaksi', RiwayatTransaksiControllerKasir::class);
+    
+    
+    Route::resource('laporan-kas', LaporanKasControllerKasir::class)->except(['show', 'edit', 'update', 'destroy']);
 
     Route::get('/stok-barang', [StokBarangControllerKasir::class, 'index'])->name('stokbarang.index');
     Route::get('/stok-barang/barang-masuk', [StokBarangControllerKasir::class, 'barangMasuk'])->name('stokbarang.barangmasuk');

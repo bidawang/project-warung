@@ -15,6 +15,7 @@ class LaporanKasWarung extends Model
         'id_kas_warung',
         'pecahan',
         'jumlah',
+        'tipe',
     ];
 
     public function kasWarung()
