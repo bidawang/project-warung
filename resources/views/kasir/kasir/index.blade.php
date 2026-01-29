@@ -131,6 +131,7 @@
                                     <label class="small fw-bold text-uppercase text-muted">Metode Bayar</label>
                                     <select class="form-select shadow-sm" x-model="transactionType" name="jenis">
                                         <option value="penjualan barang">Tunai (Cash)</option>
+                                        <option value="transfer">Transfer (Bank/E-Wallet)</option>
                                         <option value="hutang barang">Hutang (Member)</option>
                                     </select>
                                 </div>
@@ -158,6 +159,27 @@
                                                 x-model.number="payment">
                                         </div>
                                     </div>
+                                </div>
+
+                                {{-- Field Transfer (Muncul jika Transfer) --}}
+                                <div class="mb-3 bg-light p-3 rounded border-start border-primary border-4"
+                                    x-show="transactionType === 'transfer'" x-transition>
+
+                                    <div class="mb-2">
+                                        <label class="small fw-bold text-primary text-uppercase">Tujuan / Nama
+                                            Aplikasi:</label>
+                                        <input type="text" name="keterangan_transfer" class="form-control"
+                                            placeholder="Contoh: DANA, QRIS, BCA, dll" x-model="transferDetail" uppercase>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between align-items-center mt-2">
+                                        <span class="small text-muted">Nominal Transfer:</span>
+                                        <span class="fw-bold text-dark" x-text="formatRupiah(grandTotal)"></span>
+                                    </div>
+
+                                    <small class="text-muted" style="font-size: 0.75rem;">
+                                        *Pastikan status transfer sudah "Berhasil" di perangkat pembeli.
+                                    </small>
                                 </div>
 
                                 <button type="button" class="btn btn-primary btn-lg w-100 shadow"
@@ -249,6 +271,23 @@
                                         </div>
                                     </div>
                                 </template>
+
+                                <template x-if="transactionType === 'transfer'">
+                                    <div class="mt-2 p-3 bg-light rounded-3 border-start border-primary border-4">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <small class="text-primary fw-bold d-block">METODE TRANSFER</small>
+                                                <span class="fw-bold text-dark" x-text="transferDetail"></span>
+                                            </div>
+                                            <div class="text-end">
+                                                <span class="fw-bold text-primary d-block"
+                                                    x-text="formatRupiah(grandTotal)"></span>
+                                                <small class="text-success text-uppercase fw-bold"
+                                                    style="font-size: 10px;">Lunas</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
                             </div>
 
                             <div class="text-center mt-5">
@@ -285,6 +324,7 @@
                 })),
                 cart: [],
                 transactionType: 'penjualan barang',
+                transferDetail: '', // Tambahkan ini
                 payment: 0,
                 selectedMember: '',
                 showReceipt: false,
@@ -357,6 +397,23 @@
                 getMemberName() {
                     const select = document.querySelector('select[name="id_user_member"]');
                     return select && select.selectedIndex > 0 ? select.options[select.selectedIndex].text : '-';
+                },
+
+                get canCheckout() {
+                    if (this.cart.length === 0) return false;
+
+                    if (this.transactionType === 'penjualan barang') {
+                        return this.payment >= this.grandTotal && this.grandTotal > 0;
+                    }
+
+                    if (this.transactionType === 'transfer') {
+                        // Otomatis set payment sama dengan total agar uang_dibayar di form benar
+                        this.payment = this.grandTotal;
+                        // Validasi: Detail transfer (Bank/E-wallet) wajib diisi
+                        return this.transferDetail.trim() !== '';
+                    }
+
+                    return this.selectedMember !== '';
                 },
 
                 submitFinal() {

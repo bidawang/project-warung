@@ -108,14 +108,18 @@ class BarangKeluarController extends Controller
      */
     public function store(Request $request)
     {
+        // 1. Validasi Input
         $validated = $request->validate([
             'items'                     => 'required|array|min:1',
             'items.*.id_stok_warung'     => 'required|exists:stok_warung,id',
             'items.*.jumlah'            => 'required|integer|min:1',
             'items.*.harga'             => 'required|numeric|min:0',
 
-            'jenis'                     => 'required|in:penjualan barang,hutang barang',
+            'jenis'                     => 'required|in:penjualan barang,hutang barang,transfer',
             'id_user_member'            => 'nullable|exists:users,id',
+
+            // Menangkap input dari form x-model="transferDetail"
+            'keterangan_transfer'       => 'nullable|string',
 
             'total_harga'               => 'required|numeric|min:0',
             'uang_dibayar'              => 'nullable|numeric|min:0',
@@ -126,35 +130,34 @@ class BarangKeluarController extends Controller
         ]);
 
         $idWarung = session('id_warung');
-        if (! $idWarung) {
-            return redirect()->route('kasir.kasir')
-                ->with('error', 'ID warung tidak ditemukan di sesi.');
+        if (!$idWarung) {
+            return redirect()->route('kasir.kasir')->with('error', 'ID warung tidak ditemukan di sesi.');
         }
 
         /**
          * ==========================================
-         * GENERATE KETERANGAN OTOMATIS
+         * GENERATE KETERANGAN DAFTAR BARANG
          * ==========================================
          */
         $stokIds = collect($validated['items'])->pluck('id_stok_warung');
-
         $stokDetails = StokWarung::with('barang')
             ->whereIn('id', $stokIds)
             ->get();
 
         $itemDescriptions = $stokDetails->map(function ($stok) use ($validated) {
-            $item = collect($validated['items'])
-                ->firstWhere('id_stok_warung', $stok->id);
-
+            $item = collect($validated['items'])->firstWhere('id_stok_warung', $stok->id);
             $nama = optional($stok->barang)->nama_barang ?? 'Barang';
             return "{$nama} ({$item['jumlah']} pcs)";
         })->implode(', ');
 
-        $defaultKeterangan = ($validated['jenis'] === 'penjualan barang'
-            ? 'Penjualan Barang'
-            : 'Hutang Barang') . ': ' . $itemDescriptions;
-
-        $finalKeterangan = $validated['keterangan'] ?? $defaultKeterangan;
+        // Prefix untuk kolom keterangan (Riwayat)
+        $prefix = match ($validated['jenis']) {
+            'penjualan barang' => 'Penjualan Tunai',
+            'transfer'         => 'Transfer (' . ($validated['keterangan_transfer'] ?? 'Bank') . ')',
+            'hutang barang'    => 'Hutang Barang',
+        };
+// dd($prefix);
+        $finalKeterangan = $validated['keterangan'] ?? ($prefix . ': ' . $itemDescriptions);
 
         /**
          * ==========================================
@@ -164,46 +167,71 @@ class BarangKeluarController extends Controller
         try {
             DB::beginTransaction();
 
-            // Ambil kas warung CASH
-            $kasWarung = KasWarung::where('id_warung', $idWarung)
-                ->where('jenis_kas', 'cash')
-                ->firstOrFail();
+            // 2. Tentukan Jenis Kas & String Metode Pembayaran
+            if ($validated['jenis'] === 'transfer') {
+                $jenisKasTarget = 'bank';
+                $metodePembayaran = 'TF (' . ucfirst($validated['keterangan_transfer'] ?? 'Bank') . ')';
+            } elseif ($validated['jenis'] === 'penjualan barang') {
+                $jenisKasTarget = 'cash';
+                $metodePembayaran = 'cash';
+            } else {
+                // Untuk hutang, biasanya masuk record kas cash dengan total uang masuk 0 (jika sistem Anda memisahkan piutang)
+                // Namun di sini kita sesuaikan dengan target kas default Anda
+                $jenisKasTarget = 'cash';
+                $metodePembayaran = 'hutang';
+            }
 
-            // Simpan transaksi kas
+            // Ambil data Kas Warung yang sesuai (Cash atau Bank)
+            $kasWarung = KasWarung::where('id_warung', $idWarung)
+                ->where('jenis_kas', $jenisKasTarget)
+                ->first();
+
+            // Fallback: Jika kas bank belum dibuat, paksa ke kas cash agar transaksi tidak gagal
+            if (!$kasWarung) {
+                $kasWarung = KasWarung::where('id_warung', $idWarung)
+                    ->where('jenis_kas', 'cash')
+                    ->firstOrFail();
+            }
+            // dd($validated['jenis']);
+            if ($validated['jenis'] === 'transfer') {
+                $jenis = 'penjualan barang';
+            } else {
+                $jenis = $validated['jenis'];
+            }
+
+            // dd($jenis);
+            // 3. Simpan Transaksi Kas
             $transaksiKas = TransaksiKas::create([
                 'id_kas_warung'     => $kasWarung->id,
                 'total'             => $validated['total_harga'],
-                'metode_pembayaran' => $validated['jenis'] === 'penjualan barang' ? 'cash' : null,
-                'jenis'             => $validated['jenis'],
+                'metode_pembayaran' => $metodePembayaran, // Contoh: "TF (DANA)" atau "cash"
+
+                
+                'jenis'             => $jenis,
                 'keterangan'        => $finalKeterangan,
             ]);
 
             /**
              * ==========================================
-             * SIMPAN UANG PELANGGAN (KHUSUS PENJUALAN)
+             * SIMPAN UANG PELANGGAN (CASH & TRANSFER)
              * ==========================================
              */
-            if ($validated['jenis'] === 'penjualan barang') {
+            if ($jenis === 'penjualan barang') {
                 UangPelanggan::create([
                     'transaksi_id'   => $transaksiKas->id,
-                    'uang_dibayar'   => $validated['uang_dibayar'] ?? 0,
+                    'uang_dibayar'   => $validated['uang_dibayar'] ?? $validated['total_harga'],
                     'uang_kembalian' => $validated['uang_kembalian'] ?? 0,
                 ]);
             }
 
             /**
              * ==========================================
-             * HUTANG (JIKA ADA)
+             * LOGIKA HUTANG (JIKA ADA)
              * ==========================================
              */
             $hutang = null;
-
-            if (
-                $validated['jenis'] === 'hutang barang' &&
-                !empty($validated['id_user_member'])
-            ) {
+            if ($jenis === 'hutang barang' && !empty($validated['id_user_member'])) {
                 $hariIni = now()->day;
-
                 $aturan = \App\Models\AturanTenggat::where('id_warung', $idWarung)
                     ->where('tanggal_awal', '<=', $hariIni)
                     ->where('tanggal_akhir', '>=', $hariIni)
@@ -222,21 +250,23 @@ class BarangKeluarController extends Controller
                     'status'             => 'belum lunas',
                     'keterangan'         => $finalKeterangan,
                 ]);
+
+                // Update transaksi_kas untuk relasi hutang jika kolom id_hutang ada
+                $transaksiKas->update(['id_hutang' => $hutang->id]);
             }
 
             /**
              * ==========================================
-             * BARANG KELUAR (SIMPAN HARGA JUAL 🔑)
+             * BARANG KELUAR & UPDATE STOK
              * ==========================================
              */
             foreach ($validated['items'] as $item) {
-
                 $barangKeluar = BarangKeluar::create([
                     'id_stok_warung' => $item['id_stok_warung'],
                     'jumlah'         => $item['jumlah'],
-                    'harga_jual'     => $item['harga'], // 🔥 PENTING
-                    'jenis'          => $validated['jenis'],
-                    'keterangan'     => $validated['keterangan'] ?? null,
+                    'harga_jual'     => $item['harga'],
+                    'jenis'          => $jenis,
+                    'keterangan'     => $finalKeterangan,
                 ]);
 
                 TransaksiBarangKeluar::create([
@@ -245,12 +275,12 @@ class BarangKeluarController extends Controller
                     'jumlah'           => $item['jumlah'],
                 ]);
 
-                // Kurangi stok
+                // Kurangi stok fisik
                 StokWarung::where('id', $item['id_stok_warung'])
                     ->where('id_warung', $idWarung)
                     ->decrement('jumlah', $item['jumlah']);
 
-                // Relasi ke hutang (jika ada)
+                // Jika transaksi hutang, catat relasi barangnya
                 if ($hutang) {
                     \App\Models\BarangHutang::create([
                         'id_hutang'        => $hutang->id,
@@ -261,14 +291,10 @@ class BarangKeluarController extends Controller
 
             DB::commit();
             return redirect()->route('kasir.kasir')
-                ->with('success', 'Transaksi berhasil disimpan!');
+                ->with('success', 'Transaksi ' . ucfirst($jenis) . ' berhasil disimpan!');
         } catch (\Throwable $e) {
             DB::rollBack();
-
-            \Log::error('Error transaksi kasir', [
-                'message' => $e->getMessage(),
-                'trace'   => $e->getTraceAsString(),
-            ]);
+            \Log::error('Gagal Simpan Transaksi Kasir: ' . $e->getMessage());
 
             return back()->withInput()
                 ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());

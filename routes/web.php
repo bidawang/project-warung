@@ -185,6 +185,7 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     
     
     Route::resource('laporan-kas', LaporanKasControllerKasir::class)->except(['show', 'edit', 'update', 'destroy']);
+    Route::post('/laporan-bank/store', [LaporanKasControllerKasir::class, 'storeBank'])->name('laporan-bank.store');
 
     Route::get('/stok-barang', [StokBarangControllerKasir::class, 'index'])->name('stokbarang.index');
     Route::get('/stok-barang/barang-masuk', [StokBarangControllerKasir::class, 'barangMasuk'])->name('stokbarang.barangmasuk');

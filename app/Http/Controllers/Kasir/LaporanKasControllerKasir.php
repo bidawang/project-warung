@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Kasir;
 use App\Http\Controllers\Controller;
 use App\Models\LaporanKasWarung;
 use App\Models\DetailKasWarung; // Pastikan model ini ada
+use App\Models\LaporanBankWarung;
+use App\Models\KasWarung;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -13,31 +15,63 @@ class LaporanKasControllerKasir extends Controller
 {
     public function index(Request $request)
     {
-        // Filter pencarian
-        $query = LaporanKasWarung::query();
+        /* =======================
+     * BASE QUERY
+     * ======================= */
+        $filterKas  = LaporanKasWarung::query();
+        $filterBank = LaporanBankWarung::query();
 
+        /* =======================
+     * FILTER TANGGAL / BULAN / TAHUN
+     * ======================= */
         if ($request->filled('tanggal')) {
-            $query->whereDate('created_at', $request->tanggal);
-        }
-        if ($request->filled('bulan')) {
-            $query->whereMonth('created_at', $request->bulan);
-        }
-        if ($request->filled('tahun')) {
-            $query->whereYear('created_at', $request->tahun);
+            $filterKas->whereDate('created_at', $request->tanggal);
+            $filterBank->whereDate('created_at', $request->tanggal);
         }
 
-        $isFilledToday = LaporanKasWarung::whereDate('created_at', \Carbon\Carbon::today())
+        if ($request->filled('bulan')) {
+            $filterKas->whereMonth('created_at', $request->bulan);
+            $filterBank->whereMonth('created_at', $request->bulan);
+        }
+
+        if ($request->filled('tahun')) {
+            $filterKas->whereYear('created_at', $request->tahun);
+            $filterBank->whereYear('created_at', $request->tahun);
+        }
+
+        /* =======================
+     * CEK AUDIT HARI INI (PISAH)
+     * ======================= */
+        $isFilledKasToday = LaporanKasWarung::whereDate('created_at', Carbon::today())
             ->where('tipe', 'adjustment')
             ->exists();
 
-        // Grouping berdasarkan tanggal dan jam menit yang sama (Satu sesi input)
-        $laporanKas = $query->orderBy('created_at', 'desc')
-            ->get()
-            ->groupBy(function ($data) {
-                return $data->created_at->format('Y-m-d H:i');
-            });
+        $isFilledBankToday = LaporanBankWarung::whereDate('created_at', Carbon::today())
+            ->where('tipe', 'adjustment')
+            ->exists();
 
-        return view('kasir.laporan-kas.index', compact('laporanKas', 'isFilledToday'));
+        /* =======================
+     * DATA KAS (GROUP PER SESI)
+     * ======================= */
+        $laporanKas = $filterKas
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->groupBy(fn($row) => $row->created_at->format('Y-m-d H:i'));
+
+        /* =======================
+     * DATA BANK (GROUP PER SESI)
+     * ======================= */
+        $laporanBank = $filterBank
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->groupBy(fn($row) => $row->created_at->format('Y-m-d H:i'));
+
+        return view('kasir.laporan-kas.index', compact(
+            'laporanKas',
+            'laporanBank',
+            'isFilledKasToday',
+            'isFilledBankToday'
+        ));
     }
 
     public function store(Request $request)
@@ -96,6 +130,50 @@ class LaporanKasControllerKasir extends Controller
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    public function storeBank(Request $request)
+    {
+        $exists = LaporanBankWarung::whereDate('created_at', Carbon::today())->exists();
+        if ($exists) {
+            return back()->with('error', 'Laporan bank hari ini sudah diproses!');
+        }
+
+        $request->validate([
+            'jumlah' => 'required|integer|min:0',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // ambil kas_warung jenis bank (contoh: 1 akun bank aktif)
+            $bank = KasWarung::where('jenis_kas', 'bank')->firstOrFail();
+
+            $saldoSistem = $bank->saldo ?? 0;
+            $saldoFisik  = $request->jumlah;
+
+            // snapshot sistem
+            LaporanBankWarung::create([
+                'id_kas_warung' => $bank->id,
+                'jumlah' => $saldoSistem,
+                'tipe' => 'laporan',
+            ]);
+
+            // adjustment
+            LaporanBankWarung::create([
+                'id_kas_warung' => $bank->id,
+                'jumlah' => $saldoFisik,
+                'tipe' => 'adjustment',
+            ]);
+
+            // update saldo bank
+            $bank->update(['saldo' => $saldoFisik]);
+
+            DB::commit();
+            return back()->with('success', 'Laporan bank berhasil disinkronkan.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', $e->getMessage());
         }
     }
 }
