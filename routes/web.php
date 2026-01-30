@@ -50,7 +50,8 @@ use App\Http\Controllers\Admin\{
     RencanaBelanjaControllerAdmin,
     SatuanBarangControllerAdmin,
     SatuanControllerAdmin,
-    JenisPulsaController
+    JenisPulsaController,
+    InjectKasControllerAdmin
 };
 
 use App\Http\Controllers\Kasir\{
@@ -129,6 +130,9 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::get('transaksi-barang/rencana/create', [RencanaBelanjaControllerAdmin::class, 'createRencana'])->name('createrencanabelanja'); // Menampilkan form
     Route::post('/store/rencana', [RencanaBelanjaControllerAdmin::class, 'storeRencana'])->name('store.rencana');
 
+    Route::resource('inject-kas', InjectKasControllerAdmin::class)->only(['index', 'create', 'store']);
+
+
 
     Route::post('transaksibarang/update-status-massal', [TransaksiBarangController::class, 'updateStatusMassal'])->name('transaksibarang.updateStatusMassal');
     Route::post('/kirim-massal-proses', [TransaksiBarangController::class, 'kirimMassalProses'])->name('transaksibarang.kirim.mass.proses');
@@ -186,6 +190,7 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     
     Route::resource('laporan-kas', LaporanKasControllerKasir::class)->except(['show', 'edit', 'update', 'destroy']);
     Route::post('/laporan-bank/store', [LaporanKasControllerKasir::class, 'storeBank'])->name('laporan-bank.store');
+
 
     Route::get('/stok-barang', [StokBarangControllerKasir::class, 'index'])->name('stokbarang.index');
     Route::get('/stok-barang/barang-masuk', [StokBarangControllerKasir::class, 'barangMasuk'])->name('stokbarang.barangmasuk');
