@@ -46,13 +46,24 @@ class InjectKasControllerAdmin extends Controller
                 ['saldo' => 0]
             );
 
+            if($request->total > 0){
+                $numerik = '[Inject';
+            } else {
+                $numerik = '[Pengeluaran';
+            }
+
+            if($request->jenis_kas === 'bank'){
+                $keterangan = $numerik . ' Saldo Bank]';
+            } else {
+                $keterangan = $numerik . ' Saldo Cash]';
+            }
             // 2. Buat Log Transaksi
             TransaksiKas::create([
                 'id_kas_warung' => $kas->id,
                 'total' => $request->total,
                 'metode_pembayaran' => $request->jenis_kas,
                 'jenis' => 'inject',
-                'keterangan' => '[Terima Kas] ' . $request->keterangan,
+                'keterangan' => $keterangan . ' ' . $request->keterangan,
             ]);
 
             // 3. Update Saldo di Tabel Kas Warung
