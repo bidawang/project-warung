@@ -95,14 +95,12 @@ class WarungSeeder extends Seeder
                 'id_kas_warung' => $kasBank->id,
                 'pecahan' => '100000',
                 'jumlah' => 10, // Rp 1.000.000
-                'keterangan' => 'Pecahan seratus ribu',
             ]);
 
             DetailKasWarung::create([
                 'id_kas_warung' => $kasBank->id,
                 'pecahan' => '50000',
                 'jumlah' => 20, // Rp 1.000.000
-                'keterangan' => 'Pecahan lima puluh ribu',
             ]);
         }
     }
