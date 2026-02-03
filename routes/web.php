@@ -40,6 +40,7 @@ use App\Http\Controllers\Admin\{
     AturanTenggatControllerAdmin,
     HargaJualControllerAdmin,
     LabaControllerAdmin,
+    LaporanController,
     KuantitasControllerAdmin,
     StokOpnameControllerAdmin,
     HargaPulsaControllerAdmin,
@@ -108,6 +109,10 @@ Route::post('/forgot-password', function (Request $request) {
 
 
 Route::prefix('/admin')->name('admin.')->group(function () {
+
+    Route::get('/laporan-laba', [LaporanController::class, 'index'])->name('laporan.index');
+    Route::get('/laporan-laba/{id_warung}', [LaporanController::class, 'showLaba'])
+        ->name('laporan.laba');
 
     Route::get('/dashboard', [DashboardControllerAdmin::class, 'index'])->name('dashboard');
 
@@ -186,8 +191,8 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::delete('kuantitas/{id}', [KuantitasController::class, 'destroy'])->name('kuantitas.destroy');
 
     Route::resource('riwayat-transaksi', RiwayatTransaksiControllerKasir::class);
-    
-    
+
+
     Route::resource('laporan-kas', LaporanKasControllerKasir::class)->except(['show', 'edit', 'update', 'destroy']);
     Route::post('/laporan-bank/store', [LaporanKasControllerKasir::class, 'storeBank'])->name('laporan-bank.store');
 
