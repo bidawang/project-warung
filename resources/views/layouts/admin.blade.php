@@ -16,6 +16,7 @@
         .sidebar-scroll::-webkit-scrollbar-track { background: #1f2937; }
         .sidebar-scroll::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
     </style>
+
 </head>
 
 <body class="bg-gray-100 font-sans antialiased">
@@ -34,8 +35,13 @@
              x-cloak></div>
 
         {{-- Sidebar --}}
-        <aside class="fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 text-gray-300 transform transition-transform duration-300 lg:static lg:inset-0 lg:translate-x-0"
-               :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
+        <aside
+    class="fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 text-gray-300
+           transform transition-transform duration-300
+           flex flex-col h-full
+           lg:static lg:inset-0 lg:translate-x-0"
+    :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
+
 
             {{-- Logo Section --}}
             <div class="flex items-center justify-between px-6 py-5 bg-gray-900 border-b border-gray-800">
@@ -222,5 +228,8 @@
             </main>
         </div>
     </div>
+
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
 </body>
 </html>
