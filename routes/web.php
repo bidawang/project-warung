@@ -48,11 +48,13 @@ use App\Http\Controllers\Admin\{
     RiwayatTransaksiControllerAdmin,
     HutangControllerAdmin,
     AsalBarangControllerAdmin,
+    BelanjaBarangControllerAdmin,
     RencanaBelanjaControllerAdmin,
     SatuanBarangControllerAdmin,
     SatuanControllerAdmin,
     JenisPulsaController,
-    InjectKasControllerAdmin
+    InjectKasControllerAdmin,
+    OperasionalControllerAdmin,
 };
 
 use App\Http\Controllers\Kasir\{
@@ -73,7 +75,8 @@ use App\Http\Controllers\Kasir\{
     MemberControllerKasir,
     PulsaControllerKasir,
     RiwayatTransaksiControllerKasir,
-    LaporanKasControllerKasir
+    LaporanKasControllerKasir,
+    RiwayatTransaksiBarangMasukControllerKasir
 };
 
 use Illuminate\Support\Facades\{Route, Password};
@@ -110,9 +113,9 @@ Route::post('/forgot-password', function (Request $request) {
 
 Route::prefix('/admin')->name('admin.')->group(function () {
 
-    Route::get('/laporan-laba', [LaporanController::class, 'index'])->name('laporan.index');
+    Route::get('/laporan-laba', [LaporanController::class, 'index'])->name('laporan-laba.index');
     Route::get('/laporan-laba/{id_warung}', [LaporanController::class, 'showLaba'])
-        ->name('laporan.laba');
+        ->name('laporan-laba.show');
 
     Route::get('/dashboard', [DashboardControllerAdmin::class, 'index'])->name('dashboard');
 
@@ -136,6 +139,9 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::post('/store/rencana', [RencanaBelanjaControllerAdmin::class, 'storeRencana'])->name('store.rencana');
 
     Route::resource('inject-kas', InjectKasControllerAdmin::class)->only(['index', 'create', 'store']);
+
+    Route::resource('belanja-barang', BelanjaBarangControllerAdmin::class)->only(['index']);
+    Route::resource('operasional', OperasionalControllerAdmin::class)->only(['index', 'create', 'store']);
 
 
 
@@ -191,6 +197,7 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::delete('kuantitas/{id}', [KuantitasController::class, 'destroy'])->name('kuantitas.destroy');
 
     Route::resource('riwayat-transaksi', RiwayatTransaksiControllerKasir::class);
+    Route::get('riwayat-barang-masuk',[RiwayatTransaksiBarangMasukControllerKasir::class, 'index'])->name('riwayat-barang-masuk.index');
 
 
     Route::resource('laporan-kas', LaporanKasControllerKasir::class)->except(['show', 'edit', 'update', 'destroy']);

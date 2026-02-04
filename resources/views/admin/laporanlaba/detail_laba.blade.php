@@ -9,7 +9,7 @@
             </h1>
             <p class="text-slate-500 text-sm">Laporan performa penjualan dan profitabilitas.</p>
         </div>
-        <a href="{{ route('admin.laporan.index') }}" class="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition shadow-sm">
+        <a href="{{ route('admin.laporan-laba.index') }}" class="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition shadow-sm">
             <i class="fas fa-chevron-left mr-2"></i> Pilih Warung Lain
         </a>
     </div>

@@ -283,6 +283,13 @@
                         <span>Riwayat Transaksi</span>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a href="{{ url('/kasir/riwayat-barang-masuk') }}"
+                        class="nav-link @if (Request::is('kasir/riwayat-barang-masuk*')) active @endif">
+                        <i class="fas fa-clock-rotate-left"></i>
+                        <span>Riwayat Transaksi Barang Masuk</span>
+                    </a>
+                </li>
 
                 <li class="nav-item">
                     <a href="{{ route('kasir.laporan-kas.index') }}"
