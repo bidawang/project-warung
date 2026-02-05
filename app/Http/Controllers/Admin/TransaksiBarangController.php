@@ -17,7 +17,7 @@ use App\Models\TransaksiLainLain;
 use App\Models\HutangBarangMasuk;
 use App\Models\RencanaBelanja;
 use Illuminate\Validation\ValidationException;
-use App\Models\HargaJual; // ⭐ Model baru
+use App\Models\HargaJual; 
 use App\Models\AsalBarang;
 
 use Illuminate\Http\Request;
