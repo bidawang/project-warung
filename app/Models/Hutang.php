@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -30,6 +31,12 @@ class Hutang extends Model
         return $this->belongsTo(Warung::class, 'id_warung');
     }
 
+    public function logs()
+    {
+        // Sesuaikan 'id_hutang' dengan foreign key di tabel log kamu
+        return $this->hasMany(LogPembayaranHutang::class, 'id_hutang');
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class, 'id_user');
@@ -38,13 +45,13 @@ class Hutang extends Model
     public function bunga()
     {
         return $this->hasMany(Bunga::class, 'id_hutang');
-}
+    }
     public function barangHutang()
     {
         return $this->hasMany(BarangHutang::class, 'id_hutang');
-}
+    }
     public function transaksiKas()
     {
         return $this->hasMany(TransaksiKas::class, 'id_hutang');
-}
+    }
 }

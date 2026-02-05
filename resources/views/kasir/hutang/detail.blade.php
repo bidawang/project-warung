@@ -3,166 +3,233 @@
 @section('title', 'Detail Hutang Pelanggan')
 
 @section('content')
-<div class="container mt-4">
-    <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Detail Hutang Pelanggan</h5>
-            <a href="{{ route('kasir.hutang.index') }}" class="btn btn-light btn-sm">Kembali</a>
+<div class="container py-4" style="background-color:#f8f9fc; min-height:100vh;">
+
+    {{-- HEADER --}}
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <h3 class="fw-bold text-primary mb-1">
+                Detail Hutang Pelanggan
+            </h3>
+            <p class="text-muted mb-0">
+                {{ $pelanggan->name ?? 'Pelanggan Umum' }}
+            </p>
         </div>
-        <div class="card-body">
 
-            @if (session('success'))
-                <div class="alert alert-success">
-                    {{ session('success') }}
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <a href="{{ route('kasir.hutang.index') }}"
+               class="btn btn-light rounded-pill px-4 shadow-sm border">
+                ← Kembali
+            </a>
+        </div>
+    </div>
+
+    {{-- NOTIFIKASI --}}
+    @if(session('success'))
+        <div class="alert alert-success border-0 shadow-sm rounded-4 mb-4">
+            {{ session('success') }}
+        </div>
+    @endif
+    @if(session('info'))
+        <div class="alert alert-info border-0 shadow-sm rounded-4 mb-4">
+            {{ session('info') }}
+        </div>
+    @endif
+
+    {{-- RINGKASAN --}}
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3 mb-md-0">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body">
+                    <small class="text-muted d-block">Total Hutang Awal</small>
+                    <h4 class="fw-bold mb-0">
+                        Rp {{ number_format($hutangList->sum('jumlah_hutang_awal'), 0, ',', '.') }}
+                    </h4>
                 </div>
-            @endif
+            </div>
+        </div>
 
-            <div class="row mb-4">
-                {{-- Detail Informasi Hutang --}}
-                <div class="col-md-6">
-                    <table class="table table-bordered table-sm">
-                        <tr>
-                            <th>Nama Pelanggan</th>
-                            <td>{{ $hutang->user->name ?? '-' }}</td>
-                        </tr>
-                        <tr>
-                            <th>Jumlah Hutang Awal</th>
-                            <td>Rp {{ number_format($hutang->jumlah_hutang_awal, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <th>Jumlah Sisa Hutang</th>
-                            <td class="fw-bold text-danger">Rp {{ number_format($hutang->jumlah_sisa_hutang, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr>
-                            <th>Tanggal Jatuh Tempo</th>
-                            <td>{{ \Carbon\Carbon::parse($hutang->tenggat)->format('d F Y') }}</td>
-                        </tr>
-                        <tr>
-                            <th>Status</th>
-                            <td>
-                                @if ($hutang->status == 'belum lunas')
-                                    <span class="badge bg-danger">Belum Lunas</span>
-                                @else
-                                    <span class="badge bg-success">Lunas</span>
+        <div class="col-md-4 mb-3 mb-md-0">
+            <div class="card border-0 shadow-sm rounded-4 bg-danger text-white">
+                <div class="card-body">
+                    <small class="text-white-50 d-block">Sisa Hutang</small>
+                    <h4 class="fw-bold mb-0">
+                        Rp {{ number_format($hutangList->sum('jumlah_sisa_hutang'), 0, ',', '.') }}
+                    </h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body">
+                    <small class="text-muted d-block">Jumlah Transaksi</small>
+                    <h4 class="fw-bold mb-0">
+                        {{ $hutangList->count() }} Transaksi
+                    </h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- TABLE HUTANG --}}
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4 small text-muted uppercase">ID</th>
+                        <th class="small text-muted uppercase">Tanggal</th>
+                        <th class="small text-muted uppercase">Tenggat</th>
+                        <th class="small text-muted uppercase">Hutang Awal</th>
+                        <th class="small text-muted uppercase">Sisa Hutang</th>
+                        <th class="small text-muted uppercase">Status</th>
+                        <th class="text-end pe-4 small text-muted uppercase">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($hutangList as $hutang)
+                    <tr>
+                        <td class="ps-4 fw-bold">
+                            #H-{{ $hutang->id }}
+                        </td>
+
+                        <td>
+                            {{ \Carbon\Carbon::parse($hutang->created_at)->format('d M Y') }}
+                        </td>
+
+                        <td>
+                            <span class="{{ $hutang->status != 'lunas' && \Carbon\Carbon::parse($hutang->tenggat)->isPast() ? 'text-danger fw-bold' : '' }}">
+                                {{ \Carbon\Carbon::parse($hutang->tenggat)->format('d M Y') }}
+                            </span>
+                        </td>
+
+                        <td>
+                            Rp {{ number_format($hutang->jumlah_hutang_awal, 0, ',', '.') }}
+                        </td>
+
+                        <td class="fw-bold">
+                            Rp {{ number_format($hutang->jumlah_sisa_hutang, 0, ',', '.') }}
+                        </td>
+
+                        <td>
+                            @if ($hutang->status == 'lunas')
+                                <span class="badge badge-soft-success rounded-pill px-3">
+                                    Lunas
+                                </span>
+                            @else
+                                <span class="badge badge-soft-danger rounded-pill px-3">
+                                    Belum Lunas
+                                </span>
+                            @endif
+                        </td>
+
+                        <td class="text-end pe-4">
+                            <div class="btn-group">
+                                {{-- Tombol Bayar (Hanya jika belum lunas) --}}
+                                @if ($hutang->status != 'lunas')
+                                    <button type="button"
+                                            class="btn btn-sm btn-success rounded-pill px-3 me-2"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalBayar"
+                                            data-id="{{ $hutang->id }}"
+                                            data-sisa="{{ $hutang->jumlah_sisa_hutang }}">
+                                        Bayar
+                                    </button>
                                 @endif
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Deskripsi / Catatan</th>
-                            <td>{{ $hutang->keterangan ?? '-' }}</td>
-                        </tr>
-                    </table>
-                </div>
-
-                {{-- Log Pembayaran --}}
-                <div class="col-md-6">
-                    <h6>Riwayat Pembayaran</h6>
-                    @if ($logPembayaran->isEmpty())
-                        <p class="text-muted">Belum ada pembayaran yang tercatat.</p>
-                    @else
-                        <ul class="list-group list-group-flush border rounded-3">
-                            @foreach ($logPembayaran as $log)
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <strong>Rp {{ number_format($log->jumlah_pembayaran, 0, ',', '.') }}</strong>
-                                    </div>
-                                    <small class="text-muted">{{ \Carbon\Carbon::parse($log->created_at)->format('d M Y H:i') }}</small>
-                                </li>
-                            @endforeach
-                        </ul>
-                    @endif
-                </div>
-            </div>
-
-            <h5 class="mb-3 mt-4">Daftar Barang yang Dihutang</h5>
-            <div class="table-responsive mb-4">
-                @if ($hutang->barangHutang->isEmpty())
-                    <p class="alert alert-info">Tidak ada detail barang yang tercatat untuk hutang ini.</p>
-                @else
-                    <table class="table table-striped table-hover table-bordered">
-                        <thead class="bg-light">
-                            <tr>
-                                <th>Barang & Keterangan</th>
-                                <th class="text-center">Jumlah</th>
-                                <th class="text-end">Harga Satuan</th>
-                                <th class="text-end">Subtotal</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @php $totalBarang = 0; @endphp
-                            @foreach ($hutang->barangHutang as $barangHutangItem)
-                                @php
-                                    // Mengakses data melalui rantai relasi
-                                    $barangKeluar = $barangHutangItem->barangKeluar;
-
-                                    // **HARGA SATUAN BARU DARI HARGA JUAL TERBARU**
-    $hargaJualTerbaru = $barangKeluar->stokWarung->hargaJual->harga_jual_range_akhir ?? $barangKeluar->harga_satuan;
-
-    // Ambil data yang diperlukan
-    $namaBarang = $barangKeluar->stokWarung->barang->nama_barang ?? 'Barang Tidak Ditemukan';
-    $jumlah = $barangKeluar->jumlah;
-    // Gunakan harga jual terbaru jika ada, jika tidak, gunakan harga transaksi
-    $hargaSatuan = $hargaJualTerbaru; // Ganti $barangKeluar->harga_satuan dengan $hargaJualTerbaru
-    $keteranganKeluar = $barangKeluar->keterangan ?? ''; // Keterangan dari BarangKeluar
-    $subtotal = $jumlah * $hargaSatuan; // Gunakan HARGA BARU untuk subtotal
-
-    $totalBarang += $subtotal;
-                                @endphp
-                                <tr>
-                                    <td>
-                                        <strong>{{ $namaBarang }}</strong>
-                                        {{-- Keterangan diletakkan di bawah nama barang --}}
-                                        @if ($keteranganKeluar)
-                                            <small class="text-muted d-block mt-1">Catatan: {{ $keteranganKeluar }}</small>
-                                        @endif
-                                    </td>
-                                    <td class="text-center">{{ number_format($jumlah, 0, ',', '.') }}</td>
-                                    <td class="text-end">Rp {{ number_format($hargaSatuan, 0, ',', '.') }}</td>
-                                    <td class="text-end">Rp {{ number_format($subtotal, 0, ',', '.') }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                {{-- colspan="3" agar total menempati 4 kolom (3 kolom kosong + 1 kolom nilai) --}}
-                                <th colspan="3" class="text-end bg-light">Total Nilai Barang</th>
-                                <th class="text-end bg-light">Rp {{ number_format($totalBarang, 0, ',', '.') }}</th>
-                            </tr>
-                        </tfoot>
-                    </table>
-                @endif
-            </div>
-
-            {{-- Form Pembayaran Hutang --}}
-            @if ($hutang->status == 'belum lunas')
-                <div class="card mt-4 border-success">
-                    <div class="card-header bg-success text-white">
-                        <h6 class="mb-0">Bayar Hutang</h6>
-                    </div>
-                    <div class="card-body">
-                        <form action="{{ route('kasir.hutang.bayar', $hutang->id) }}" method="POST">
-                            @csrf
-                            <div class="mb-3">
-                                <label for="jumlah_bayar" class="form-label">Jumlah Bayar (Maksimal: Rp {{ number_format($hutang->jumlah_sisa_hutang, 0, ',', '.') }})</label>
-                                <input type="number" name="jumlah_bayar" id="jumlah_bayar" class="form-control"
-                                    min="1"
-                                    max="{{ $hutang->jumlah_sisa_hutang }}"
-                                    value="{{ $hutang->jumlah_sisa_hutang }}"
-                                    placeholder="Masukkan jumlah pembayaran"
-                                    required>
-                                @error('jumlah_bayar')
-                                    <div class="text-danger mt-1">{{ $message }}</div>
-                                @enderror
+                                <a href="{{ route('kasir.hutang.show', $hutang->id) }}"
+                                   class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                    Detail
+                                </a>
                             </div>
-                            <button type="submit" class="btn btn-success">
-                                <i class="bi bi-cash me-1"></i> Proses Pembayaran
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            @endif
-
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-5">
+                            Tidak ada data hutang
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
+
+{{-- MODAL BAYAR --}}
+<div class="modal fade" id="modalBayar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">Pembayaran Hutang</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            {{-- Form Action akan diisi lewat JavaScript --}}
+            <form id="formBayar" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <small class="text-muted d-block mb-1">Sisa yang harus dibayar</small>
+                        <h2 class="fw-bold text-danger" id="display_sisa">Rp 0</h2>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label small fw-bold">Nominal Pembayaran</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-0">Rp</span>
+                            <input type="number"
+                                   name="jumlah_bayar"
+                                   id="input_bayar"
+                                   class="form-control bg-light border-0 rounded-end shadow-none"
+                                   required
+                                   min="1">
+                        </div>
+                        <small class="text-muted mt-2 d-block">
+                            *Maksimal pembayaran sesuai sisa hutang.
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-3">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 shadow">Simpan Pembayaran</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.uppercase { text-transform: uppercase; letter-spacing: .5px; font-size: 0.75rem; }
+.badge-soft-danger { background:#fff5f5; color:#e53e3e; }
+.badge-soft-success { background:#f0fff4; color:#38a169; }
+.btn-group .btn { transition: all 0.2s; }
+.btn-group .btn:hover { transform: translateY(-1px); }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const modalBayar = document.getElementById('modalBayar');
+        const formBayar = document.getElementById('formBayar');
+        const displaySisa = document.getElementById('display_sisa');
+        const inputBayar = document.getElementById('input_bayar');
+
+        modalBayar.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const id = button.getAttribute('data-id');
+            const sisa = button.getAttribute('data-sisa');
+
+            // 1. Update Action URL Form (Sesuaikan dengan route name kamu)
+            // Route ini akan menghasilkan: /kasir/hutang/bayar/{id}
+            formBayar.action = `/kasir/hutang/bayar/${id}`;
+
+            // 2. Tampilan Sisa Hutang
+            displaySisa.textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(sisa);
+
+            // 3. Set Input Constraints
+            inputBayar.max = sisa;
+            inputBayar.value = sisa; // Default lunas
+        });
+    });
+</script>
 @endsection

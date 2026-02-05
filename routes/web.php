@@ -218,6 +218,7 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::get('/hutang', [HutangControllerKasir::class, 'index'])->name('hutang.index');
     Route::get('/hutang/detail/{id}', [HutangControllerKasir::class, 'detail'])->name('hutang.detail');
     Route::post('/hutang/bayar/{id}', [HutangControllerKasir::class, 'bayar'])->name('hutang.bayar');
+    Route::get('/hutang/show/{id}', [HutangControllerKasir::class, 'show'])->name('hutang.show');
     // Hutang Barang Masuk
     Route::get('/hutangBarangamMasuk', [HutangBarangMasukControllerKasir::class, 'index'])->name('hutang.barangmasuk.index');
     Route::get('/{id}/bayar', [HutangBarangMasukControllerKasir::class, 'showDetailPembayaran'])->name('bayar.detail');
