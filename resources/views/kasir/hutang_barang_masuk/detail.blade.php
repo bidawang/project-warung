@@ -1,94 +1,126 @@
 @extends('layouts.app')
 
-@section('title', 'Bayar Hutang Barang Masuk')
+@section('title', 'Detail Pelunasan Hutang')
 
 @section('content')
+<div class="container py-4">
+    <div class="mb-4">
+        <a href="{{ route('kasir.hutang.barangmasuk.index') }}" class="btn btn-sm btn-outline-secondary rounded-pill">
+            <i class="fas fa-arrow-left me-1"></i> Kembali
+        </a>
+    </div>
 
-<div class="container mt-4">
-    <h3 class="mb-4">Pembayaran Hutang Barang Masuk</h3>
-
-    <div class="card shadow-lg">
-        <div class="card-header bg-success text-white">
-            <h5 class="mb-0 fw-bold"><i class="fas fa-money-bill-wave me-2"></i>Bayar Hutang</h5>
-        </div>
-        <div class="card-body">
-
-            {{-- Pesan Error / Success --}}
-            @if (session('error'))
-                <div class="alert alert-danger">{{ session('error') }}</div>
-            @endif
-            @if ($errors->any())
-                <div class="alert alert-warning">
-                    <ul class="mb-0">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
+    <div class="row g-4">
+        {{-- Kiri: Rincian Barang Masuk --}}
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="fw-bold mb-0">Rincian Barang (Nota #{{ $hutang->id }})</h5>
                 </div>
-            @endif
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead class="bg-light text-muted small text-uppercase">
+                                <tr>
+                                    <th class="ps-4">Item Barang</th>
+                                    <th class="text-center">Qty</th>
+                                    <th class="text-end pe-4">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($hutang->hutangBarangMasuk as $detail)
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-bold text-dark">
+                                            {{ $detail->barangMasuk->transaksiBarang->barang->nama_barang ?? 'N/A' }}
+                                        </div>
+                                        <small class="text-muted">ID Transaksi: {{ $detail->id_barang_masuk }}</small>
+                                    </td>
+                                    <td class="text-center">{{ $detail->barangMasuk->jumlah }}</td>
+                                    <td class="text-end pe-4 fw-bold">
+                                        Rp {{ number_format($detail->total, 0, ',', '.') }}
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-white py-3">
+                    <div class="d-flex justify-content-between px-2">
+                        <span class="fw-bold text-muted">Total Keseluruhan</span>
+                        <span class="fw-bold text-dark h5 mb-0">Rp {{ number_format($hutang->total, 0, ',', '.') }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-            {{-- Detail Hutang --}}
-            <div class="mb-4 p-3 border rounded">
-                <p class="mb-1"><strong>ID Barang Masuk:</strong> {{ $hutang->barangMasuk->kode_barang_masuk ?? '-' }}</p>
-                <p class="mb-1"><strong>Supplier:</strong> {{ $hutang->barangMasuk->supplier->nama ?? 'Tidak Diketahui' }}</p>
-                <p class="mb-1"><strong>Tanggal Hutang:</strong> {{ \Carbon\Carbon::parse($hutang->created_at)->format('d M Y') }}</p>
-                <h4 class="text-danger mt-3">Total Hutang: **Rp {{ number_format($hutang->total, 0, ',', '.') }}**</h4>
+        {{-- Kanan: Form Pembayaran --}}
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-success text-white py-3">
+                    <h5 class="fw-bold mb-0 text-center">Konfirmasi Bayar</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form action="{{ url('/kasir/' . $hutang->id . '/proses-bayar') }}" method="POST">
+                        @csrf
+                        
+                        {{-- Ringkasan Tagihan --}}
+                        <div class="mb-4 text-center">
+                            <small class="text-muted d-block mb-1">Total yang harus dibayar</small>
+                            <h3 class="fw-black text-danger">Rp {{ number_format($hutang->total, 0, ',', '.') }}</h3>
+                        </div>
+
+                        {{-- Pilihan Metode Pembayaran --}}
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-uppercase">Metode Pembayaran</label>
+                            <div class="row g-2">
+                                @foreach($kasOptions as $kas)
+                                <div class="col-6">
+                                    <input type="radio" class="btn-check" name="id_kas_warung" id="kas_{{ $kas->id }}" value="{{ $kas->id }}" required>
+                                    <label class="btn btn-outline-success w-100 py-3 rounded-3" for="kas_{{ $kas->id }}">
+                                        <i class="fas {{ $kas->jenis_kas == 'cash' ? 'fa-money-bill-wave' : 'fa-university' }} mb-1 d-block"></i>
+                                        <span class="small fw-bold">{{ strtoupper($kas->jenis_kas) }}</span>
+                                    </label>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        {{-- Input Nominal (ReadOnly karena harus lunas) --}}
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-uppercase">Nominal Bayar</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0">Rp</span>
+                                <input type="number" name="total_bayar" class="form-control bg-light fw-bold" 
+                                       value="{{ $hutang->total }}" readonly>
+                            </div>
+                            <div class="form-text text-muted small italic text-end">*Nominal harus sesuai tagihan</div>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100 py-3 rounded-pill fw-bold shadow-sm">
+                            <i class="fas fa-check-circle me-2"></i> Lunasi Sekarang
+                        </button>
+                    </form>
+                </div>
             </div>
 
-            {{-- Form Pembayaran --}}
-            <form action="{{ url('/kasir/' . $hutang->id . '/proses-bayar') }}" method="POST">
-                @csrf
-
-                {{-- Hidden input untuk ID Kas Warung Cash --}}
-                <input type="hidden" name="id_kas_warung" value="{{ $idKasWarung }}">
-
-                <div class="mb-3">
-                    <label for="total_bayar" class="form-label fw-bold">Jumlah Pembayaran <span class="text-danger">*</span></label>
-                    <div class="input-group">
-                        <span class="input-group-text">Rp</span>
-                        <input type="number" name="total_bayar" id="total_bayar" class="form-control form-control-lg text-success fw-bold"
-                            value="{{ old('total_bayar', $hutang->total) }}"
-                            placeholder="Masukkan jumlah pembayaran" required min="1" step="1"
-                            {{-- Memastikan jumlah bayar adalah total hutang --}}
-                            data-total-hutang="{{ $hutang->total }}">
-                    </div>
-                    <div class="form-text text-danger">Pembayaran harus sama persis dengan total hutang.</div>
-                    @error('total_bayar')
-                        <div class="text-danger mt-1">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <div class="d-flex justify-content-between mt-4">
-                    <a href="{{ route('kasir.hutang.barangmasuk.index') }}" class="btn btn-secondary rounded-pill px-3">
-                        <i class="fas fa-arrow-left me-2"></i> Kembali ke Daftar
-                    </a>
-                    <button type="submit" class="btn btn-success rounded-pill px-4">
-                        <i class="fas fa-check-circle me-2"></i> Konfirmasi Pembayaran
-                    </button>
-                </div>
-            </form>
-
+            <div class="mt-3 p-3 bg-warning-subtle rounded-4 border border-warning-alpha small text-warning-emphasis">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Pastikan saldo kas pilihan Anda mencukupi untuk melakukan pembayaran ini.
+            </div>
         </div>
     </div>
 </div>
 
-{{-- Script sederhana untuk memastikan nilai input sesuai total hutang saat diketik --}}
-{{-- Anda bisa menggunakan JavaScript untuk lebih baik, tapi ini sebagai contoh --}}
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const totalBayarInput = document.getElementById('total_bayar');
-        if (totalBayarInput) {
-            const totalHutang = parseFloat(totalBayarInput.dataset.totalHutang);
-
-            totalBayarInput.addEventListener('change', function() {
-                const totalBayar = parseFloat(this.value);
-                if (totalBayar !== totalHutang) {
-                    alert('PERINGATAN: Jumlah pembayaran harus sama dengan total hutang (Rp ' + totalHutang.toLocaleString('id-ID') + ')');
-                    // Opsi: kembalikan nilai ke total hutang
-                    this.value = totalHutang;
-                }
-            });
-        }
-    });
-</script>
+<style>
+    .fw-black { font-weight: 900; }
+    .btn-check:checked + .btn-outline-success {
+        background-color: #198754;
+        color: white;
+        border-color: #198754;
+    }
+    .bg-warning-subtle { background-color: #fff9e6; }
+    .border-warning-alpha { border-color: rgba(255, 193, 7, 0.2); }
+</style>
 @endsection

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\KasWarung;
 use App\Models\TransaksiKas;
 use App\Models\Warung;
+use App\Models\HutangWarung;
 use Illuminate\Support\Facades\DB;
 
 class InjectKasControllerAdmin extends Controller
@@ -37,7 +38,7 @@ class InjectKasControllerAdmin extends Controller
             'total' => 'required|numeric',
             'keterangan' => 'required|string|max:255',
         ]);
-
+// dd('asu');
         DB::beginTransaction();
         try {
             // 1. Cari atau Buat KasWarung tersebut
@@ -46,31 +47,35 @@ class InjectKasControllerAdmin extends Controller
                 ['saldo' => 0]
             );
 
-            if($request->total > 0){
-                $numerik = '[Inject';
-            } else {
-                $numerik = '[Pengeluaran';
-            }
+            // Penentuan prefix keterangan
+            $prefix = $request->total > 0 ? '[Inject' : '[Pengeluaran';
+            $keteranganLengkap = $prefix . ($request->jenis_kas === 'bank' ? ' Saldo Bank] ' : ' Saldo Cash] ') . $request->keterangan;
 
-            if($request->jenis_kas === 'bank'){
-                $keterangan = $numerik . ' Saldo Bank]';
-            } else {
-                $keterangan = $numerik . ' Saldo Cash]';
-            }
-            // 2. Buat Log Transaksi
+            // 2. Buat Log Transaksi Kas
             TransaksiKas::create([
-                'id_kas_warung' => $kas->id,
-                'total' => $request->total,
+                'id_kas_warung'     => $kas->id,
+                'total'             => $request->total,
                 'metode_pembayaran' => $request->jenis_kas,
-                'jenis' => 'inject',
-                'keterangan' => $keterangan . ' ' . $request->keterangan,
+                'jenis'             => 'inject',
+                'keterangan'        => $keteranganLengkap,
             ]);
 
             // 3. Update Saldo di Tabel Kas Warung
             $kas->updateSaldo($request->total, 'tambah');
 
+            // 4. TAMBAHAN: Buat Hutang Warung (Jenis: inject)
+            // Kita catat total inject sebagai hutang yang berstatus 'belum lunas'
+            HutangWarung::create([
+                'id_warung' => $request->id_warung,
+                'total'     => $request->total,
+                'jenis'     => 'inject '.$request->jenis_kas,
+                'status'    => 'belum lunas', // Status awal saat saldo disuntikkan
+                // Jika ada kolom keterangan di tabel hutang_warung, tambahkan di sini:
+                // 'keterangan' => $keteranganLengkap,
+            ]);
+
             DB::commit();
-            return redirect()->route('admin.inject-kas.index')->with('success', 'Saldo berhasil disuntikkan!');
+            return redirect()->route('admin.inject-kas.index')->with('success', 'Saldo berhasil disuntikkan dan dicatat sebagai hutang!');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Gagal: ' . $e->getMessage());

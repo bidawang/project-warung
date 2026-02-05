@@ -15,6 +15,7 @@ class HutangBarangMasuk extends Model
     protected $fillable = [
         'id_warung',
         'id_barang_masuk',
+        'id_hutang_warung', // Tambah ini
         'total',
         'status',
     ];

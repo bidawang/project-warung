@@ -5,20 +5,14 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\RencanaBelanja;
 use App\Models\TransaksiBarang;
-use App\Models\Warung;
 use App\Models\Barang;
-use App\Models\AreaPembelian;
 use App\Models\TransaksiAwal;
 use App\Models\StokWarung;
 use App\Models\BarangMasuk;
 use App\Models\HutangBarangMasuk;
 use App\Models\HargaJual;
-use App\Models\Area;
-use Illuminate\Validation\ValidationException;
+use App\Models\HutangWarung;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
@@ -104,7 +98,7 @@ class RencanaBelanjaControllerAdmin extends Controller
      */
 
 
-    public function create()
+    public function createRencana()
     {
         $rencanaBelanjas = RencanaBelanja::with(['barang', 'warung'])
             ->whereColumn('jumlah_dibeli', '<', 'jumlah_awal')
@@ -234,6 +228,7 @@ class RencanaBelanjaControllerAdmin extends Controller
 
     public function store(Request $request)
     {
+        //Fungsi setelah dari index rencana belanja (proses pembelian dari rencana)
         // 1. Ambil data asli
         // dd($request->all());
         $items = $request->input('items', []);
@@ -342,52 +337,32 @@ class RencanaBelanjaControllerAdmin extends Controller
 
     public function kirimRencanaProses(Request $request)
     {
-        // 1. Filtering dan Sanitasi Input Awal (TIDAK BERUBAH)
+        // 1. Filtering dan Sanitasi Input
         $allData = $request->all();
-        // dd($allData);
         $itemsFiltered = collect($allData['items'] ?? [])
             ->filter(function ($item) {
                 return !empty($item['transactions']);
             })
             ->toArray();
         $request->merge(['items' => $itemsFiltered]);
-        // dd($allData, $itemsFiltered);
-        // 2. Validasi Input (TIDAK BERUBAH)
-        try {
-            $data = $request->validate([
-                'items' => 'required|array',
-                'items.*' => ['array', function ($attribute, $value, $fail) {
-                    $rencanaId = explode('.', $attribute)[1];
-                    if (!RencanaBelanja::where('id', $rencanaId)->exists()) {
-                        $fail("Rencana Belanja dengan ID {$rencanaId} tidak valid atau tidak ditemukan.");
-                    }
-                }],
-                'items.*.transactions' => 'required|array',
-                'items.*.transactions.*.id_transaksi_barang' => 'required|exists:transaksi_barang,id',
-                'items.*.transactions.*.jumlah' => 'required|integer|min:1',
-            ], [
-                // ... Pesan Validasi
-                'items.required' => 'Tidak ada Rencana Belanja yang dipilih.',
-                'items.*.transactions.required' => 'Setiap rencana harus memiliki minimal satu sumber stok.',
-                'items.*.transactions.*.id_transaksi_barang.required' => 'Sumber Transaksi (TRX) wajib dipilih.',
-                'items.*.transactions.*.id_transaksi_barang.exists' => 'Sumber Transaksi (TRX) tidak valid.',
-                'items.*.transactions.*.jumlah.required' => 'Jumlah kirim wajib diisi.',
-                'items.*.transactions.*.jumlah.min' => 'Jumlah minimal kirim adalah 1.',
-            ]);
-        } catch (ValidationException $e) {
-            return redirect()->back()->withErrors($e->errors())->withInput();
-        }
 
-        $rencanaIdsDiproses = [];
-        $transaksiIdsDiproses = [];
+        // 2. Validasi Input
+        $data = $request->validate([
+            'items' => 'required|array',
+            'items.*' => ['array', function ($attribute, $value, $fail) {
+                $rencanaId = explode('.', $attribute)[1];
+                if (!RencanaBelanja::where('id', $rencanaId)->exists()) {
+                    $fail("Rencana Belanja dengan ID {$rencanaId} tidak valid.");
+                }
+            }],
+            'items.*.transactions' => 'required|array',
+            'items.*.transactions.*.id_transaksi_barang' => 'required|exists:transaksi_barang,id',
+            'items.*.transactions.*.jumlah' => 'required|integer|min:1',
+        ]);
 
-        // Gunakan array untuk menyimpan ID TransaksiBarang Sumber yang perlu dicek stok sisanya
-        $trxSourcesToUpdate = [];
-
-        DB::transaction(function () use ($data, &$rencanaIdsDiproses, &$transaksiIdsDiproses, &$trxSourcesToUpdate) {
-
+        DB::transaction(function () use ($data) {
             $rencanaIds = array_keys($data['items']);
-            $rencanas = RencanaBelanja::with(['barang', 'warung', 'warung.area.laba'])
+            $rencanas = RencanaBelanja::with(['barang', 'warung.area.laba'])
                 ->whereIn('id', $rencanaIds)
                 ->get()
                 ->keyBy('id');
@@ -395,179 +370,121 @@ class RencanaBelanjaControllerAdmin extends Controller
             $trxIds = collect($data['items'])->pluck('transactions.*.id_transaksi_barang')->flatten()->unique()->toArray();
             $trxSources = TransaksiBarang::with('areaPembelian')->whereIn('id', $trxIds)->get()->keyBy('id');
 
-            // Total alokasi per TransaksiBarang sumber (untuk cek stok)
-            $totalAlokasiPerTrx = [];
-            foreach ($data['items'] as $rencanaData) {
-                foreach ($rencanaData['transactions'] as $trxDetail) {
-                    $trxSourceId = $trxDetail['id_transaksi_barang'];
-                    $jumlahKirim = (int) $trxDetail['jumlah'];
-                    $totalAlokasiPerTrx[$trxSourceId] = ($totalAlokasiPerTrx[$trxSourceId] ?? 0) + $jumlahKirim;
-                }
-            }
+            // Menampung induk hutang per warung agar tidak duplikat dalam satu request
+            $rekapHutangWarung = [];
 
-            // Cek ketersediaan stok aktual di TransaksiBarang (TIDAK BERUBAH)
-            foreach ($totalAlokasiPerTrx as $trxSourceId => $totalKirim) {
-                $trxBarang = $trxSources->get($trxSourceId);
-                $stokTersedia = $trxBarang->jumlah - $trxBarang->jumlah_terpakai;
-
-                if ($totalKirim > $stokTersedia) {
-                    throw ValidationException::withMessages([
-                        "items.{$trxSourceId}" => "Total pengiriman ({$totalKirim}) untuk barang {$trxBarang->barang->nama_barang} (TRX #{$trxSourceId}) melebihi stok yang tersedia ({$stokTersedia})."
-                    ]);
-                }
-            }
-
-            // dd($data, $rencanas, $trxSources);
-            // --- PROSES KIRIM PER RENCANA BELANJA ---
             foreach ($data['items'] as $rencanaId => $rencanaData) {
                 $rencana = $rencanas->get($rencanaId);
-
                 $warung = $rencana->warung;
-                $barangId = $rencana->id_barang;
                 $warungId = $rencana->id_warung;
+                $barangId = $rencana->id_barang;
 
                 $totalKirimItemRencana = 0;
 
                 foreach ($rencanaData['transactions'] as $trxDetail) {
                     $trxSourceId = $trxDetail['id_transaksi_barang'];
                     $jumlahKirim = (int) $trxDetail['jumlah'];
-
                     $trxBarang = $trxSources->get($trxSourceId);
 
-                    // Hitung harga modal per unit
+                    // Hitung harga modal & total
                     $hargaBeliPerUnit = $trxBarang->jumlah > 0 ? $trxBarang->harga / $trxBarang->jumlah : 0;
                     $markupPercent = optional($trxBarang->areaPembelian)->markup ?? 0;
                     $hargaModalWarung = $hargaBeliPerUnit * (1 + ($markupPercent / 100));
+                    $totalHargaBarang = round($hargaModalWarung * $jumlahKirim);
 
                     $totalKirimItemRencana += $jumlahKirim;
 
-                    // --- LOGIKA UTAMA PENGIRIMAN (SAMA) ---
-
-                    // 1. Cari atau buat Stok Warung
+                    // 1. Stok Warung
                     $stokWarung = StokWarung::firstOrCreate(
-                        [
-                            'id_warung' => $warungId,
-                            'id_barang' => $barangId,
-                        ],
+                        ['id_warung' => $warungId, 'id_barang' => $barangId],
                         ['jumlah' => 0]
                     );
-                    // dd($stokWarung);
-                    // 2. Buat Barang Masuk (Status 'kirim', Jenis 'tambahan')
+
+                    // 2. Buat Barang Masuk (Skema Baru: ada 'total')
                     $barangMasuk = BarangMasuk::create([
-                        'id_transaksi_barang' => $trxSourceId, // ID TransaksiBarang sumber
-                        'id_stok_warung' => $stokWarung->id,
-                        'id_barang' => $barangId,
-                        'jumlah' => $jumlahKirim,
-                        'status' => 'kirim',
-                        'jenis' => 'rencana', // Jenis wajib 'tambahan'
-                        'tanggal_kadaluarsa' => $trxBarang->tanggal_kadaluarsa,
+                        'id_transaksi_barang' => $trxSourceId,
+                        'id_stok_warung'      => $stokWarung->id,
+                        'id_barang'           => $barangId,
+                        'jumlah'              => $jumlahKirim,
+                        'total'               => $totalHargaBarang, // Perbaikan: isi total
+                        'status'              => 'kirim',
+                        'jenis'               => 'rencana',
+                        'tanggal_kadaluarsa'  => $trxBarang->tanggal_kadaluarsa,
                     ]);
 
-                    // 3. Catat Hutang
-                    $hargaTotalHutang = $hargaModalWarung * $jumlahKirim;
+                    // 3. Kelola Hutang Warung (Induk/Master)
+                    if (!isset($rekapHutangWarung[$warungId])) {
+                        $rekapHutangWarung[$warungId] = HutangWarung::create([
+                            'id_warung' => $warungId,
+                            'total'  => 0,
+                            'jenis'  => 'barang masuk',
+                            'status' => 'belum lunas'
+                        ]);
+                    }
+
+                    $hutangInduk = $rekapHutangWarung[$warungId];
+                    $hutangInduk->increment('total', $totalHargaBarang);
+
+                    // 4. Buat Hutang Barang Masuk (Detail refer ke Induk)
                     HutangBarangMasuk::create([
-                        'id_warung' => $warungId,
-                        'id_barang_masuk' => $barangMasuk->id,
-                        'total' => round($hargaTotalHutang),
-                        'jumlah_unit' => $jumlahKirim,
-                        'status_pembayaran' => 'belum lunas',
-                        'tanggal_hutang' => now(),
+                        'id_hutang_warung' => $hutangInduk->id, // Perbaikan: simpan ID induk
+                        'id_warung'        => $warungId,
+                        'id_barang_masuk'  => $barangMasuk->id,
+                        'total'            => $totalHargaBarang,
+                        'status'           => 'belum lunas',
                     ]);
 
-                    // 4. Logika INSERT KE HARGAJUAL (SAMA)
+                    // 5. Update Harga Jual
                     $laba = optional($warung->area)->laba()
                         ->where('input_minimal', '<=', $hargaModalWarung)
                         ->where('input_maksimal', '>=', $hargaModalWarung)
                         ->first();
 
-                    $hargaJualSatuan = optional($laba)->harga_jual ?? 0;
-
                     HargaJual::create([
-                        'id_warung' => $warungId,
-                        'id_barang' => $barangId,
-                        'harga_sebelum_markup' => $hargaBeliPerUnit,
-                        'harga_modal' => round($hargaModalWarung),
-                        'harga_jual_range_awal' => $hargaJualSatuan,
-                        'harga_jual_range_akhir' => $hargaJualSatuan,
-                        'periode_awal' => now(),
-                        'periode_akhir' => null,
+                        'id_warung'              => $warungId,
+                        'id_barang'              => $barangId,
+                        'harga_sebelum_markup'   => $hargaBeliPerUnit,
+                        'harga_modal'            => round($hargaModalWarung),
+                        'harga_jual_range_awal'  => optional($laba)->harga_jual ?? 0,
+                        'harga_jual_range_akhir' => optional($laba)->harga_jual ?? 0,
+                        'periode_awal'           => now(),
                     ]);
 
-                    // 5. Update TransaksiBarang sumber (jumlah_terpakai)
-                    // Kita akan kumpulkan ID TRX Sumber yang terpakai
-                    $trxSource = TransaksiBarang::find($trxSourceId);
-                    $trxSource->jumlah_terpakai += $jumlahKirim;
-                    $trxSource->save();
-
-                    // Tambahkan ID TRX ke array untuk diproses splitting nanti
-                    $trxSourcesToUpdate[$trxSourceId] = $trxSource;
+                    // 6. Update TransaksiBarang sumber (jumlah_terpakai)
+                    $trxBarang->increment('jumlah_terpakai', $jumlahKirim);
                 }
 
-                // 6. Update RencanaBelanja (status & jumlah_kirim)
-                RencanaBelanja::where('id_warung', $warungId)
-                    ->where('id_barang', $barangId)
-                    ->where('status', 'pending')
-                    ->update(['status' => 'dikirim', 'jumlah_dibeli' => DB::raw("jumlah_dibeli + {$totalKirimItemRencana}")]);
-
-                $rencanaIdsDiproses[] = $rencanaId . " (Kirim: {$totalKirimItemRencana})";
+                // 7. Update Status Rencana Belanja
+                $rencana->update([
+                    'status' => 'dikirim',
+                    'jumlah_dibeli' => DB::raw("jumlah_dibeli + {$totalKirimItemRencana}")
+                ]);
             }
 
-            // --- LOGIKA PEMBAGIAN STOK SISA (SPLITTING) ---
-
-            // Loop melalui setiap TransaksiBarang sumber yang telah digunakan
-            foreach (array_unique(array_keys($trxSourcesToUpdate)) as $trxId) {
-                $transaksiBarang = $trxSourcesToUpdate[$trxId];
-
+            // 8. LOGIKA SPLITTING STOK SISA (TransaksiBarang)
+            foreach ($trxSources as $transaksiBarang) {
+                $transaksiBarang->refresh(); // Ambil data terbaru setelah increment
                 $sisaStok = $transaksiBarang->jumlah - $transaksiBarang->jumlah_terpakai;
 
                 if ($sisaStok > 0) {
-                    // Jika ada sisa, buat TransaksiBarang baru untuk sisa stok
-
-                    // Hitung harga per unit (diambil dari proses di atas, harus dihitung ulang jika loop di luar)
-                    $hargaBeliPerUnit = $transaksiBarang->jumlah > 0 ? $transaksiBarang->harga / $transaksiBarang->jumlah : 0;
-                    $hargaSisa = $hargaBeliPerUnit * $sisaStok;
+                    $hargaBeliPerUnit = $transaksiBarang->harga / $transaksiBarang->jumlah;
 
                     $dataSisa = $transaksiBarang->toArray();
-
-                    // Hapus ID lama agar Laravel tahu ini data baru
                     unset($dataSisa['id']);
 
-                    // Update kolom yang relevan untuk data sisa
                     $dataSisa['jumlah'] = $sisaStok;
-                    $dataSisa['jumlah_terpakai'] = 0; // Sisa stok belum terpakai
-                    $dataSisa['harga'] = round($hargaSisa); // Harga total untuk sisa stok
-                    $dataSisa['status'] = 'pending'; // Status kembali pending
+                    $dataSisa['jumlah_terpakai'] = 0;
+                    $dataSisa['harga'] = round($hargaBeliPerUnit * $sisaStok);
+                    $dataSisa['status'] = 'pending';
 
-                    // Buat entri TransaksiBarang baru untuk sisa stok
-                    $newTransaksiBarang = TransaksiBarang::create($dataSisa);
-
-                    // Catat transaksi lama sebagai 'parsial' (atau 'selesai')
-                    $transaksiBarang->status = 'parsial';
-                    $transaksiBarang->save();
-
-                    $transaksiIdsDiproses[] = $trxId . " (parsial, sisa stok dibuat dengan ID: {$newTransaksiBarang->id})";
-                } else {
-                    // Jika stok habis, ubah status menjadi 'dikirim' (selesai)
-                    $transaksiBarang->status = 'dikirim';
-                    $transaksiBarang->save();
-                    $transaksiIdsDiproses[] = $trxId . " (dikirim penuh)";
+                    TransaksiBarang::create($dataSisa);
                 }
+
+                $transaksiBarang->update(['status' => 'dikirim']);
             }
-            // dd($data, 'asu');
         });
 
-        // 3. Redirect dan Notifikasi
-        $totalRencanaDiproses = count($data['items'] ?? []);
-        $successMessage = $totalRencanaDiproses . ' Rencana Belanja berhasil didistribusikan. ';
-
-        // Tambahkan notifikasi khusus untuk pengiriman parsial
-        if (collect($transaksiIdsDiproses)->contains(fn($id) => str_contains($id, 'parsial'))) {
-            $successMessage .= 'Beberapa sumber stok diproses parsial dan sisa stok telah dibuat sebagai entri baru.';
-        } else {
-            $successMessage .= 'Semua sumber stok dikirim penuh.';
-        }
-
-        return redirect()->route('admin.rencana.index') // Redirect kembali ke halaman rencana
-            ->with('success', $successMessage);
+        return redirect()->route('admin.rencana.index')
+            ->with('success', 'Rencana belanja berhasil dikirim dan hutang telah dicatat.');
     }
 }

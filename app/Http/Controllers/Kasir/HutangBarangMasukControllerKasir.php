@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use App\Models\TransaksiKas;
 use App\Models\KasWarung;
+use App\Models\HutangWarung;
 use Carbon\Carbon;
 
 class HutangBarangMasukControllerKasir extends Controller
@@ -22,34 +23,36 @@ class HutangBarangMasukControllerKasir extends Controller
      */
     public function index(Request $request)
     {
-        // Mendapatkan role pengguna yang sedang login
         $user = Auth::user();
         $role = $user->role;
 
-        // Memulai query dengan eager loading relasi yang dibutuhkan
-        $hutangQuery = HutangBarangMasuk::with(['barangMasuk']);
+        // Query utama ke HutangWarung (Master)
+        // Eager load ke detail (hutangBarangMasuk) dan barangnya
+        $hutangQuery = HutangWarung::with(['hutangBarangMasuk.barangMasuk.transaksiBarang.barang'])
+            ->where('jenis', 'barang masuk');
 
-        // Jika user adalah kasir, filter berdasarkan id_warung dari session
+        // Filter akses Kasir
         if ($role === 'kasir') {
             $id_warung = session('id_warung');
             $hutangQuery->where('id_warung', $id_warung);
         }
 
-        // Filter berdasarkan status hutang
+        // Filter Status
         $status = $request->get('status');
         if ($status && in_array($status, ['lunas', 'belum lunas'])) {
-            $hutangQuery->whereHas('barangMasuk', function ($query) use ($status) {
-                $query->where('status', $status);
-            });
+            $hutangQuery->where('status', $status);
         }
 
-        // Ambil data dengan paginasi
-        $hutangList = $hutangQuery->paginate(10);
-        // dd($hutangList);
-        // Mengembalikan view dengan data hutang
+        // Search (Opsional: berdasarkan ID atau jika ada info tambahan)
+        if ($request->filled('q')) {
+            $q = $request->get('q');
+            $hutangQuery->where('id', 'like', "%$q%");
+        }
+
+        $hutangList = $hutangQuery->orderBy('created_at', 'desc')->paginate(10);
+
         return view('kasir.hutang_barang_masuk.index', compact('hutangList'));
     }
-
     public function showDetailPembayaran($id)
     {
         $idWarung = session('id_warung');
@@ -58,42 +61,27 @@ class HutangBarangMasukControllerKasir extends Controller
             return redirect()->route('kasir.kas.index')->with('error', 'ID warung tidak ditemukan di sesi.');
         }
 
-        // 1. Cari hutang
-        $hutang = HutangBarangMasuk::with('barangMasuk')
+        // Mengambil data HutangWarung (Header) beserta semua item barangnya (Detail)
+        $hutang = HutangWarung::with(['hutangBarangMasuk.barangMasuk.transaksiBarang.barang'])
             ->where('id', $id)
             ->where('id_warung', $idWarung)
+            ->where('jenis', 'barang masuk')
             ->first();
 
-        // 2. Logika Validasi Baru
         if (!$hutang) {
-            return redirect()->route('kasir.hutang.index')->with('error', 'Hutang tidak ditemukan.');
+            return redirect()->route('kasir.hutang.barangmasuk.index')->with('error', 'Nota hutang tidak ditemukan.');
         }
 
-        // Cek status lunas berdasarkan kondisi id_barang_masuk
-        if ($hutang->id_barang_masuk != null) {
-            // Jika ini hutang barang fisik, cek status di tabel barang_masuk
-            if ($hutang->barangMasuk->status_pembayaran === 'lunas') {
-                return redirect()->route('kasir.hutang.index')->with('error', 'Hutang barang ini sudah lunas.');
-            }
-        } else {
-            // Jika ini hutang non-fisik (Top-Up Pulsa), cek status di tabel hutang_barang_masuk itu sendiri
-            if ($hutang->status_pembayaran === 'lunas') {
-                return redirect()->route('kasir.hutang.index')->with('error', 'Hutang pulsa ini sudah lunas.');
-            }
+        if ($hutang->status === 'lunas') {
+            return redirect()->route('kasir.hutang.barangmasuk.index')->with('error', 'Nota ini sudah dilunasi.');
         }
 
-        // 3. Ambil kas warung 'cash'
-        $kasWarung = KasWarung::where('id_warung', $idWarung)
-            ->where('jenis_kas', 'cash')
-            ->first();
+        // Mengambil pilihan kas untuk metode pembayaran di view
+        $kasOptions = KasWarung::where('id_warung', $idWarung)
+            ->whereIn('jenis_kas', ['cash', 'bank'])
+            ->get();
 
-        if (!$kasWarung) {
-            return redirect()->route('kasir.hutang.index')->with('error', 'Kas warung cash tidak ditemukan.');
-        }
-
-        $idKasWarung = $kasWarung->id;
-
-        return view('kasir.hutang_barang_masuk.detail', compact('hutang', 'idKasWarung'));
+        return view('kasir.hutang_barang_masuk.detail', compact('hutang', 'kasOptions'));
     }
 
     /**

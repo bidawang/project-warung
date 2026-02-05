@@ -80,12 +80,12 @@ class BarangMasukControllerKasir extends Controller
     /**
      * Form tambah barang masuk
      */
-    public function create()
-    {
-        $transaksiBarang = TransaksiBarang::all();
-        $stokWarung = StokWarung::with('barang')->get();
-        return view('barangmasuk.create', compact('transaksiBarang', 'stokWarung'));
-    }
+    // public function create()
+    // {
+    //     $transaksiBarang = TransaksiBarang::all();
+    //     $stokWarung = StokWarung::with('barang')->get();
+    //     return view('barangmasuk.create', compact('transaksiBarang', 'stokWarung'));
+    // }
 
     /**
      * Simpan data barang masuk baru

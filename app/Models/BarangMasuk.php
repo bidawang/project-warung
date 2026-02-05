@@ -27,6 +27,7 @@ class BarangMasuk extends Model
         'id_stok_warung',
         'id_barang',
         'jumlah',
+        'total',
         'status',
         'jenis',
         'tanggal_kadaluarsa',
