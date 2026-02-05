@@ -27,13 +27,11 @@ class LaporanController extends Controller
                     ->on('stok_warung.id_warung', '=', 'harga_jual.id_warung');
             })
             ->select(
-                // Laba Kotor = Total semua harga jual (Omset)
                 DB::raw("SUM(barang_keluar.jumlah * barang_keluar.harga_jual) as laba_kotor"),
-                // Laba Bersih = Total (Harga Jual - Harga Modal) x Jumlah
                 DB::raw("SUM(barang_keluar.jumlah * (barang_keluar.harga_jual - harga_jual.harga_modal)) as laba_bersih")
             )
             ->where('stok_warung.id_warung', $id_warung)
-            ->where('barang_keluar.jenis', 'penjualan')
+            ->where('barang_keluar.jenis', 'penjualan barang')
             ->first();
 
         return view('admin.laporanlaba.detail_laba', [
