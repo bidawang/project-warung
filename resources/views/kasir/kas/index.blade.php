@@ -27,8 +27,8 @@
     <div class="row g-3 mb-4">
         @php
             $cashStats = [
-                ['label' => 'Pendapatan Cash', 'val' => $pendapatanCash, 'icon' => 'fa-arrow-trend-up', 'color' => 'success', 'bg' => '#e7f7ed'],
-                ['label' => 'Pengeluaran Cash', 'val' => $pengeluaranCash, 'icon' => 'fa-arrow-trend-down', 'color' => 'danger', 'bg' => '#fce8e8'],
+                ['label' => 'Uang Cash', 'val' => $pendapatanCash, 'icon' => 'fa-arrow-trend-up', 'color' => 'success', 'bg' => '#e7f7ed'],
+                ['label' => 'Pengeluaran Uang Cash', 'val' => $pengeluaranCash, 'icon' => 'fa-arrow-trend-down', 'color' => 'danger', 'bg' => '#fce8e8'],
                 ['label' => 'Saldo Sistem', 'val' => $saldoCash, 'icon' => 'fa-wallet', 'color' => 'primary', 'bg' => '#e7f1ff'],
                 ['label' => 'Total Uang Fisik', 'val' => $totalUangFisik, 'icon' => 'fa-coins', 'color' => 'dark', 'bg' => '#f0f2f5'],
             ];
@@ -63,8 +63,8 @@
     <div class="row g-3 mb-5">
         @php
             $bankStats = [
-                ['label' => 'Pendapatan Bank', 'val' => $pendapatanBank, 'icon' => 'fa-arrow-up', 'color' => 'success'],
-                ['label' => 'Pengeluaran Bank', 'val' => $pengeluaranBank, 'icon' => 'fa-arrow-down', 'color' => 'danger'],
+                ['label' => 'Uang Bank', 'val' => $pendapatanBank, 'icon' => 'fa-arrow-up', 'color' => 'success'],
+                ['label' => 'Pengeluaran Uang Bank', 'val' => $pengeluaranBank, 'icon' => 'fa-arrow-down', 'color' => 'danger'],
                 ['label' => 'Saldo Perhitungan', 'val' => $saldoHitungBank, 'icon' => 'fa-calculator', 'color' => 'secondary'],
                 ['label' => 'Saldo Sistem (Bank)', 'val' => $saldoSistemBank, 'icon' => 'fa-building-columns', 'color' => 'info'],
             ];
