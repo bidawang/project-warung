@@ -188,6 +188,11 @@ Route::prefix('/admin')->name('admin.')->group(function () {
 Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::get('/', [KasirControllerKasir::class, 'index'])->name('kasir');
 
+    // Route Laporan Laba
+    Route::get('/laporan-laba', [LaporanController::class, 'index'])->name('laporan-laba.index');
+    Route::get('/laporan-laba/{id_warung}', [LaporanController::class, 'showLaba'])
+        ->name('laporan-laba.show');
+
     // Kuantitas routes manual
     Route::get('kuantitas/create', [KuantitasController::class, 'create'])->name('kuantitas.create');
     Route::post('kuantitas/store', [KuantitasController::class, 'store'])->name('kuantitas.store');

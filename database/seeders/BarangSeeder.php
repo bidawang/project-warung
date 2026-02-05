@@ -122,8 +122,7 @@ class BarangSeeder extends Seeder
 
             // BABY POPOK
             [
-                'id_sub_kategori' => $subKategoriBaby
-                Id,
+                'id_sub_kategori' => $subKategoriBabyPopokId,
                 'kode_barang' => 'MAMY POKO-L',
                 'nama_barang' => 'MAMY POKO (L)',
                 'keterangan' => '28',

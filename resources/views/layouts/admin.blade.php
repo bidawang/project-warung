@@ -239,8 +239,6 @@
                     </div>
                 </div>
 
-<<<<<<< HEAD
-=======
                 {{-- KASIR --}}
                 <div x-data="{
                     open: {{ request()->routeIs('admin.inject-kas.*', 'admin.laporan-laba.*', 'admin.belanja-barang.*', 'admin.operasional.*') ? 'true' : 'false' }}">
@@ -265,22 +263,22 @@
 
                     <div x-show="open" x-transition x-cloak class="mt-1 space-y-1 ml-9 border-l border-gray-700">
                         <a href="{{ route('admin.inject-kas.index') }}"
-                            class="block px-4 py-2 text-sm 
+                            class="block px-4 py-2 text-sm
            {{ request()->routeIs('admin.inject-kas.*') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">
                             Terima Kas
                         </a>
                         <a href="{{ route('admin.laporan-laba.index') }}"
-                            class="block px-4 py-2 text-sm 
+                            class="block px-4 py-2 text-sm
            {{ request()->routeIs('admin.laporan-laba.*') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">
                             Omset (Laporan Laba)
                         </a>
                         <a href="{{ route('admin.belanja-barang.index') }}"
-                            class="block px-4 py-2 text-sm 
+                            class="block px-4 py-2 text-sm
            {{ request()->routeIs('admin.belanja-barang.*') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">
                             Belanja Barang
                         </a>
                         <a href="{{ route('admin.operasional.index') }}"
-                            class="block px-4 py-2 text-sm 
+                            class="block px-4 py-2 text-sm
            {{ request()->routeIs('admin.operasional.*') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">
                             Biaya Operasional
                         </a>
@@ -288,7 +286,6 @@
                 </div>
 
 
->>>>>>> 6bc1f4718250fcb9df21161307f9e402991e5be7
                 <a href="{{ route('admin.hutang.index') }}"
                     class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->routeIs('admin.hutang.*') ? 'bg-red-600 text-white shadow-lg' : 'hover:bg-gray-800 hover:text-white' }}">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -345,18 +342,14 @@
                     </svg>
                     <span class="text-sm font-medium">Manajemen User</span>
                 </a>
-<<<<<<< HEAD
                 <a href="{{ route('admin.inject-kas.index') }}"
-=======
-                {{-- <a href="{{ route('admin.inject-kas.index') }}"
->>>>>>> 6bc1f4718250fcb9df21161307f9e402991e5be7
                     class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->routeIs('admin.inject-kas.*') ? 'bg-gray-700 text-white' : 'hover:bg-gray-800 hover:text-white' }}">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
                     <span class="text-sm font-medium">Inject Kas</span>
-                </a> --}}
+                </a>
 
                 <a href="{{ route('logout') }}"
                     onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
