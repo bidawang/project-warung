@@ -118,7 +118,7 @@ class TransaksiBarangController extends Controller
         $transaksis = TransaksiKas::all();
         $barangs = Barang::all(); // Tetap ambil semua barang untuk referensi harga
         $areas = AreaPembelian::all();
-
+// dd(123);
         // Ambil data AsalBarang dengan relasi barang
         $asalBarangs = AsalBarang::with('barang')->get();
 

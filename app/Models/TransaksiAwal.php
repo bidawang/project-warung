@@ -25,4 +25,12 @@ class TransaksiAwal extends Model
         'total',
         'keterangan',
     ];
+
+    // app/Models/TransaksiAwal.php
+
+    public function detailsLain()
+    {
+        // Parameter kedua adalah Foreign Key yang ada di tabel transaksi_lain_lain
+        return $this->hasMany(TransaksiLainLain::class, 'id_transaksi_awal', 'id');
+    }
 }

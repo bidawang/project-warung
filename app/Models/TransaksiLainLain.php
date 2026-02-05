@@ -22,8 +22,16 @@ class TransaksiLainLain extends Model
      * @var array
      */
     protected $fillable = [
-        'id_transaksi_wrb',
+        'id_transaksi_awal',
         'keterangan',
         'harga',
     ];
+
+    // app/Models/TransaksiLainLain.php
+
+    public function transaksiAwal()
+    {
+        // Kita hubungkan id_transaksi_awal (FK) ke id di tabel transaksi_awal
+        return $this->belongsTo(TransaksiAwal::class, 'id_transaksi_awal', 'id');
+    }
 }

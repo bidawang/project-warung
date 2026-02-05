@@ -55,7 +55,7 @@
                             {{ $warung->keterangan ?? '-' }}
                         </td>
                         <td class="px-6 py-4 text-right">
-                            <a href="{{ route('admin.laporan.laba', $warung->id) }}"
+                            <a href="{{ route('admin.laporan-laba.show', $warung->id) }}"
                                class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm transition-all active:scale-95">
                                 <i class="fas fa-chart-line mr-2"></i> Detail Laba
                             </a>

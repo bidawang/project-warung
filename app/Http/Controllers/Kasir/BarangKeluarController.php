@@ -20,87 +20,87 @@ class BarangKeluarController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-        $barang_keluar = BarangKeluar::whereHas('stokWarung', function ($q) {
-            $q->where('id_warung', session('id_warung'));
-        })
-            ->with(['stokWarung.barang']) // biar langsung load barangnya juga
-            ->latest()
-            ->get();
+    // public function index()
+    // {
+    //     $barang_keluar = BarangKeluar::whereHas('stokWarung', function ($q) {
+    //         $q->where('id_warung', session('id_warung'));
+    //     })
+    //         ->with(['stokWarung.barang']) // biar langsung load barangnya juga
+    //         ->latest()
+    //         ->get();
 
-        return view('barangkeluar.index', compact('barang_keluar'));
-    }
+    //     return view('barangkeluar.index', compact('barang_keluar'));
+    // }
 
 
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
-    {
-        $users = User::where('role', 'member')->get();
-        $stok_warungs = StokWarung::where('id_warung', session('id_warung'))
-            ->with(['barang.transaksiBarang.areaPembelian', 'kuantitas'])
-            ->get();
+    // public function create()
+    // {
+    //     $users = User::where('role', 'member')->get();
+    //     $stok_warungs = StokWarung::where('id_warung', session('id_warung'))
+    //         ->with(['barang.transaksiBarang.areaPembelian', 'kuantitas'])
+    //         ->get();
 
-        $stok_warungs->transform(function ($stok) {
-            // Hitung stok saat ini
-            $stokMasuk = $stok->barangMasuk()
-                ->where('status', 'terima')
-                ->whereHas('stokWarung', fn($q) => $q->where('id_warung', session('id_warung')))
-                ->sum('jumlah');
+    //     $stok_warungs->transform(function ($stok) {
+    //         // Hitung stok saat ini
+    //         $stokMasuk = $stok->barangMasuk()
+    //             ->where('status', 'terima')
+    //             ->whereHas('stokWarung', fn($q) => $q->where('id_warung', session('id_warung')))
+    //             ->sum('jumlah');
 
-            $stokKeluar = $stok->barangKeluar()
-                ->whereHas('stokWarung', fn($q) => $q->where('id_warung', session('id_warung')))
-                ->sum('jumlah');
+    //         $stokKeluar = $stok->barangKeluar()
+    //             ->whereHas('stokWarung', fn($q) => $q->where('id_warung', session('id_warung')))
+    //             ->sum('jumlah');
 
-            $mutasiMasuk = $stok->mutasiBarang()
-                ->where('status', 'terima')
-                ->whereHas('stokWarung', fn($q) => $q->where('id_warung', session('id_warung')))
-                ->sum('jumlah');
+    //         $mutasiMasuk = $stok->mutasiBarang()
+    //             ->where('status', 'terima')
+    //             ->whereHas('stokWarung', fn($q) => $q->where('id_warung', session('id_warung')))
+    //             ->sum('jumlah');
 
-            $mutasiKeluar = $stok->mutasiBarang()
-                ->where('status', 'keluar')
-                ->whereHas('stokWarung', fn($q) => $q->where('id_warung', session('id_warung')))
-                ->sum('jumlah');
+    //         $mutasiKeluar = $stok->mutasiBarang()
+    //             ->where('status', 'keluar')
+    //             ->whereHas('stokWarung', fn($q) => $q->where('id_warung', session('id_warung')))
+    //             ->sum('jumlah');
 
-            $stokSaatIni = $stokMasuk + $mutasiMasuk - $mutasiKeluar - $stokKeluar;
-            $stok->stok_saat_ini = $stokSaatIni;
+    //         $stokSaatIni = $stokMasuk + $mutasiMasuk - $mutasiKeluar - $stokKeluar;
+    //         $stok->stok_saat_ini = $stokSaatIni;
 
-            // Ambil transaksi terbaru
-            $transaksi = $stok->barang->transaksiBarang()->latest()->first();
+    //         // Ambil transaksi terbaru
+    //         $transaksi = $stok->barang->transaksiBarang()->latest()->first();
 
-            if (!$transaksi) {
-                $stok->harga_jual = 0;
-                $stok->kuantitas_list = [];
-                return $stok;
-            }
+    //         if (!$transaksi) {
+    //             $stok->harga_jual = 0;
+    //             $stok->kuantitas_list = [];
+    //             return $stok;
+    //         }
 
-            // Harga dasar = total beli / jumlah
-            $hargaDasar = $transaksi->harga / max($transaksi->jumlah, 1);
+    //         // Harga dasar = total beli / jumlah
+    //         $hargaDasar = $transaksi->harga / max($transaksi->jumlah, 1);
 
-            // Tambahkan markup dari area pembelian
-            $markupPercent = optional($transaksi->areaPembelian)->markup ?? 0;
-            $hargaSatuan = $hargaDasar + ($hargaDasar * $markupPercent / 100);
+    //         // Tambahkan markup dari area pembelian
+    //         $markupPercent = optional($transaksi->areaPembelian)->markup ?? 0;
+    //         $hargaSatuan = $hargaDasar + ($hargaDasar * $markupPercent / 100);
 
-            // Ambil harga_jual dari tabel Laba
-            $laba = Laba::where('input_minimal', '<=', $hargaSatuan)
-                ->where('input_maksimal', '>=', $hargaSatuan)
-                ->first();
+    //         // Ambil harga_jual dari tabel Laba
+    //         $laba = Laba::where('input_minimal', '<=', $hargaSatuan)
+    //             ->where('input_maksimal', '>=', $hargaSatuan)
+    //             ->first();
 
-            $stok->harga_jual = $laba ? $laba->harga_jual : 0;
+    //         $stok->harga_jual = $laba ? $laba->harga_jual : 0;
 
-            // Daftar kuantitas (bundle)
-            $stok->kuantitas_list = $stok->kuantitas->map(fn($k) => [
-                'jumlah' => $k->jumlah,
-                'harga_jual' => $k->harga_jual,
-            ]);
+    //         // Daftar kuantitas (bundle)
+    //         $stok->kuantitas_list = $stok->kuantitas->map(fn($k) => [
+    //             'jumlah' => $k->jumlah,
+    //             'harga_jual' => $k->harga_jual,
+    //         ]);
 
-            return $stok;
-        });
+    //         return $stok;
+    //     });
 
-        return view('barangkeluar.create', compact('stok_warungs', 'users'));
-    }
+    //     return view('barangkeluar.create', compact('stok_warungs', 'users'));
+    // }
 
 
     /**
@@ -128,7 +128,7 @@ class BarangKeluarController extends Controller
             'keterangan'                => 'nullable|string',
             'tenggat'                   => 'nullable|date',
         ]);
-
+        // dd($request->all());
         $idWarung = session('id_warung');
         if (!$idWarung) {
             return redirect()->route('kasir.kasir')->with('error', 'ID warung tidak ditemukan di sesi.');
@@ -156,7 +156,7 @@ class BarangKeluarController extends Controller
             'transfer'         => 'Transfer (' . ($validated['keterangan_transfer'] ?? 'Bank') . ')',
             'hutang barang'    => 'Hutang Barang',
         };
-// dd($prefix);
+        // dd($prefix);
         $finalKeterangan = $validated['keterangan'] ?? ($prefix . ': ' . $itemDescriptions);
 
         /**
@@ -175,9 +175,7 @@ class BarangKeluarController extends Controller
                 $jenisKasTarget = 'cash';
                 $metodePembayaran = 'cash';
             } else {
-                // Untuk hutang, biasanya masuk record kas cash dengan total uang masuk 0 (jika sistem Anda memisahkan piutang)
-                // Namun di sini kita sesuaikan dengan target kas default Anda
-                $jenisKasTarget = 'cash';
+                $jenisKasTarget = 'cash'; // Hutang biasanya tidak menambah saldo kas fisik saat itu juga
                 $metodePembayaran = 'hutang';
             }
 
@@ -186,30 +184,38 @@ class BarangKeluarController extends Controller
                 ->where('jenis_kas', $jenisKasTarget)
                 ->first();
 
-            // Fallback: Jika kas bank belum dibuat, paksa ke kas cash agar transaksi tidak gagal
+            // Fallback: Jika kas bank belum dibuat, paksa ke kas cash
             if (!$kasWarung) {
                 $kasWarung = KasWarung::where('id_warung', $idWarung)
                     ->where('jenis_kas', 'cash')
                     ->firstOrFail();
             }
-            // dd($validated['jenis']);
+
             if ($validated['jenis'] === 'transfer') {
                 $jenis = 'penjualan barang';
             } else {
                 $jenis = $validated['jenis'];
             }
 
-            // dd($jenis);
             // 3. Simpan Transaksi Kas
             $transaksiKas = TransaksiKas::create([
                 'id_kas_warung'     => $kasWarung->id,
                 'total'             => $validated['total_harga'],
-                'metode_pembayaran' => $metodePembayaran, // Contoh: "TF (DANA)" atau "cash"
-
-                
+                'metode_pembayaran' => $metodePembayaran,
                 'jenis'             => $jenis,
                 'keterangan'        => $finalKeterangan,
             ]);
+
+            /**
+             * ==========================================
+             * UPDATE SALDO KAS WARUNG (Fungsi yang ditambahkan)
+             * ==========================================
+             */
+            // Saldo hanya bertambah jika jenisnya 'penjualan barang' (Cash) atau 'transfer' (Bank)
+            // Jika 'hutang barang', saldo kas tidak bertambah karena uang belum diterima.
+            if ($validated['jenis'] === 'penjualan barang' || $validated['jenis'] === 'transfer') {
+                $kasWarung->updateSaldo($validated['total_harga'], 'tambah');
+            }
 
             /**
              * ==========================================

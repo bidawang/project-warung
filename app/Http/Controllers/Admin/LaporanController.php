@@ -13,7 +13,7 @@ class LaporanController extends Controller
         // Mengambil semua data dari tabel warung
         $warungs = DB::table('warung')->select('id', 'nama_warung', 'keterangan', 'modal')->get();
 
-        return view('admin.laporan.select_warung', compact('warungs'));
+        return view('admin.laporanlaba.select_warung', compact('warungs'));
     }
 
     public function showLaba($id_warung)
@@ -36,7 +36,7 @@ class LaporanController extends Controller
             ->where('barang_keluar.jenis', 'penjualan')
             ->first();
 
-        return view('admin.laporan.detail_laba', [
+        return view('admin.laporanlaba.detail_laba', [
             'warung' => $warung,
             'laba_kotor' => $laporan->laba_kotor ?? 0,
             'laba_bersih' => $laporan->laba_bersih ?? 0,
