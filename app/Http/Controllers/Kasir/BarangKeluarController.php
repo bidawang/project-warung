@@ -258,7 +258,7 @@ class BarangKeluarController extends Controller
                 ]);
 
                 // Update transaksi_kas untuk relasi hutang jika kolom id_hutang ada
-                $transaksiKas->update(['id_hutang' => $hutang->id]);
+                // $transaksiKas->update(['id_hutang' => $hutang->id]);
             }
 
             /**

@@ -13,58 +13,67 @@ class HutangControllerKasir extends Controller
     {
         $idWarung = session('id_warung');
 
-        if (! $idWarung) {
-            return redirect()->route('dashboard')->with('error', 'ID warung tidak ditemukan di sesi.');
+        if (!$idWarung) {
+            return redirect()->route('dashboard')
+                ->with('error', 'ID warung tidak ditemukan di sesi.');
         }
 
-        // filter status
-        $status = $request->get('status'); // 'belum lunas', 'lunas', atau null
+        $status = $request->get('status');
+
         $query = Hutang::with('user')
-            ->where('id_warung', $idWarung);
+            ->where('id_warung', $idWarung)
+            ->selectRaw('
+            id_user,
+            SUM(jumlah_hutang_awal) as total_hutang,
+            SUM(jumlah_sisa_hutang) as total_sisa_hutang
+        ')
+            ->groupBy('id_user');
 
-        if ($status) {
-            $query->where('status', $status);
+        // filter status pelanggan (GLOBAL)
+        if ($status === 'belum_lunas') {
+            $query->having('total_sisa_hutang', '>', 0);
+        } elseif ($status === 'lunas') {
+            $query->having('total_sisa_hutang', '=', 0);
         }
 
-        // pencarian nama user
+        // search nama pelanggan
         if ($request->filled('q')) {
             $query->whereHas('user', function ($q) use ($request) {
                 $q->where('name', 'like', '%' . $request->q . '%');
             });
         }
 
-        $hutangList = $query->orderBy('tenggat', 'asc')->paginate(10);
+        $hutangList = $query->paginate(10);
 
         return view('kasir.hutang.index', compact('hutangList', 'status'));
     }
 
-    public function detail($id)
+
+    public function detail($idUser)
     {
-        // Mendapatkan ID warung dari sesi
         $idWarung = session('id_warung');
 
         if (!$idWarung) {
-            return redirect()->route('dashboard')->with('error', 'ID warung tidak ditemukan di sesi.');
+            return redirect()->route('dashboard')
+                ->with('error', 'ID warung tidak ditemukan di sesi.');
         }
 
-        // Mengambil data hutang dengan EAGER LOAD relasi yang Diperbarui
-        // Tambahkan 'stokWarung.hargaJual'
-        $hutang = Hutang::with([
-            'user',
-            'barangHutang.barangKeluar.stokWarung.barang',
-            'barangHutang.barangKeluar.stokWarung.hargaJual', // <--- Tambahkan ini
-        ])
+        $hutangList = Hutang::with('user')
             ->where('id_warung', $idWarung)
-            ->findOrFail($id);
-
-            // dd($hutang->barangHutang->first()->barangKeluar->stokWarung->hargaJual);
-        // Mengambil riwayat pembayaran, diurutkan dari yang terbaru
-        $logPembayaran = LogPembayaranHutang::where('id_hutang', $hutang->id)
-            ->orderBy('created_at', 'desc')
+            ->where('id_user', $idUser)
+            ->orderBy('tenggat', 'asc')
             ->get();
-        // Mengembalikan view detail dengan data hutang dan log pembayaran
-        return view('kasir.hutang.detail', compact('hutang', 'logPembayaran'));
+
+        if ($hutangList->isEmpty()) {
+            return redirect()->back()
+                ->with('info', 'Tidak ada hutang untuk pelanggan ini.');
+        }
+
+        $pelanggan = $hutangList->first()->user;
+
+        return view('kasir.hutang.detail', compact('pelanggan', 'hutangList'));
     }
+
 
 
     public function bayar(Request $request, $id)
@@ -108,5 +117,17 @@ class HutangControllerKasir extends Controller
 
         return redirect()->route('kasir.hutang.detail', $hutang->id)
             ->with('success', 'Pembayaran berhasil.');
+    }
+
+    public function show($id)
+    {
+        $idWarung = session('id_warung');
+
+        // Gunakan .with('logs') untuk mengambil riwayat pembayaran sekaligus
+        $hutang = Hutang::with('logs')
+            ->where('id_warung', $idWarung)
+            ->findOrFail($id);
+
+        return view('kasir.hutang.show', compact('hutang'));
     }
 }
