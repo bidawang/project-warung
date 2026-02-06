@@ -24,4 +24,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(Hutang::class, 'id_user', 'id');
     }
+
+    public function hutangs()
+    {
+        // Sesuaikan 'id_user' dengan nama foreign key di tabel hutang Anda
+        return $this->hasMany(Hutang::class, 'id_user');
+    }
 }

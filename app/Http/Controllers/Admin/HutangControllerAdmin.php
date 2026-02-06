@@ -13,37 +13,38 @@ class HutangControllerAdmin extends Controller
 {
     public function index(Request $request)
     {
-        $query = Hutang::with(['user', 'warung']);
+        $status = $request->status;
+        $search = $request->q;
 
-        $status = $request->get('status');
-        if ($status) {
-            $query->where('status', $status);
-        }
+        // Base query untuk Aturan Tenggat (tetap sama)
+        $aturanTenggats = AturanTenggat::with('warung')->get();
 
-        if ($request->filled('expired')) {
-            $query->where('status', 'belum_lunas')
-                ->whereDate('tenggat', '<', now());
-        }
+        // Query Utama: Kelompokkan berdasarkan User
+        $query = Hutang::with(['user', 'warung'])
+            ->select('id_user', 'id_warung') // Ambil kolom kunci
+            ->selectRaw('SUM(jumlah_hutang_awal) as total_awal')
+            ->selectRaw('SUM(jumlah_sisa_hutang) as total_sisa')
+            ->selectRaw('COUNT(*) as total_nota')
+            ->selectRaw('MIN(tenggat) as tenggat_terdekat')
+            ->groupBy('id_user', 'id_warung');
 
-        if ($request->filled('q')) {
-            $query->whereHas('user', function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->q . '%');
+        // Filter Search (Nama User)
+        if ($search) {
+            $query->whereHas('user', function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%');
             });
         }
 
-        // --- Perubahan Utama: Prioritaskan status 'belum_lunas' ---
-        // 1. Urutkan berdasarkan status, 'belum_lunas' (0) akan muncul sebelum 'lunas' (1).
-        // 2. Kemudian, urutkan berdasarkan tanggal tenggat terdekat (ASC).
-        $hutangList = $query
-            ->orderByRaw("status = 'lunas' ASC") // ASC = 0 (belum_lunas) lalu 1 (lunas)
-            ->orderBy('tenggat', 'asc')
-            ->paginate(10);
+        // Filter Status
+        if ($status === 'lunas') {
+            $query->havingRaw('SUM(jumlah_sisa_hutang) <= 0');
+        } elseif ($status === 'belum_lunas') {
+            $query->havingRaw('SUM(jumlah_sisa_hutang) > 0');
+        }
 
-        // Data tambahan untuk View
-        $aturanTenggats = AturanTenggat::with('warung')->get();
-        $allWarungs = Warung::select('id', 'nama_warung')->get();
+        $hutangList = $query->paginate(10);
 
-        return view('admin.hutang.index', compact('hutangList', 'status', 'aturanTenggats', 'allWarungs'));
+        return view('admin.hutang.index', compact('hutangList', 'aturanTenggats'));
     }
 
 
@@ -72,5 +73,21 @@ class HutangControllerAdmin extends Controller
         // Mengembalikan view detail dengan data hutang dan log pembayaran
         // Asumsi view berada di 'admin.hutang.detail'
         return view('admin.hutang.detail', compact('hutang', 'logPembayaran'));
+    }
+
+    public function userDetail($userId)
+    {
+        $user = \App\Models\User::findOrFail($userId);
+
+        // Sekarang pembayarans sudah terdaftar di model
+        $hutangList = Hutang::with(['warung', 'pembayarans'])
+            ->where('id_user', $userId)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $totalSisa = $hutangList->sum('jumlah_sisa_hutang');
+        $totalHutang = $hutangList->sum('jumlah_hutang_awal');
+
+        return view('admin.hutang.user_detail', compact('user', 'hutangList', 'totalSisa', 'totalHutang'));
     }
 }

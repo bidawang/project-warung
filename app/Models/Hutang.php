@@ -46,6 +46,13 @@ class Hutang extends Model
     {
         return $this->hasMany(Bunga::class, 'id_hutang');
     }
+
+    public function pembayarans()
+    {
+        // Menghubungkan ke Model LogPembayaranHutang menggunakan id_hutang
+        return $this->hasMany(LogPembayaranHutang::class, 'id_hutang');
+    }
+    
     public function barangHutang()
     {
         return $this->hasMany(BarangHutang::class, 'id_hutang');

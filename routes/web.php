@@ -169,6 +169,7 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::get('/riwayat-transaksi', [RiwayatTransaksiControllerAdmin::class, 'index'])->name('riwayat_transaksi.index');
 
     Route::get('/hutang', [HutangControllerAdmin::class, 'index'])->name('hutang.index');
+    Route::get('/hutang/user-detail/{id_user}', [HutangControllerAdmin::class, 'userDetail'])->name('hutang.user_detail');
     Route::get('/hutang/{hutang}/detail', [HutangControllerAdmin::class, 'detailAllWarung'])->name('hutang.detail');
     Route::resource('asalbarang', AsalBarangControllerAdmin::class)->except(['show', 'destroy'])
         ->parameters([
@@ -217,6 +218,7 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
 
     Route::get('/hutang', [HutangControllerKasir::class, 'index'])->name('hutang.index');
     Route::get('/hutang/detail/{id}', [HutangControllerKasir::class, 'detail'])->name('hutang.detail');
+
     Route::post('/hutang/bayar/{id}', [HutangControllerKasir::class, 'bayar'])->name('hutang.bayar');
     Route::get('/hutang/show/{id}', [HutangControllerKasir::class, 'show'])->name('hutang.show');
     // Hutang Barang Masuk
