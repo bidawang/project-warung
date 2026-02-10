@@ -141,7 +141,7 @@ public function index()
         'items.*.purchases.*.harga'             => 'required_without:items.*.skip|numeric|min:0',
         'items.*.purchases.*.tanggal_kadaluarsa' => 'nullable|date',
     ]);
-// dd($validated);
+dd($validated);
     $grandTotal = 0;
     $keteranganTransaksi = "Pembelian Berdasarkan Rencana Belanja Warung";
     $rencanaUpdates = [];
@@ -423,7 +423,7 @@ public function kirimRencanaProses(Request $request)
                 $transaksiIdsDiproses[] = $trxId . " (dikirim penuh)";
             }
         }
-        // dd($data, 'asu');
+        dd($data, 'asu');
     });
 
     // 3. Redirect dan Notifikasi

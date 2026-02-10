@@ -265,7 +265,7 @@ class RencanaBelanjaControllerAdmin extends Controller
             'items.*.purchases.*.harga'             => 'required_without:items.*.skip|numeric|min:0',
             'items.*.purchases.*.tanggal_kadaluarsa' => 'nullable|date',
         ]);
-        // dd($validated,'asuuu');
+        // dd($validated,'asuuuuuuuuuuuuuuuu');
 
 
         $grandTotal = 0;
@@ -339,6 +339,7 @@ class RencanaBelanjaControllerAdmin extends Controller
     {
         // 1. Filtering dan Sanitasi Input
         $allData = $request->all();
+        // dd('Kirim Rencana Proses', $allData);
         $itemsFiltered = collect($allData['items'] ?? [])
             ->filter(function ($item) {
                 return !empty($item['transactions']);
@@ -434,21 +435,37 @@ class RencanaBelanjaControllerAdmin extends Controller
                         'status'           => 'belum lunas',
                     ]);
 
-                    // 5. Update Harga Jual
+                    // 5. Update Harga Jual (TUTUP PERIODE LAMA, BUAT BARU)
                     $laba = optional($warung->area)->laba()
                         ->where('input_minimal', '<=', $hargaModalWarung)
                         ->where('input_maksimal', '>=', $hargaModalWarung)
                         ->first();
 
+                    // 5.a Tutup harga jual aktif sebelumnya (jika ada)
+                    
+                    HargaJual::where('id_warung', $warungId)
+                        ->where('id_barang', $barangId)
+                        ->whereNull('periode_akhir')
+                        ->orderByDesc('id')   // data TERAKHIR di-input
+                        ->limit(1)
+                        ->update([
+                            'periode_akhir' => now()
+                        ]);
+                    
+
+
+                    // 5.b Buat harga jual baru
                     HargaJual::create([
                         'id_warung'              => $warungId,
                         'id_barang'              => $barangId,
-                        'harga_sebelum_markup'   => $hargaBeliPerUnit,
+                        'harga_sebelum_markup'   => round($hargaBeliPerUnit),
                         'harga_modal'            => round($hargaModalWarung),
                         'harga_jual_range_awal'  => optional($laba)->harga_jual ?? 0,
                         'harga_jual_range_akhir' => optional($laba)->harga_jual ?? 0,
                         'periode_awal'           => now(),
+                        'periode_akhir'          => null,
                     ]);
+
 
                     // 6. Update TransaksiBarang sumber (jumlah_terpakai)
                     $trxBarang->increment('jumlah_terpakai', $jumlahKirim);

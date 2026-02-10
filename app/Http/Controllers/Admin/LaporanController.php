@@ -3,7 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+// use Illuminate\Http\Request;
+use App\Models\Warung;
 use Illuminate\Support\Facades\DB;
 
 class LaporanController extends Controller
@@ -18,28 +19,42 @@ class LaporanController extends Controller
 
     public function showLaba($id_warung)
     {
-        $warung = DB::table('warung')->where('id', $id_warung)->first();
+        // ===============================
+        // 1. AMBIL WARUNG + RELASI
+        // ===============================
+        $warung = Warung::with([
+            'stokWarung.barangKeluar' => function ($q) {
+                $q->where('jenis', 'penjualan barang');
+            },
+            'stokWarung.hargaJual'
+        ])->findOrFail($id_warung);
 
-        $laporan = DB::table('barang_keluar')
-            ->join('stok_warung', 'barang_keluar.id_stok_warung', '=', 'stok_warung.id')
-            ->join('harga_jual', function ($join) {
-                $join->on('stok_warung.id_barang', '=', 'harga_jual.id_barang')
-                    ->on('stok_warung.id_warung', '=', 'harga_jual.id_warung');
-            })
-            ->select(
-                DB::raw("SUM(barang_keluar.jumlah * barang_keluar.harga_jual) as laba_kotor"),
-                DB::raw("SUM(barang_keluar.jumlah * (barang_keluar.harga_jual - harga_jual.harga_modal)) as laba_bersih")
-            )
-            ->where('stok_warung.id_warung', $id_warung)
-            ->where('barang_keluar.jenis', 'penjualan barang')
-            ->first();
+        // ===============================
+        // 2. HITUNG LABA
+        // ===============================
+        $labaKotor  = 0;
+        $labaBersih = 0;
 
+        foreach ($warung->stokWarung as $stok) {
+            $hargaModal = $stok->hargaJual->harga_modal ?? 0;
+
+            foreach ($stok->barangKeluar as $keluar) {
+                $subtotalJual = $keluar->jumlah * $keluar->harga_jual;
+                $subtotalModal = $keluar->jumlah * $hargaModal;
+
+                $labaKotor  += $subtotalJual;
+                $labaBersih += ($subtotalJual - $subtotalModal);
+            }
+        }
+
+        // ===============================
+        // 3. RETURN KE VIEW
+        // ===============================
         return view('admin.laporanlaba.detail_laba', [
-            'warung' => $warung,
-            'laba_kotor' => $laporan->laba_kotor ?? 0,
-            'laba_bersih' => $laporan->laba_bersih ?? 0,
-            // Selisih untuk info HPP (Modal)
-            'total_modal' => ($laporan->laba_kotor ?? 0) - ($laporan->laba_bersih ?? 0)
+            'warung'       => $warung,
+            'laba_kotor'   => $labaKotor,
+            'laba_bersih'  => $labaBersih,
+            'total_modal'  => $labaKotor - $labaBersih,
         ]);
     }
 }
