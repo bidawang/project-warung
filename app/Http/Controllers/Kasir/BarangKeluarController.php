@@ -206,6 +206,7 @@ class BarangKeluarController extends Controller
                 'keterangan'        => $finalKeterangan,
             ]);
 
+
             /**
              * ==========================================
              * UPDATE SALDO KAS WARUNG (Fungsi yang ditambahkan)
@@ -256,7 +257,6 @@ class BarangKeluarController extends Controller
                     'status'             => 'belum lunas',
                     'keterangan'         => $finalKeterangan,
                 ]);
-
             }
 
             /**
@@ -265,6 +265,21 @@ class BarangKeluarController extends Controller
              * ==========================================
              */
             foreach ($validated['items'] as $item) {
+                // Ambil stok untuk tahu id_barang
+                $stok = StokWarung::find($item['id_stok_warung']);
+
+                if ($stok) {
+                    $hargaAktif = \App\Models\HargaJual::where('id_warung', $idWarung)
+                        ->where('id_barang', $stok->id_barang)
+                        ->whereNull('periode_akhir')
+                        ->latest('periode_awal')
+                        ->first();
+
+                    if ($hargaAktif) {
+                        $hargaAktif->increment('barang_terjual', $item['jumlah']);
+                    }
+                }
+                
                 $barangKeluar = BarangKeluar::create([
                     'id_stok_warung' => $item['id_stok_warung'],
                     'jumlah'         => $item['jumlah'],

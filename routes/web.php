@@ -55,6 +55,7 @@ use App\Http\Controllers\Admin\{
     JenisPulsaController,
     InjectKasControllerAdmin,
     OperasionalControllerAdmin,
+    PengeluaranPokokWarungControllerAdmin,
 };
 
 use App\Http\Controllers\Kasir\{
@@ -120,6 +121,11 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardControllerAdmin::class, 'index'])->name('dashboard');
 
     Route::resource('/user', UserControllerAdmin::class);
+
+    Route::resource(
+        'pengeluaran-pokok-warung',
+        PengeluaranPokokWarungControllerAdmin::class
+    );
 
     // Ganti route area manual menjadi resource
     Route::resource('/area', AreaControllerAdmin::class);
@@ -203,7 +209,7 @@ Route::prefix('kasir')->name('kasir.')->group(function () {
     Route::delete('kuantitas/{id}', [KuantitasController::class, 'destroy'])->name('kuantitas.destroy');
 
     Route::resource('riwayat-transaksi', RiwayatTransaksiControllerKasir::class);
-    Route::get('riwayat-barang-masuk',[RiwayatTransaksiBarangMasukControllerKasir::class, 'index'])->name('riwayat-barang-masuk.index');
+    Route::get('riwayat-barang-masuk', [RiwayatTransaksiBarangMasukControllerKasir::class, 'index'])->name('riwayat-barang-masuk.index');
 
     Route::resource('laporan-kas', LaporanKasControllerKasir::class)->except(['show', 'edit', 'update', 'destroy']);
     Route::post('/laporan-bank/store', [LaporanKasControllerKasir::class, 'storeBank'])->name('laporan-bank.store');

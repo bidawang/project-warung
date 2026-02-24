@@ -464,6 +464,8 @@ class RencanaBelanjaControllerAdmin extends Controller
                         'harga_jual_range_akhir' => optional($laba)->harga_jual ?? 0,
                         'periode_awal'           => now(),
                         'periode_akhir'          => null,
+                        'barang_terjual'         => 0,
+                        'total_barang'           => $jumlahKirim,
                     ]);
 
 

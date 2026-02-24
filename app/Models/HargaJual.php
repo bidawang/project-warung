@@ -20,6 +20,8 @@ class HargaJual extends Model
         'harga_jual_range_akhir',
         'periode_awal',
         'periode_akhir',
+        'total_barang',
+        'barang_terjual',
     ];
 
     // Relasi ke model Warung

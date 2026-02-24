@@ -114,6 +114,7 @@ class HargaJualControllerAdmin extends Controller
 
         // 4. Kirim data yang sudah terstruktur ke view
         // Sesuaikan nama view jika perlu, di sini menggunakan monitor_all_prices_detail
+        // dd($barangPricesByWarung);
         return view('admin.harga_jual.monitor_all_prices', compact('barangPricesByWarung'));
     }
 

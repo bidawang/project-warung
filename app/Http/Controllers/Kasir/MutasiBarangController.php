@@ -41,7 +41,7 @@ class MutasiBarangController extends Controller
             ->get()
             ->groupBy('warung_tujuan');
         // dd($mutasiKeluarGrouped);
-        return view('mutasibarang.index', compact('mutasiMasuk', 'mutasiKeluarGrouped'));
+        return view('kasir.mutasibarang.index', compact('mutasiMasuk', 'mutasiKeluarGrouped'));
     }
 
 
@@ -138,7 +138,7 @@ class MutasiBarangController extends Controller
 
         // Ambil semua warung untuk dropdown tujuan (kecuali warung aktif biar ga mutasi ke diri sendiri)
         $warungTujuan = Warung::where('id', '!=', $warungId)->get();
-        return view('mutasibarang.create', compact('warung', 'barangTersedia', 'warungTujuan'));
+        return view('kasir.mutasibarang.create', compact('warung', 'barangTersedia', 'warungTujuan'));
     }
 
 

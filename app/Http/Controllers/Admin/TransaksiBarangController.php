@@ -285,6 +285,7 @@ class TransaksiBarangController extends Controller
     {
         // 1. Filtering dan Sanitasi Input
         $allData = $request->all();
+        // dd($allData);
         $transaksiFiltered = collect($allData['transaksi'] ?? [])
             ->filter(function ($trx) {
                 return !empty($trx['details']);
@@ -402,6 +403,8 @@ class TransaksiBarangController extends Controller
                         'harga_modal'            => round($hargaModalWarung),
                         'harga_jual_range_awal'  => $hargaJualSatuan,
                         'harga_jual_range_akhir' => $hargaJualSatuan,
+                        'total_barang'           => $jumlahKirim,
+                        'barang_terjual'         => 0,
                         'periode_awal'           => now(),
                     ]);
                 }
