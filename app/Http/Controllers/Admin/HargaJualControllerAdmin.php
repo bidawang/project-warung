@@ -32,8 +32,8 @@ class HargaJualControllerAdmin extends Controller
         $allBarang = Barang::all()->keyBy('id');
         // Eager load stokWarung hanya untuk barang yang ada
         $allWarung = Warung::with(['area', 'user', 'stokWarung' => fn($q) => $q->whereIn('id_barang', $allBarang->keys())])
-                        ->get()
-                        ->keyBy('id');
+            ->get()
+            ->keyBy('id');
 
 
         // 3. Atur data ke dalam struktur yang mudah diolah di view: $BarangId => [Collection Warung Prices]
@@ -109,7 +109,6 @@ class HargaJualControllerAdmin extends Controller
                 ];
             }
             return null;
-
         })->filter()->values(); // Hapus item null dan reset keys
 
         // 4. Kirim data yang sudah terstruktur ke view
@@ -189,7 +188,7 @@ class HargaJualControllerAdmin extends Controller
 
         $id_warung = $request->id_warung;
         $id_barang = $request->id_barang;
-// dd('here');
+        // dd('here');
         // Cari HargaJual aktif terbaru.
         $hargaJual = HargaJual::where('id_warung', $id_warung)
             ->where('id_barang', $id_barang)
@@ -211,11 +210,69 @@ class HargaJualControllerAdmin extends Controller
             ]);
 
             return redirect()->route('admin.harga_jual.monitor_all_prices')
-                    ->with('success', "Harga jual untuk Barang '{$hargaJual->barang->nama_barang}' di Warung '{$hargaJual->warung->nama_warung}' berhasil diperbarui.");
+                ->with('success', "Harga jual untuk Barang '{$hargaJual->barang->nama_barang}' di Warung '{$hargaJual->warung->nama_warung}' berhasil diperbarui.");
         }
 
         // Handle jika tidak ada harga modal, atau record tidak ditemukan
         return redirect()->route('admin.harga_jual.monitor_all_prices')
-                ->with('error', 'Gagal memperbarui harga. Pastikan Harga Modal untuk barang ini sudah terdaftar dan aktif.');
+            ->with('error', 'Gagal memperbarui harga. Pastikan Harga Modal untuk barang ini sudah terdaftar dan aktif.');
+    }
+
+    public function inflasiLaba(Request $request)
+    {
+        $selectedWarungId = $request->id_warung;
+
+        // Ambil semua warung untuk dropdown
+        $allWarung = Warung::orderBy('nama_warung')->get();
+
+        $inflasiData = collect();
+
+        if ($selectedWarungId) {
+
+            // Ambil semua histori harga jual warung tsb (semua periode)
+            $hargaJual = HargaJual::with('barang')
+                ->where('id_warung', $selectedWarungId)
+                ->orderBy('id_barang')
+                ->orderBy('periode_awal')
+                ->get()
+                ->groupBy('id_barang');
+
+            foreach ($hargaJual as $barangId => $records) {
+
+                $previous = null;
+
+                foreach ($records as $record) {
+
+                    $modal = $record->harga_modal;
+                    $jual = $record->harga_jual_range_akhir;
+
+                    $margin = $modal > 0 ? $jual - $modal : 0;
+
+                    $inflasi = null;
+
+                    if ($previous && $previous['margin'] > 0) {
+                        $inflasi = (($margin - $previous['margin']) / $previous['margin']) * 100;
+                    }
+
+                    $inflasiData->push([
+                        'nama_barang' => $record->barang->nama_barang,
+                        'periode_awal' => $record->periode_awal,
+                        'periode_akhir' => $record->periode_akhir,
+                        'margin' => $margin,
+                        'inflasi' => $inflasi !== null ? round($inflasi, 2) : null,
+                    ]);
+
+                    $previous = [
+                        'margin' => $margin
+                    ];
+                }
+            }
+        }
+
+        return view('admin.harga_jual.inflasi_laba', compact(
+            'allWarung',
+            'selectedWarungId',
+            'inflasiData'
+        ));
     }
 }

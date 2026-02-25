@@ -172,6 +172,8 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::get('barang/{id}/prices', [HargaJualControllerAdmin::class, 'showWarungPrices'])->name('harga_jual.show_warung_prices');
     Route::put('update', [HargaJualControllerAdmin::class, 'updateHargaJual'])->name('harga_jual.update');
 
+    Route::get('/harga-jual/inflasi-laba',[HargaJualControllerAdmin::class, 'inflasiLaba'])->name('harga_jual.inflasi_laba');
+
     Route::get('/riwayat-transaksi', [RiwayatTransaksiControllerAdmin::class, 'index'])->name('riwayat_transaksi.index');
 
     Route::get('/hutang', [HutangControllerAdmin::class, 'index'])->name('hutang.index');

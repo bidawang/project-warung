@@ -136,6 +136,15 @@
                     <span class="text-sm font-medium">Stok Opname</span>
                 </a>
 
+                <a href="{{ route('admin.pengeluaran-pokok-warung.index') }}"
+                    class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->routeIs('admin.pengeluaran-pokok-warung.*') ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-gray-800 hover:text-white' }}">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <span class="text-sm font-medium">Pengeluaran Pokok Warung</span>
+                </a>
+
                 <a href="{{ route('admin.kuantitas.index') }}"
                     class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->routeIs('admin.kuantitas.*') ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-gray-800 hover:text-white' }}">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -243,7 +252,7 @@
                 </div>
 
                 {{-- Pricing & Laba --}}
-                <div x-data="{ open: {{ request()->is('admin/barang/prices*', 'admin/laba*', 'admin/riwayat-transaksi*') ? 'true' : 'false' }} }">
+                <div x-data="{ open: {{ request()->is('admin/harga-jual/inflasi-laba','admin/barang/prices*','admin/riwayat-transaksi') ? 'true' : 'false' }} }">
                     <button @click="open = !open"
                         class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg hover:bg-gray-800 hover:text-white transition group">
                         <div class="flex items-center">
@@ -262,11 +271,15 @@
                     </button>
                     <div x-show="open" x-cloak class="mt-1 space-y-1 ml-9 border-l border-gray-700">
                         <a href="{{ route('admin.harga_jual.monitor_all_prices') }}"
-                            class="block px-4 py-2 text-sm {{ request()->routeIs('admin.harga_jual.*') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">Monitor
+                            class="block px-4 py-2 text-sm {{ request()->routeIs('admin.harga_jual.monitor_all_prices*') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">Monitor
                             Harga</a>
                         <a href="{{ route('admin.riwayat_transaksi.index') }}"
                             class="block px-4 py-2 text-sm {{ request()->routeIs('admin.riwayat_transaksi.*') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">
                             Riwayat Transaksi
+                        </a>
+                        <a href="{{ route('admin.harga_jual.inflasi_laba') }}"
+                            class="block px-4 py-2 text-sm {{ request()->routeIs('admin.harga_jual.inflasi_laba*') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">
+                            Inflasi Laba
                         </a>
                         {{-- <a href="{{ route('admin.laba.index') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('admin.laba.index') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">Aturan Laba</a>
                         <a href="{{ route('laba.formImport') }}" class="block px-4 py-2 text-sm {{ request()->routeIs('laba.formImport') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">Import Laba</a> --}}

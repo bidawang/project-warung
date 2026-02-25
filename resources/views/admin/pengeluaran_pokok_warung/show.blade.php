@@ -1,60 +1,66 @@
-@extends('layouts.app')
+@extends('layouts.admin')
+
+@section('title', 'Detail Pengeluaran')
 
 @section('content')
-<div class="container-fluid px-4">
 
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-white fw-bold">
-            Detail Pengeluaran Pokok
+<div class="max-w-2xl mx-auto">
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
+
+        <h2 class="text-xl font-bold text-gray-800">Detail Pengeluaran</h2>
+
+        <div class="space-y-4 text-sm">
+
+            <div class="flex justify-between">
+                <span class="text-gray-500">Warung</span>
+                <span class="font-semibold text-gray-800">
+                    {{ $pengeluaran_pokok_warung->warung->nama_warung ?? '-' }}
+                </span>
+            </div>
+
+            <div class="flex justify-between">
+                <span class="text-gray-500">Redaksi</span>
+                <span class="font-semibold text-gray-800">
+                    {{ $pengeluaran_pokok_warung->redaksi }}
+                </span>
+            </div>
+
+            <div class="flex justify-between">
+                <span class="text-gray-500">Jumlah</span>
+                <span class="font-semibold text-gray-800">
+                    Rp {{ number_format($pengeluaran_pokok_warung->jumlah,0,',','.') }}
+                </span>
+            </div>
+
+            <div class="flex justify-between">
+                <span class="text-gray-500">Tanggal</span>
+                <span class="font-semibold text-gray-800">
+                    {{ \Carbon\Carbon::parse($pengeluaran_pokok_warung->date)->format('d M Y') }}
+                </span>
+            </div>
+
+            <div class="flex justify-between">
+                <span class="text-gray-500">Status</span>
+                <span class="px-3 py-1 text-xs rounded-full font-semibold
+                    {{ $pengeluaran_pokok_warung->status == 'belum terpenuhi'
+                        ? 'bg-yellow-100 text-yellow-700'
+                        : 'bg-green-100 text-green-700' }}">
+                    {{ ucfirst($pengeluaran_pokok_warung->status) }}
+                </span>
+            </div>
+
         </div>
 
-        <div class="card-body">
-
-            <div class="row mb-3">
-                <div class="col-md-4 fw-bold">Warung</div>
-                <div class="col-md-8">
-                    {{ $pengeluaran_pokok_warung->warung->nama_warung ?? '-' }}
-                </div>
-            </div>
-
-            <div class="row mb-3">
-                <div class="col-md-4 fw-bold">Redaksi</div>
-                <div class="col-md-8">
-                    {{ $pengeluaran_pokok_warung->redaksi }}
-                </div>
-            </div>
-
-            <div class="row mb-3">
-                <div class="col-md-4 fw-bold">Jumlah</div>
-                <div class="col-md-8">
-                    Rp {{ number_format($pengeluaran_pokok_warung->jumlah,0,',','.') }}
-                </div>
-            </div>
-
-            <div class="row mb-3">
-                <div class="col-md-4 fw-bold">Tanggal</div>
-                <div class="col-md-8">
-                    {{ \Carbon\Carbon::parse($pengeluaran_pokok_warung->date)->format('d M Y') }}
-                </div>
-            </div>
-
-            <div class="row mb-3">
-                <div class="col-md-4 fw-bold">Status</div>
-                <div class="col-md-8">
-                    <span class="badge 
-                        {{ $pengeluaran_pokok_warung->status == 'belum terpenuhi' ? 'bg-warning text-dark' : 'bg-success' }}">
-                        {{ ucfirst($pengeluaran_pokok_warung->status) }}
-                    </span>
-                </div>
-            </div>
-
+        <div class="pt-6">
             <a href="{{ route('admin.pengeluaran-pokok-warung.index') }}"
-               class="btn btn-secondary">
+               class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
                 Kembali
             </a>
-
         </div>
+
     </div>
 
 </div>
+
 @endsection
