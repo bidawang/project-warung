@@ -50,7 +50,7 @@ class InjectKasControllerAdmin extends Controller
             // Penentuan prefix keterangan
             $prefix = $request->total > 0 ? '[Inject' : '[Pengeluaran';
             $keteranganLengkap = $prefix . ($request->jenis_kas === 'bank' ? ' Saldo Bank] ' : ' Saldo Cash] ') . $request->keterangan;
-
+// dd($keteranganLengkap);
             // 2. Buat Log Transaksi Kas
             TransaksiKas::create([
                 'id_kas_warung'     => $kas->id,
@@ -59,12 +59,12 @@ class InjectKasControllerAdmin extends Controller
                 'jenis'             => 'inject',
                 'keterangan'        => $keteranganLengkap,
             ]);
-
             // 3. Update Saldo di Tabel Kas Warung
             $kas->updateSaldo($request->total, 'tambah');
-
+            
             // 4. TAMBAHAN: Buat Hutang Warung (Jenis: inject)
             // Kita catat total inject sebagai hutang yang berstatus 'belum lunas'
+            // dd($request->all());
             HutangWarung::create([
                 'id_warung' => $request->id_warung,
                 'total'     => $request->total,
@@ -72,7 +72,7 @@ class InjectKasControllerAdmin extends Controller
                 'status'    => 'belum lunas', // Status awal saat saldo disuntikkan
                 // Jika ada kolom keterangan di tabel hutang_warung, tambahkan di sini:
                 // 'keterangan' => $keteranganLengkap,
-            ]);
+                ]);
 
             DB::commit();
             return redirect()->route('admin.inject-kas.index')->with('success', 'Saldo berhasil disuntikkan dan dicatat sebagai hutang!');

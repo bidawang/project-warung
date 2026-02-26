@@ -221,50 +221,56 @@ class HargaJualControllerAdmin extends Controller
     public function inflasiLaba(Request $request)
     {
         $selectedWarungId = $request->id_warung;
-
-        // Ambil semua warung untuk dropdown
         $allWarung = Warung::orderBy('nama_warung')->get();
 
         $inflasiData = collect();
 
         if ($selectedWarungId) {
 
-            // Ambil semua histori harga jual warung tsb (semua periode)
             $hargaJual = HargaJual::with('barang')
                 ->where('id_warung', $selectedWarungId)
                 ->orderBy('id_barang')
-                ->orderBy('periode_awal')
+                ->orderBy('periode_awal') // urutkan naik dulu
                 ->get()
                 ->groupBy('id_barang');
 
             foreach ($hargaJual as $barangId => $records) {
 
-                $previous = null;
+                $previousMargin = null;
+                $latestData = null;
 
                 foreach ($records as $record) {
 
                     $modal = $record->harga_modal;
-                    $jual = $record->harga_jual_range_akhir;
 
-                    $margin = $modal > 0 ? $jual - $modal : 0;
+                    $marginAwal  = $record->harga_jual_range_awal  - $modal;
+                    $marginAkhir = $record->harga_jual_range_akhir - $modal;
 
-                    $inflasi = null;
+                    $inflasiAkhir = null;
 
-                    if ($previous && $previous['margin'] > 0) {
-                        $inflasi = (($margin - $previous['margin']) / $previous['margin']) * 100;
+                    if ($previousMargin !== null && $previousMargin > 0) {
+                        $inflasiAkhir = (($marginAkhir - $previousMargin) / $previousMargin) * 100;
                     }
 
-                    $inflasiData->push([
-                        'nama_barang' => $record->barang->nama_barang,
-                        'periode_awal' => $record->periode_awal,
-                        'periode_akhir' => $record->periode_akhir,
-                        'margin' => $margin,
-                        'inflasi' => $inflasi !== null ? round($inflasi, 2) : null,
-                    ]);
-
-                    $previous = [
-                        'margin' => $margin
+                    // simpan sebagai kandidat terakhir
+                    $latestData = [
+                        'id_barang'      => $barangId,
+                        'nama_barang'    => $record->barang->nama_barang,
+                        'periode_awal'   => $record->periode_awal,
+                        'periode_akhir'  => $record->periode_akhir,
+                        'margin_awal'    => $marginAwal,
+                        'margin_akhir'   => $marginAkhir,
+                        'inflasi_akhir'  => $inflasiAkhir !== null ? round($inflasiAkhir, 2) : null,
+                        'total_barang'   => $record->total_barang,
+                        'barang_terjual' => $record->barang_terjual,
                     ];
+
+                    $previousMargin = $marginAkhir;
+                }
+
+                // push hanya data periode terakhir
+                if ($latestData) {
+                    $inflasiData->push($latestData);
                 }
             }
         }
@@ -274,5 +280,49 @@ class HargaJualControllerAdmin extends Controller
             'selectedWarungId',
             'inflasiData'
         ));
+    }
+    public function inflasiLabaDetail(Request $request)
+    {
+        $barangId = $request->id_barang;
+        $warungId = $request->id_warung;
+
+        $records = HargaJual::where('id_warung', $warungId)
+            ->where('id_barang', $barangId)
+            ->orderBy('periode_awal')
+            ->get();
+
+        $data = [];
+        $previousMargin = null;
+
+        foreach ($records as $record) {
+
+            $modal = $record->harga_modal;
+
+            $marginAwal  = $record->harga_jual_range_awal  - $modal;
+            $marginAkhir = $record->harga_jual_range_akhir - $modal;
+
+            $inflasiAwal  = null;
+            $inflasiAkhir = null;
+
+            if ($previousMargin !== null && $previousMargin > 0) {
+                $inflasiAwal  = (($marginAwal - $previousMargin) / $previousMargin) * 100;
+                $inflasiAkhir = (($marginAkhir - $previousMargin) / $previousMargin) * 100;
+            }
+
+            $data[] = [
+                'periode_awal'   => $record->periode_awal,
+                'periode_akhir'  => $record->periode_akhir,
+                'margin_awal'    => $marginAwal,
+                'margin_akhir'   => $marginAkhir,
+                'inflasi_awal'   => $inflasiAwal ? round($inflasiAwal, 2) : null,
+                'inflasi_akhir'  => $inflasiAkhir ? round($inflasiAkhir, 2) : null,
+                'total_barang'   => $record->total_barang,
+                'barang_terjual' => $record->barang_terjual,
+            ];
+
+            $previousMargin = $marginAkhir;
+        }
+
+        return response()->json($data);
     }
 }

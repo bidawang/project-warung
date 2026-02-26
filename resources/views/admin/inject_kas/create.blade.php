@@ -9,6 +9,17 @@
             <h3 class="text-lg font-bold text-gray-800">Formulir Terima/Suntik Kas</h3>
         </div>
         
+     @if ($errors->any())
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                <strong>Terjadi kesalahan:</strong>
+                <ul class="mt-2 list-disc list-inside text-sm">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+        
         <form action="{{ route('admin.inject-kas.store') }}" method="POST" class="p-6 space-y-5">
             @csrf
             

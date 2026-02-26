@@ -55,6 +55,7 @@ use App\Http\Controllers\Admin\{
     JenisPulsaController,
     InjectKasControllerAdmin,
     OperasionalControllerAdmin,
+    WarungControllerAdmin,
     PengeluaranPokokWarungControllerAdmin,
 };
 
@@ -158,7 +159,7 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::resource('areapembelian', AreaPembelianController::class)->names('areapembelian');
     Route::resource('targetpencapaian', TargetPencapaianController::class);
     Route::resource('subkategori', SubKategoriControllerAdmin::class);
-    Route::resource('warung', WarungController::class);
+    Route::resource('warung', WarungControllerAdmin::class);
     Route::resource('aturanTenggat', AturanTenggatControllerAdmin::class);
     Route::resource('laba', LabaControllerAdmin::class);
     Route::get('/mutasibarang', [MutasiBarangController::class, 'index'])->name('mutasibarang.index');
@@ -173,6 +174,7 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::put('update', [HargaJualControllerAdmin::class, 'updateHargaJual'])->name('harga_jual.update');
 
     Route::get('/harga-jual/inflasi-laba',[HargaJualControllerAdmin::class, 'inflasiLaba'])->name('harga_jual.inflasi_laba');
+    Route::get('/inflasi-laba-detail', [HargaJualControllerAdmin::class, 'inflasiLabaDetail'])->name('harga_jual.inflasi_laba_detail');
 
     Route::get('/riwayat-transaksi', [RiwayatTransaksiControllerAdmin::class, 'index'])->name('riwayat_transaksi.index');
 

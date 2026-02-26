@@ -17,7 +17,7 @@ return new class extends Migration
             // Menggunakan decimal untuk akurasi nilai uang (15 digit total, 2 di belakang koma)
             $table->decimal('total', 15, 2)->default(0);
             // Enum untuk kategori transaksi
-            $table->enum('jenis', ['barang masuk', 'opname', 'inject']);
+            $table->enum('jenis', ['barang masuk', 'opname', 'inject bank', 'inject cash']);
             $table->timestamps();
         });
     }

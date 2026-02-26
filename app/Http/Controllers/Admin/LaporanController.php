@@ -13,7 +13,7 @@ class LaporanController extends Controller
     {
         // Mengambil semua data dari tabel warung
         $warungs = DB::table('warung')->select('id', 'nama_warung', 'keterangan', 'modal')->get();
-
+// dd($warungs);
         return view('admin.laporanlaba.select_warung', compact('warungs'));
     }
 
@@ -28,7 +28,7 @@ class LaporanController extends Controller
             },
             'stokWarung.hargaJual'
         ])->findOrFail($id_warung);
-
+// dd($warung);
         // ===============================
         // 2. HITUNG LABA
         // ===============================
