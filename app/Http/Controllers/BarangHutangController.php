@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BarangHutang;
 use App\Models\Hutang;
-use App\Models\TransaksiBarang;
+use App\Models\TransaksiBarangMasuk;
 use Illuminate\Http\Request;
 
 class BarangHutangController extends Controller
@@ -18,7 +18,7 @@ class BarangHutangController extends Controller
     public function create()
     {
         $hutang = Hutang::all();
-        $transaksiBarang = TransaksiBarang::all();
+        $transaksiBarang = TransaksiBarangMasuk::all();
         return view('baranghutang.create', compact('hutang', 'transaksiBarang'));
     }
 
@@ -38,7 +38,7 @@ class BarangHutangController extends Controller
     {
         $baranghutang = BarangHutang::findOrFail($id);
         $hutang = Hutang::all();
-        $transaksiBarang = TransaksiBarang::all();
+        $transaksiBarang = TransaksiBarangMasuk::all();
         return view('baranghutang.edit', compact('baranghutang', 'hutang', 'transaksiBarang'));
     }
 

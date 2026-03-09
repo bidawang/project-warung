@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BarangMasuk;
 use App\Events\BarangMasukUpdated;
 use App\Models\StokWarung;
-use App\Models\TransaksiBarang;
+use App\Models\TransaksiBarangMasuk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Exception;
@@ -73,7 +73,7 @@ class BarangMasukControllerKasir extends Controller
             return $bm;
         });
 
-        dd($barangMasuk);  
+        dd($barangMasuk);
         return view('barangmasuk.index', compact('barangMasuk', 'status', 'search'));
     }
 
@@ -82,7 +82,7 @@ class BarangMasukControllerKasir extends Controller
      */
     // public function create()
     // {
-    //     $transaksiBarang = TransaksiBarang::all();
+    //     $transaksiBarang = TransaksiBarangMasuk::all();
     //     $stokWarung = StokWarung::with('barang')->get();
     //     return view('barangmasuk.create', compact('transaksiBarang', 'stokWarung'));
     // }
@@ -112,7 +112,7 @@ class BarangMasukControllerKasir extends Controller
     // public function edit($id)
     // {
     //     $barangMasuk = BarangMasuk::findOrFail($id);
-    //     $transaksiBarang = TransaksiBarang::all();
+    //     $transaksiBarang = TransaksiBarangMasuk::all();
     //     $stokWarung = StokWarung::with('barang')->get();
 
     //     return view('barangmasuk.edit', compact('barangMasuk', 'transaksiBarang', 'stokWarung'));
@@ -145,14 +145,14 @@ class BarangMasukControllerKasir extends Controller
             'barangMasuk.*' => 'exists:barang_masuk,id',
             'status_baru' => 'required|in:terima,tolak',
         ]);
-// dd($request->All());
+        // dd($request->All());
         try {
             // Memulai Transaksi Database untuk menjamin atomisitas (semua berhasil atau semua gagal)
             DB::beginTransaction();
 
             // 2. Update status di tabel barang_masuk
             BarangMasuk::whereIn('id', $request->barangMasuk)->update(['status' => $request->status_baru]);
-// dd($request->All());
+            // dd($request->All());
             $message = 'Status barang masuk berhasil diperbarui menjadi ' . $request->status_baru;
 
             // 3. Logika Update Stok (Hanya jika status_baru adalah 'terima')
@@ -169,7 +169,7 @@ class BarangMasukControllerKasir extends Controller
                     // Gunakan (float) jika stok bisa berbentuk desimal (misal: 1.5),
                     // atau (int) jika stok selalu bilangan bulat.
                     $jumlahMasuk = (float) $item->jumlah;
-// dd($jumlahMasuk);
+                    // dd($jumlahMasuk);
                     // Lakukan penambahan hanya jika jumlahMasuk positif
                     if ($jumlahMasuk > 0) {
                         // Tambahkan jumlah_masuk ke stok yang ada di stok_warung

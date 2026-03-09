@@ -11,6 +11,7 @@ return new class extends Migration
         Schema::create('pengeluaran_pokok_warung', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('id_warung');
+            $table->unsignedBigInteger('id_transaksi_kas')->nullable();
             $table->string('redaksi');
             $table->decimal('jumlah', 15, 2);
             $table->date('date');
@@ -21,6 +22,10 @@ return new class extends Migration
             $table->foreign('id_warung')
                 ->references('id')
                 ->on('warung')
+                ->onDelete('cascade');
+            $table->foreign('id_transaksi_kas')
+                ->references('id')
+                ->on('transaksi_kas')
                 ->onDelete('cascade');
         });
     }

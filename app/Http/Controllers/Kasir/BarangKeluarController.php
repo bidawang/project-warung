@@ -11,7 +11,7 @@ use App\Models\KasWarung;
 use App\Models\TransaksiKas;
 use App\Models\Hutang;
 use App\Models\UangPelanggan;
-use App\Models\TransaksiBarangKeluar;
+use App\Models\TransaksiBarangMasukKeluar;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
@@ -279,7 +279,7 @@ class BarangKeluarController extends Controller
                         $hargaAktif->increment('barang_terjual', $item['jumlah']);
                     }
                 }
-                
+
                 $barangKeluar = BarangKeluar::create([
                     'id_stok_warung' => $item['id_stok_warung'],
                     'jumlah'         => $item['jumlah'],

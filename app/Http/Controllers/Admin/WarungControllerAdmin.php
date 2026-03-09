@@ -11,6 +11,8 @@ use App\Models\Barang;
 use App\Models\Area;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
+use App\Models\PengeluaranPokokWarung;
 
 class WarungControllerAdmin extends Controller
 {
@@ -80,32 +82,47 @@ class WarungControllerAdmin extends Controller
         return redirect()->route('admin.warung.index')->with('success', 'Warung berhasil dihapus.');
     }
 
+    public function pengeluaranPokokByMonth(Request $request, $id)
+    {
+        $bulan = $request->bulan ?? now()->format('Y-m');
+
+        $tanggal = Carbon::parse($bulan);
+
+        $data = PengeluaranPokokWarung::where('id_warung', $id)
+            ->whereMonth('date', $tanggal->month)
+            ->whereYear('date', $tanggal->year)
+            ->orderBy('date')
+            ->get();
+
+        return response()->json([
+            'data' => $data,
+            'total' => $data->sum('jumlah'),
+            'terpenuhi' => $data->where('status', 'terpenuhi')->sum('jumlah'),
+            'belum' => $data->where('status', 'belum terpenuhi')->sum('jumlah'),
+        ]);
+    }
+
     public function show($id)
     {
-        // dd('Fungsi show warung belum diimplementasi.');
-        // akses warung sesuai role
         if (Auth::user()->role === 'admin') {
             $warung = Warung::with(['user', 'area'])->findOrFail($id);
         } else {
-            // Hanya izinkan pemilik warung untuk mengakses
             $warung = Warung::with(['user', 'area'])
                 ->where('id_user', Auth::id())
                 ->findOrFail($id);
         }
 
-        // ambil barang + transaksi terbaru (jika ada) untuk fallback tanggal kadaluarsa
         $allBarang = Barang::with(['transaksiBarang' => function ($q) {
             $q->latest()->with('areaPembelian');
         }])->get();
 
-        // ambil stok warung (relasi stokWarung di model Warung)
         $stokWarung = $warung->stokWarung()->with(['barang', 'kuantitas'])->get();
         $stokByBarangId = $stokWarung->keyBy('id_barang');
 
         $barangWithStok = $allBarang->map(function ($barang) use ($stokByBarangId, $warung) {
+
             $stok = $stokByBarangId->get($barang->id);
 
-            // cari harga_jual aktif untuk warung ini (periode-aware)
             $hargaJual = HargaJual::where('id_warung', $warung->id)
                 ->where('id_barang', $barang->id)
                 ->where(function ($q) {
@@ -117,33 +134,30 @@ class WarungControllerAdmin extends Controller
                 ->latest('id')
                 ->first();
 
-            // === Penambahan Logika Persentase Laba pada objek Barang ===
-            // Ambil persentase laba dari accessor di model HargaJual
             $barang->persentase_laba = $hargaJual ? $hargaJual->persentase_laba : 'N/A';
 
-            // Kunci numerik untuk sorting, mengambil persentase laba range awal
-            $sortingKey = 999999.0; // Nilai default yang sangat tinggi agar barang tanpa harga muncul di akhir
+            $sortingKey = 999999.0;
+
             if ($hargaJual && $hargaJual->harga_modal > 0) {
-                // Rumus: ((Harga Jual Awal - Harga Modal) / Harga Modal) * 100
                 $persenAwal = (($hargaJual->harga_jual_range_awal - $hargaJual->harga_modal) / $hargaJual->harga_modal) * 100;
                 $sortingKey = $persenAwal;
             }
+
             $barang->persentase_laba_sort_key = $sortingKey;
-            // =========================================================
 
             if ($stok) {
-                // tanggal kadaluarsa prioritas ke stok, fallback ke transaksi terbaru barang
+
                 $tanggalKadaluarsa = $stok->tanggal_kadaluarsa
                     ?? optional($barang->transaksiBarang->first())->tanggal_kadaluarsa
                     ?? null;
 
                 $barang->stok_saat_ini = $stok->jumlah ?? 0;
-                $barang->kuantitas = $stok->kuantitas ?? collect(); // pastikan koleksi, bukan null
+                $barang->kuantitas = $stok->kuantitas ?? collect();
                 $barang->keterangan = $stok->keterangan ?? '-';
                 $barang->tanggal_kadaluarsa = $tanggalKadaluarsa;
                 $barang->id_stok_warung = $stok->id;
             } else {
-                // tidak ada stok di warung ini
+
                 $tanggalKadaluarsa = optional($barang->transaksiBarang->first())->tanggal_kadaluarsa ?? null;
 
                 $barang->stok_saat_ini = 0;
@@ -153,15 +167,15 @@ class WarungControllerAdmin extends Controller
                 $barang->id_stok_warung = null;
             }
 
-            // Atur properti harga jual/modal (jika ada HargaJual)
             if ($hargaJual) {
+
                 $barang->harga_sebelum_markup = $hargaJual->harga_sebelum_markup ?? 0;
                 $barang->harga_satuan = $hargaJual->harga_modal ?? 0;
                 $barang->harga_jual_range_awal = $hargaJual->harga_jual_range_awal ?? 0;
                 $barang->harga_jual_range_akhir = $hargaJual->harga_jual_range_akhir ?? 0;
                 $barang->harga_jual = $hargaJual->harga_jual_range_akhir ?? 0;
             } else {
-                // Pastikan properti harga default diatur jika tidak ada HargaJual
+
                 $barang->harga_sebelum_markup = 0;
                 $barang->harga_satuan = 0;
                 $barang->harga_jual_range_awal = 0;
@@ -172,12 +186,12 @@ class WarungControllerAdmin extends Controller
             return $barang;
         });
 
-        // Lakukan sorting di sini berdasarkan persentase laba terkecil (numerical sorting key)
         $barangWithStok = $barangWithStok->sortBy('persentase_laba_sort_key')->values();
 
         // ===============================
         // HITUNG LABA WARUNG
         // ===============================
+
         $warungWithLaba = Warung::with([
             'stokWarung.barangKeluar' => function ($q) {
                 $q->where('jenis', 'penjualan barang');
@@ -189,9 +203,11 @@ class WarungControllerAdmin extends Controller
         $labaBersih = 0;
 
         foreach ($warungWithLaba->stokWarung as $stok) {
+
             $hargaModal = $stok->hargaJual->harga_modal ?? 0;
 
             foreach ($stok->barangKeluar as $keluar) {
+
                 $subtotalJual  = $keluar->jumlah * $keluar->harga_jual;
                 $subtotalModal = $keluar->jumlah * $hargaModal;
 
@@ -200,14 +216,45 @@ class WarungControllerAdmin extends Controller
             }
         }
 
+        // ===============================
+        // ASSET WARUNG
+        // ===============================
+
+        $assets = \App\Models\Asset::with('pelunasan')
+            ->where('id_warung', $warung->id)
+            ->latest()
+            ->get();
+
+        foreach ($assets as $asset) {
+            $asset->volume_pelunasan = $asset->pelunasan->count();
+        }
+
+        // ===============================
+        // PENGELUARAN POKOK BULAN INI
+        // ===============================
+
+        $now = Carbon::now();
+
+        $pengeluaranPokokBulanIni = PengeluaranPokokWarung::where('id_warung', $warung->id)
+            ->whereMonth('date', $now->month)
+            ->whereYear('date', $now->year)
+            ->latest()
+            ->get();
+
+        $totalPengeluaranPokok = $pengeluaranPokokBulanIni->sum('jumlah');
+
         $totalModal = $labaKotor - $labaBersih;
+
         return view('admin.warung.show', compact(
             'warung',
             'barangWithStok',
             'stokWarung',
             'labaKotor',
             'labaBersih',
-            'totalModal'
+            'totalModal',
+            'assets',
+            'pengeluaranPokokBulanIni',
+            'totalPengeluaranPokok'
         ));
     }
 }

@@ -4,13 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 
-use App\Models\TransaksiBarang;
+use App\Models\TransaksiBarangMasuk;
 use App\Models\TransaksiKas;
 use App\Models\Barang;
 use App\Models\BarangMasuk;
 use App\Models\AreaPembelian;
 use App\Models\Warung;
-use App\Models\Laba;
+use Illuminate\Support\Facades\Log;
 use App\Models\StokWarung;
 use App\Models\TransaksiAwal;
 use App\Models\TransaksiLainLain;
@@ -30,7 +30,7 @@ class TransaksiBarangController extends Controller
     protected function getStockData()
     {
         // Mengambil semua TransaksiBarang (Stok Sumber) yang masih memiliki stok > 0
-        $allTransactions = TransaksiBarang::with('barang')
+        $allTransactions = TransaksiBarangMasuk::with('barang')
             ->where('jumlah', '>', 0)
             ->get() // Ambil semua (tidak dipaginasi)
             ->map(function ($trx) {
@@ -64,7 +64,7 @@ class TransaksiBarangController extends Controller
     {
         // dd(123);
         $status = $request->query('status', 'pending');
-        $query = TransaksiBarang::with(['transaksiKas', 'barang'])->where('jenis', 'tambahan');
+        $query = TransaksiBarangMasuk::with(['transaksiKas', 'barang'])->where('jenis', 'tambahan');
 
         // Logika Filter Status (Sama seperti sebelumnya)
         if ($status === 'pending') {
@@ -106,7 +106,7 @@ class TransaksiBarangController extends Controller
             'status' => 'required|in:diterima,ditolak',
         ]);
 
-        TransaksiBarang::whereIn('id', $request->ids)->update(['status' => $request->status]);
+        TransaksiBarangMasuk::whereIn('id', $request->ids)->update(['status' => $request->status]);
 
         return redirect()->route('admin.transaksibarang.index', ['status' => 'pending'])
             ->with('success', 'Status transaksi berhasil diperbarui.');
@@ -210,7 +210,7 @@ class TransaksiBarangController extends Controller
 
                             // Kita asumsikan kolom 'harga' di TransaksiBarang menyimpan harga total baris ini
                             // Jika 'harga' menyimpan harga satuan, logika ini harus disesuaikan.
-                            TransaksiBarang::create([
+                            TransaksiBarangMasuk::create([
                                 'id_transaksi_awal'     => $transaksi->id,
                                 'id_area_pembelian'     => $areaId,
                                 'id_barang'              => $barangId,
@@ -260,7 +260,7 @@ class TransaksiBarangController extends Controller
 
                 if ($affected === 0) {
                     // Opsional: Berikan peringatan jika tidak ada saldo yang dikurangi
-                    \Log::warning("Tidak ada saldo 'wrb_old' yang ditemukan/dikurangi untuk transaksi ID: " . $transaksi->id);
+                    Log::warning("Tidak ada saldo 'wrb_old' yang ditemukan/dikurangi untuk transaksi ID: " . $transaksi->id);
                 }
             }
 
@@ -272,7 +272,7 @@ class TransaksiBarangController extends Controller
             DB::rollBack();
 
             // Log error
-            \Log::error('Gagal memproses transaksi manual: ' . $e->getMessage());
+            Log::error('Gagal memproses transaksi manual: ' . $e->getMessage());
 
             return redirect()->back()
                 ->withInput()
@@ -298,7 +298,7 @@ class TransaksiBarangController extends Controller
             'transaksi' => 'required|array',
             'transaksi.*' => ['array', function ($attribute, $value, $fail) {
                 $transaksiId = explode('.', $attribute)[1];
-                if (!TransaksiBarang::where('id', $transaksiId)->exists()) {
+                if (!TransaksiBarangMasuk::where('id', $transaksiId)->exists()) {
                     $fail("Transaksi dengan ID {$transaksiId} tidak valid.");
                 }
             }],
@@ -315,7 +315,7 @@ class TransaksiBarangController extends Controller
             $rekapHutangWarung = [];
 
             foreach ($data['transaksi'] as $transaksiId => $transaksiData) {
-                $transaksiBarang = TransaksiBarang::with('areaPembelian', 'barang')->findOrFail($transaksiId);
+                $transaksiBarang = TransaksiBarangMasuk::with('areaPembelian', 'barang')->findOrFail($transaksiId);
                 $totalPengiriman = collect($transaksiData['details'])->sum('jumlah');
                 $stokTersedia = $transaksiBarang->jumlah - $transaksiBarang->jumlah_terpakai;
 
@@ -422,7 +422,7 @@ class TransaksiBarangController extends Controller
                     $dataSisa['harga'] = round($hargaBeliPerUnit * $sisa);
                     $dataSisa['status'] = 'pending';
 
-                    TransaksiBarang::create($dataSisa);
+                    TransaksiBarangMasuk::create($dataSisa);
                 }
 
                 $transaksiBarang->status = 'dikirim';
@@ -486,7 +486,7 @@ class TransaksiBarangController extends Controller
     //                 $jumlahKirim = $item['jumlah_kirim'];
     //                 $transaksiId = $item['transaksi_id'];
 
-    //                 $transaksiBarang = TransaksiBarang::with('areaPembelian')->findOrFail($transaksiId);
+    //                 $transaksiBarang = TransaksiBarangMasuk::with('areaPembelian')->findOrFail($transaksiId);
 
     //                 if ($transaksiBarang->jumlah < $jumlahKirim) {
     //                     throw new \Exception("Stok sumber #{$transaksiId} tidak mencukupi untuk rencana #{$rencanaId}.");

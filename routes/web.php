@@ -57,6 +57,7 @@ use App\Http\Controllers\Admin\{
     OperasionalControllerAdmin,
     WarungControllerAdmin,
     PengeluaranPokokWarungControllerAdmin,
+    AssetControllerAdmin
 };
 
 use App\Http\Controllers\Kasir\{
@@ -123,6 +124,8 @@ Route::prefix('/admin')->name('admin.')->group(function () {
 
     Route::resource('/user', UserControllerAdmin::class);
 
+    Route::resource('/asset', AssetControllerAdmin::class);
+
     Route::resource(
         'pengeluaran-pokok-warung',
         PengeluaranPokokWarungControllerAdmin::class
@@ -150,6 +153,7 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::resource('belanja-barang', BelanjaBarangControllerAdmin::class)->only(['index']);
     Route::resource('operasional', OperasionalControllerAdmin::class)->only(['index', 'create', 'store']);
 
+    Route::get('/warung/{id}/pengeluaran-pokok-bulan', [WarungControllerAdmin::class, 'pengeluaranPokokByMonth'])->name('warung.pengeluaran-pokok-bulan');
 
 
     Route::post('transaksibarang/update-status-massal', [TransaksiBarangController::class, 'updateStatusMassal'])->name('transaksibarang.updateStatusMassal');
@@ -173,7 +177,7 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::get('barang/{id}/prices', [HargaJualControllerAdmin::class, 'showWarungPrices'])->name('harga_jual.show_warung_prices');
     Route::put('update', [HargaJualControllerAdmin::class, 'updateHargaJual'])->name('harga_jual.update');
 
-    Route::get('/harga-jual/inflasi-laba',[HargaJualControllerAdmin::class, 'inflasiLaba'])->name('harga_jual.inflasi_laba');
+    Route::get('/harga-jual/inflasi-laba', [HargaJualControllerAdmin::class, 'inflasiLaba'])->name('harga_jual.inflasi_laba');
     Route::get('/inflasi-laba-detail', [HargaJualControllerAdmin::class, 'inflasiLabaDetail'])->name('harga_jual.inflasi_laba_detail');
 
     Route::get('/riwayat-transaksi', [RiwayatTransaksiControllerAdmin::class, 'index'])->name('riwayat_transaksi.index');

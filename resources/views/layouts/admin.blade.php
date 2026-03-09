@@ -145,15 +145,6 @@
                     <span class="text-sm font-medium">Pengeluaran Pokok Warung</span>
                 </a>
 
-                <a href="{{ route('admin.kuantitas.index') }}"
-                    class="flex items-center px-4 py-2.5 rounded-lg transition {{ request()->routeIs('admin.kuantitas.*') ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-gray-800 hover:text-white' }}">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                    </svg>
-                    <span class="text-sm font-medium">Kuantitas Barang</span>
-                </a>
-
                 {{-- Group: Transaksi & Keuangan --}}
                 <div class="pt-4 pb-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest px-4">Transaksi &
                     Keuangan</div>
@@ -252,7 +243,7 @@
                 </div>
 
                 {{-- Pricing & Laba --}}
-                <div x-data="{ open: {{ request()->is('admin/harga-jual/inflasi-laba','admin/barang/prices*','admin/riwayat-transaksi') ? 'true' : 'false' }} }">
+                <div x-data="{ open: {{ request()->is('admin/harga-jual/inflasi-laba', 'admin/barang/prices*', 'admin/riwayat-transaksi') ? 'true' : 'false' }} }">
                     <button @click="open = !open"
                         class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg hover:bg-gray-800 hover:text-white transition group">
                         <div class="flex items-center">
@@ -287,9 +278,7 @@
                 </div>
 
                 {{-- KASIR --}}
-                <div x-data="{
-                    open: {{ request()->routeIs('admin.inject-kas.*', 'admin.laporan-laba.*', 'admin.belanja-barang.*', 'admin.operasional.*') ? 'true' : 'false' }}">
-
+                <div x-data="{ open: {{ request()->routeIs('admin.inject-kas.*', 'admin.laporan-laba.*', 'admin.belanja-barang.*', 'admin.operasional.*') ? 'true' : 'false' }} }">
                     <button @click="open = !open"
                         class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg hover:bg-gray-800 hover:text-white transition group">
                         <div class="flex items-center">

@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BarangMasuk;
 use App\Events\BarangMasukUpdated;
 use App\Models\StokWarung;
-use App\Models\TransaksiBarang;
+use App\Models\TransaksiBarangMasuk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -77,7 +77,7 @@ class BarangMasukController extends Controller
      */
     public function create()
     {
-        $transaksiBarang = TransaksiBarang::all();
+        $transaksiBarang = TransaksiBarangMasuk::all();
         $stokWarung = StokWarung::with('barang')->get();
         return view('barangmasuk.create', compact('transaksiBarang', 'stokWarung'));
     }
@@ -116,7 +116,7 @@ class BarangMasukController extends Controller
     public function edit($id)
     {
         $barangMasuk = BarangMasuk::findOrFail($id);
-        $transaksiBarang = TransaksiBarang::all();
+        $transaksiBarang = TransaksiBarangMasuk::all();
         $stokWarung = StokWarung::with('barang')->get();
 
         return view('barangmasuk.edit', compact('barangMasuk', 'transaksiBarang', 'stokWarung'));

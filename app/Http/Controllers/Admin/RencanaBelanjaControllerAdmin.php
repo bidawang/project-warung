@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\RencanaBelanja;
-use App\Models\TransaksiBarang;
+use App\Models\TransaksiBarangMasuk;
 use App\Models\Barang;
 use App\Models\TransaksiAwal;
 use App\Models\StokWarung;
@@ -20,7 +20,7 @@ class RencanaBelanjaControllerAdmin extends Controller
 {
     protected function getStockData()
     {
-        $allTransactions = TransaksiBarang::with(['barang.satuan', 'areaPembelian'])
+        $allTransactions = TransaksiBarangMasuk::with(['barang.satuan', 'areaPembelian'])
             ->where('jenis', 'rencana')
             ->whereColumn('jumlah', '>', 'jumlah_terpakai')
             ->get()
@@ -299,7 +299,7 @@ class RencanaBelanjaControllerAdmin extends Controller
                     $hargaUnit  = (float) $purchase['harga'];
                     $totalHargaBaris = $jumlahBeli * $hargaUnit;
 
-                    TransaksiBarang::create([
+                    TransaksiBarangMasuk::create([
                         'id_transaksi_awal' => $transaksi->id,
                         'id_area_pembelian' => $purchase['area_pembelian_id'],
                         'id_barang'         => $idBarang,
@@ -330,7 +330,7 @@ class RencanaBelanjaControllerAdmin extends Controller
             return redirect()->route('admin.rencana.index')->with('success', 'Transaksi rencana berhasil diproses.');
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error($e);
+            Log::error($e);
             return back()->withErrors(['process_error' => "Gagal memproses transaksi. Error: " . $e->getMessage()]);
         }
     }
@@ -369,7 +369,7 @@ class RencanaBelanjaControllerAdmin extends Controller
                 ->keyBy('id');
 
             $trxIds = collect($data['items'])->pluck('transactions.*.id_transaksi_barang')->flatten()->unique()->toArray();
-            $trxSources = TransaksiBarang::with('areaPembelian')->whereIn('id', $trxIds)->get()->keyBy('id');
+            $trxSources = TransaksiBarangMasuk::with('areaPembelian')->whereIn('id', $trxIds)->get()->keyBy('id');
 
             // Menampung induk hutang per warung agar tidak duplikat dalam satu request
             $rekapHutangWarung = [];
@@ -442,7 +442,7 @@ class RencanaBelanjaControllerAdmin extends Controller
                         ->first();
 
                     // 5.a Tutup harga jual aktif sebelumnya (jika ada)
-                    
+
                     HargaJual::where('id_warung', $warungId)
                         ->where('id_barang', $barangId)
                         ->whereNull('periode_akhir')
@@ -451,7 +451,7 @@ class RencanaBelanjaControllerAdmin extends Controller
                         ->update([
                             'periode_akhir' => now()
                         ]);
-                    
+
 
 
                     // 5.b Buat harga jual baru
@@ -496,7 +496,7 @@ class RencanaBelanjaControllerAdmin extends Controller
                     $dataSisa['harga'] = round($hargaBeliPerUnit * $sisaStok);
                     $dataSisa['status'] = 'pending';
 
-                    TransaksiBarang::create($dataSisa);
+                    TransaksiBarangMasuk::create($dataSisa);
                 }
 
                 $transaksiBarang->update(['status' => 'dikirim']);
