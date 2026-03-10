@@ -23,7 +23,7 @@ class BarangMasuk extends Model
      * @var array
      */
     protected $fillable = [
-        'id_transaksi_barang',
+        'id_transaksi_barang_masuk',
         'id_stok_warung',
         'id_barang',
         'jumlah',

@@ -228,6 +228,7 @@ class RencanaBelanjaControllerAdmin extends Controller
 
     public function store(Request $request)
     {
+        
         //Fungsi setelah dari index rencana belanja (proses pembelian dari rencana)
         // 1. Ambil data asli
         // dd($request->all());
@@ -357,7 +358,7 @@ class RencanaBelanjaControllerAdmin extends Controller
                 }
             }],
             'items.*.transactions' => 'required|array',
-            'items.*.transactions.*.id_transaksi_barang' => 'required|exists:transaksi_barang,id',
+            'items.*.transactions.*.id_transaksi_barang_masuk' => 'required|exists:transaksi_barang_masuk,id',
             'items.*.transactions.*.jumlah' => 'required|integer|min:1',
         ]);
 
@@ -368,7 +369,7 @@ class RencanaBelanjaControllerAdmin extends Controller
                 ->get()
                 ->keyBy('id');
 
-            $trxIds = collect($data['items'])->pluck('transactions.*.id_transaksi_barang')->flatten()->unique()->toArray();
+            $trxIds = collect($data['items'])->pluck('transactions.*.id_transaksi_barang_masuk')->flatten()->unique()->toArray();
             $trxSources = TransaksiBarangMasuk::with('areaPembelian')->whereIn('id', $trxIds)->get()->keyBy('id');
 
             // Menampung induk hutang per warung agar tidak duplikat dalam satu request
@@ -383,7 +384,7 @@ class RencanaBelanjaControllerAdmin extends Controller
                 $totalKirimItemRencana = 0;
 
                 foreach ($rencanaData['transactions'] as $trxDetail) {
-                    $trxSourceId = $trxDetail['id_transaksi_barang'];
+                    $trxSourceId = $trxDetail['id_transaksi_barang_masuk'];
                     $jumlahKirim = (int) $trxDetail['jumlah'];
                     $trxBarang = $trxSources->get($trxSourceId);
 
@@ -403,7 +404,7 @@ class RencanaBelanjaControllerAdmin extends Controller
 
                     // 2. Buat Barang Masuk (Skema Baru: ada 'total')
                     $barangMasuk = BarangMasuk::create([
-                        'id_transaksi_barang' => $trxSourceId,
+                        'id_transaksi_barang_masuk' => $trxSourceId,
                         'id_stok_warung'      => $stokWarung->id,
                         'id_barang'           => $barangId,
                         'jumlah'              => $jumlahKirim,

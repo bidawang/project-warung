@@ -285,7 +285,6 @@ class TransaksiBarangController extends Controller
     {
         // 1. Filtering dan Sanitasi Input
         $allData = $request->all();
-        // dd($allData);
         $transaksiFiltered = collect($allData['transaksi'] ?? [])
             ->filter(function ($trx) {
                 return !empty($trx['details']);
@@ -316,6 +315,7 @@ class TransaksiBarangController extends Controller
 
             foreach ($data['transaksi'] as $transaksiId => $transaksiData) {
                 $transaksiBarang = TransaksiBarangMasuk::with('areaPembelian', 'barang')->findOrFail($transaksiId);
+
                 $totalPengiriman = collect($transaksiData['details'])->sum('jumlah');
                 $stokTersedia = $transaksiBarang->jumlah - $transaksiBarang->jumlah_terpakai;
 
@@ -342,12 +342,11 @@ class TransaksiBarangController extends Controller
                         ['id_warung' => $warungId, 'id_barang' => $transaksiBarang->id_barang],
                         ['jumlah' => 0]
                     );
-
                     // 3. Buat Barang Masuk (dengan kolom 'total' sesuai migrasi baru)
                     $barangMasuk = BarangMasuk::create([
-                        'id_transaksi_barang' => $transaksiBarang->id,
+                        'id_transaksi_barang_masuk' => $transaksiBarang->id,
                         'id_stok_warung'      => $stokWarung->id,
-                        'id_barang'           => $transaksiBarang->id_barang,
+                        // 'id_barang  '           => $transaksiBarang->id_barang,
                         'jumlah'              => $jumlahKirim,
                         'total'               => $totalHargaBarang, // Kolom baru
                         'status'              => 'kirim',
