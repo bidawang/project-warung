@@ -257,4 +257,20 @@ class WarungControllerAdmin extends Controller
             'totalPengeluaranPokok'
         ));
     }
+
+    public function setting($id)
+    {
+        $warung = Warung::findOrFail($id);
+        $users = User::all();
+        $areas = Area::all();
+
+        $barangs = Barang::with('subKategori.kategori')->get();
+
+        return view('admin.warung.setting', compact(
+            'warung',
+            'users',
+            'areas',
+            'barangs'
+        ));
+    }
 }

@@ -5,13 +5,11 @@ namespace App\Http\Controllers\Kasir;
 use App\Http\Controllers\Controller;
 use App\Models\BarangKeluar;
 use App\Models\StokWarung;
-use App\Models\Laba;
-use App\Models\User;
 use App\Models\KasWarung;
 use App\Models\TransaksiKas;
 use App\Models\Hutang;
 use App\Models\UangPelanggan;
-use App\Models\TransaksiBarangMasukKeluar;
+use App\Models\TransaksiBarangKeluar;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 

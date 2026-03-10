@@ -164,6 +164,9 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     Route::resource('targetpencapaian', TargetPencapaianController::class);
     Route::resource('subkategori', SubKategoriControllerAdmin::class);
     Route::resource('warung', WarungControllerAdmin::class);
+    Route::get('warung/{warung}/setting', [WarungControllerAdmin::class, 'setting'])->name('warung.setting');
+    Route::post('warung/{warung}/setting', [WarungControllerAdmin::class, 'settingStore'])->name('admin.warung.setting.store');
+
     Route::resource('aturanTenggat', AturanTenggatControllerAdmin::class);
     Route::resource('laba', LabaControllerAdmin::class);
     Route::get('/mutasibarang', [MutasiBarangController::class, 'index'])->name('mutasibarang.index');
