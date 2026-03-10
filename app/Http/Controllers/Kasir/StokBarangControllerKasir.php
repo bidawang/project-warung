@@ -21,7 +21,7 @@ class StokBarangControllerKasir extends Controller
         $search = $request->get('search');
         $userId = Auth::id();
         $today = Carbon::today(); // Ambil tanggal hari ini
-// dd(123);
+        // dd(123);
         // 1. Ambil Data Stok Barang (TIDAK BERUBAH)
         $stokBarang = StokWarung::with([
             'barang.transaksiBarang' => function ($query) {
@@ -117,7 +117,7 @@ class StokBarangControllerKasir extends Controller
     {
         $status = $request->get('status', 'kirim');
         $search = $request->get('search');
-// dd($request->All());
+        // dd($request->All());
         //         $barangMasuk = BarangMasuk::with([
         //     'transaksiBarang.areaPembelian',
         //     'stokWarung.barang',
@@ -129,7 +129,7 @@ class StokBarangControllerKasir extends Controller
             'stokWarung.barang',
             'stokWarung.warung.user'
         ])
-        ->where('jenis', 'tambahan')
+            ->where('jenis', 'tambahan')
             ->whereHas('stokWarung.warung', function ($query) {
                 $query->where('id_user', Auth::id());
             })
@@ -153,11 +153,14 @@ class StokBarangControllerKasir extends Controller
 
         // Hitung harga final dengan markup
         $barangMasuk->getCollection()->transform(function ($bm) {
-            $hargaTotalBeli = $bm->transaksiBarang->harga ?? 0;
-            $markupPercent = optional($bm->transaksiBarang->areaPembelian)->markup ?? 0;
+            // Gunakan ?-> untuk setiap level relasi
+            $hargaTotalBeli = $bm->transaksiBarang?->harga ?? 0;
+
+            // Rantai ini aman sekarang: jika transaksiBarang null, dia berhenti. 
+            // Jika areaPembelian null, dia berhenti.
+            $markupPercent = $bm->transaksiBarang?->areaPembelian?->markup ?? 0;
 
             $bm->markup_percent = $markupPercent;
-
             $bm->harga_final_total = $hargaTotalBeli + ($hargaTotalBeli * $markupPercent / 100);
 
             $jumlah = max($bm->jumlah ?? 1, 1);
@@ -168,5 +171,4 @@ class StokBarangControllerKasir extends Controller
         // dd($barangMasuk);
         return view('kasir.stok_barang.barang_masuk', compact('barangMasuk', 'status', 'search'));
     }
-
 }
