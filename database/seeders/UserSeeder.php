@@ -17,7 +17,7 @@ class UserSeeder extends Seeder
         User::create([
             'name' => 'Admin User',
             'role' => 'admin',
-            'email' => 'admin@example.com',
+            'email' => 'admin@gmail.com',
             'google_id' => 'google-admin-001',
             'nomor_hp' => '081234567890',
             'password' => Hash::make('password123'),
@@ -30,7 +30,7 @@ class UserSeeder extends Seeder
         User::create([
             'name' => 'Member User',
             'role' => 'member',
-            'email' => 'member@example.com',
+            'email' => 'member@gmail.com',
             'google_id' => 'google-member-001',
             'nomor_hp' => '081223344556',
             'password' => Hash::make('password123'),
@@ -45,7 +45,7 @@ class UserSeeder extends Seeder
             $kasirUsers[] = [
                 'name' => "Kasir Warung {$i}",
                 'role' => 'kasir',
-                'email' => "kasir{$i}@example.com",
+                'email' => "kasir{$i}@gmail.com",
                 'google_id' => "google-kasir-00{$i}",
                 'nomor_hp' => '0877777777' . str_pad($i, 2, '0', STR_PAD_LEFT),
                 'password' => Hash::make('password123'),
