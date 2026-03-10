@@ -21,7 +21,7 @@ class WarungSeeder extends Seeder
 
         // Ambil 5 user Kasir yang baru dibuat di UserSeeder (dengan email kasir1@example.com s/d kasir5@example.com)
         $kasirUsers = User::where('role', 'kasir')
-                          ->whereIn('email', ['kasir1@example.com', 'kasir2@example.com', 'kasir3@example.com', 'kasir4@example.com', 'kasir5@example.com'])
+                          ->whereIn('email', ['kasir1@gmail.com', 'kasir2@gmail.com', 'kasir3@gmail.com', 'kasir4@gmail.com', 'kasir5@gmail.com'])
                           ->orderBy('id')
                           ->limit(5)
                           ->get();
