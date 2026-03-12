@@ -27,6 +27,7 @@ class BarangKeluar extends Model
         'jenis',
         'keterangan',
         'harga_jual',
+        'laba_bersih'
     ];
 
     public function stokWarung()
