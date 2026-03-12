@@ -225,58 +225,69 @@ class BarangKeluarController extends Controller
             /**
              * 6. PROSES BARANG KELUAR & HITUNG LABA BERSIH
              */
+            $totalLabaTransaksiIni = 0;
+
             foreach ($validated['items'] as $item) {
-                // Ambil data stok fisik untuk tahu ID barang dan jumlah
+                // 1. Ambil data stok fisik
                 $stokFisik = \App\Models\StokWarung::find($item['id_stok_warung']);
                 if (!$stokFisik) continue;
 
-                // Ambil Harga Jual yang sedang aktif untuk mendapatkan 'harga_modal'
+                // 2. Ambil Harga Jual aktif untuk mendapatkan harga modal
                 $hargaAktif = \App\Models\HargaJual::where('id_warung', $idWarung)
                     ->where('id_barang', $stokFisik->id_barang)
                     ->whereNull('periode_akhir')
                     ->latest('periode_awal')
                     ->first();
 
-                // --- HITUNG LABA BERSIH ---
+                // 3. Definisikan variabel pendukung (PASTIKAN DI ATAS PENGGUNAANNYA)
                 $hargaModalSatuan = $hargaAktif->harga_modal ?? 0;
                 $hargaJualSatuan  = $item['harga'];
                 $jumlahBarang     = $item['jumlah'];
 
-                // Laba = (Harga Jual - Harga Modal) * Jumlah
-                $labaBersih = ($hargaJualSatuan - $hargaModalSatuan) * $jumlahBarang;
+                // 4. Hitung Laba untuk item ini
+                $labaBersihItem = ($hargaJualSatuan - $hargaModalSatuan) * $jumlahBarang;
 
-                // Simpan ke tabel barang_keluar
+                // 5. Tambahkan ke akumulasi total laba transaksi
+                $totalLabaTransaksiIni += $labaBersihItem;
+
+                // 6. Simpan ke tabel barang_keluar
                 $barangKeluar = \App\Models\BarangKeluar::create([
                     'id_stok_warung' => $item['id_stok_warung'],
                     'jumlah'         => $jumlahBarang,
                     'harga_jual'     => $hargaJualSatuan,
-                    'laba_bersih'    => $labaBersih,
+                    'laba_bersih'    => $labaBersihItem,
                     'jenis'          => $jenis,
                     'keterangan'     => $finalKeterangan,
                 ]);
 
-                // Catat ke tabel pivot (Relation Table)
+                // 7. Catat ke tabel pivot
                 \App\Models\TransaksiBarangKeluar::create([
                     'id_transaksi_kas' => $transaksiKas->id,
                     'id_barang_keluar' => $barangKeluar->id,
                     'jumlah'           => $jumlahBarang,
                 ]);
 
-                // Update statistik barang terjual di tabel harga_jual
+                // 8. Update statistik & stok
                 if ($hargaAktif) {
                     $hargaAktif->increment('barang_terjual', $jumlahBarang);
                 }
-
-                // Kurangi stok fisik barang di warung
                 $stokFisik->decrement('jumlah', $jumlahBarang);
 
-                // Jika transaksi hutang, catat relasi barangnya
+                // 9. Jika transaksi hutang, catat relasi
                 if ($hutang) {
                     \App\Models\BarangHutang::create([
                         'id_hutang'        => $hutang->id,
                         'id_barang_keluar' => $barangKeluar->id,
                     ]);
                 }
+            }
+
+            /**
+             * 7. UPDATE TOTAL LABA BERSIH DI TABEL WARUNG
+             */
+            $warung = \App\Models\Warung::find($idWarung);
+            if ($warung) {
+                $warung->increment('laba', $totalLabaTransaksiIni);
             }
 
             DB::commit();

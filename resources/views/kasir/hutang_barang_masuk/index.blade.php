@@ -13,9 +13,10 @@
         <div class="bg-warning-subtle p-3 rounded-4 border border-warning-alpha">
             <small class="text-warning-emphasis fw-bold d-block">Total Hutang Aktif</small>
             <h4 class="fw-black text-warning mb-0">
-                Rp {{ number_format($hutangList->where('status', '!=', 'lunas')->sum('total'), 0, ',', '.') }}
+                Rp {{ number_format($warung->hutang, 0, ',', '.') }}
             </h4>
         </div>
+
     </div>
 
     {{-- Filter Section --}}
@@ -28,17 +29,17 @@
                         <button class="btn btn-warning text-white rounded-pill-end" type="submit"><i class="fas fa-search"></i></button>
                     </form>
                 </div>
-                <div class="col-md-8 text-md-end">
+                {{-- <div class="col-md-8 text-md-end">
                     <div class="btn-group p-1 bg-light border rounded-pill">
                         <a href="{{ request()->fullUrlWithQuery(['status' => null]) }}" class="btn btn-sm rounded-pill px-3 {{ request('status') == null ? 'btn-warning text-white shadow-sm' : 'btn-light border-0' }}">Semua</a>
                         <a href="{{ request()->fullUrlWithQuery(['status' => 'belum lunas']) }}" class="btn btn-sm rounded-pill px-3 {{ request('status') == 'belum lunas' ? 'btn-danger text-white shadow-sm' : 'btn-light border-0' }}">Belum Lunas</a>
                         <a href="{{ request()->fullUrlWithQuery(['status' => 'lunas']) }}" class="btn btn-sm rounded-pill px-3 {{ request('status') == 'lunas' ? 'btn-success text-white shadow-sm' : 'btn-light border-0' }}">Lunas</a>
                     </div>
-                </div>
+                </div> --}}
             </div>
         </div>
     </div>
-
+    <h3 class="fw-bold">Histori Hutang</h3>
     {{-- Accordion List --}}
     <div class="accordion" id="accordionHutang">
         @forelse($hutangList as $hutang)
@@ -58,13 +59,13 @@
                             <span class="d-block text-muted small">Total Tagihan</span>
                             <span class="fw-bold text-warning">Rp {{ number_format($hutang->total, 0, ',', '.') }}</span>
                         </div>
-                        <div class="col-md-3 text-end pe-4">
+                        {{-- <div class="col-md-3 text-end pe-4">
                             @if($hutang->status == 'lunas')
                                 <span class="badge bg-success-subtle text-success rounded-pill px-3">Lunas</span>
                             @else
                                 <span class="badge bg-danger-subtle text-danger rounded-pill px-3 pulse-animation">Belum Lunas</span>
                             @endif
-                        </div>
+                        </div> --}}
                     </div>
                 </button>
             </h2>
@@ -100,11 +101,11 @@
                         </table>
                     </div>
                     <div class="d-flex justify-content-end gap-2 mt-2">
-                        @if($hutang->status != 'lunas')
+                        {{-- @if($hutang->status != 'lunas')
                             <a href="{{ route('kasir.bayar.detail', ['id' => $hutang->id]) }}" class="btn btn-warning text-white rounded-pill px-4 shadow-sm">
                                 <i class="fas fa-money-bill-wave me-2"></i>Bayar Nota Ini
                             </a>
-                        @endif
+                        @endif --}}
                         <a href="#" class="btn btn-outline-secondary rounded-pill px-4">
                             <i class="fas fa-print me-2"></i>Cetak Nota
                         </a>

@@ -28,7 +28,7 @@ class HutangBarangMasukControllerKasir extends Controller
         $role = $user->role;
 
         // ambil data total hutang warung
-        $warung = Warung::where('id_user', $user->id)->select('id')->first();
+        $warung = Warung::where('id_user', $user->id)->first();
         session(['id_warung' => $warung->id]);
 
         // Query utama ke HutangWarung (Master)
@@ -56,7 +56,7 @@ class HutangBarangMasukControllerKasir extends Controller
 
         $hutangList = $hutangQuery->orderBy('created_at', 'desc')->paginate(10);
 
-        return view('kasir.hutang_barang_masuk.index', compact('hutangList'));
+        return view('kasir.hutang_barang_masuk.index', compact('hutangList','warung'));
     }
     public function showDetailPembayaran($id)
     {

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 // use Illuminate\Http\Request;
 use App\Models\Warung;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class LaporanController extends Controller
@@ -13,48 +14,27 @@ class LaporanController extends Controller
     {
         // Mengambil semua data dari tabel warung
         $warungs = DB::table('warung')->select('id', 'nama_warung', 'keterangan', 'modal')->get();
-// dd($warungs);
+        // dd($warungs);
         return view('admin.laporanlaba.select_warung', compact('warungs'));
     }
 
-    public function showLaba($id_warung)
-    {
-        // ===============================
-        // 1. AMBIL WARUNG + RELASI
-        // ===============================
-        $warung = Warung::with([
-            'stokWarung.barangKeluar' => function ($q) {
-                $q->where('jenis', 'penjualan barang');
-            },
-            'stokWarung.hargaJual'
-        ])->findOrFail($id_warung);
-// dd($warung);
-        // ===============================
-        // 2. HITUNG LABA
-        // ===============================
-        $labaKotor  = 0;
-        $labaBersih = 0;
 
-        foreach ($warung->stokWarung as $stok) {
-            $hargaModal = $stok->hargaJual->harga_modal ?? 0;
+    public function showLaba(Request $request, $id)
+{
+    $warung = Warung::findOrFail($id);
 
-            foreach ($stok->barangKeluar as $keluar) {
-                $subtotalJual = $keluar->jumlah * $keluar->harga_jual;
-                $subtotalModal = $keluar->jumlah * $hargaModal;
+    $historyLaba = \App\Models\BarangKeluar::whereHas('stokWarung', function($query) use ($id) {
+            $query->where('id_warung', $id); // Sesuaikan dengan foreign key area/warungmu
+        })
+        ->with('stokWarung.barang')
+        ->latest()
+        ->paginate(10); // Ambil 10 data per load
 
-                $labaKotor  += $subtotalJual;
-                $labaBersih += ($subtotalJual - $subtotalModal);
-            }
-        }
-
-        // ===============================
-        // 3. RETURN KE VIEW
-        // ===============================
-        return view('admin.laporanlaba.detail_laba', [
-            'warung'       => $warung,
-            'laba_kotor'   => $labaKotor,
-            'laba_bersih'  => $labaBersih,
-            'total_modal'  => $labaKotor - $labaBersih,
-        ]);
+    if ($request->ajax()) {
+        // Balikkan hanya baris table (tr), bukan seluruh table
+        return view('admin.laporanlaba._item_history', compact('historyLaba'))->render();
     }
+
+    return view('admin.laporanlaba.detail_laba', compact('warung', 'historyLaba'));
+}
 }
