@@ -115,6 +115,7 @@ class TransaksiBarangController extends Controller
 
     public function create()
     {
+
         // Ambil data yang sudah ada
         $transaksis = TransaksiKas::all();
         $barangs = Barang::all(); // Tetap ambil semua barang untuk referensi harga
@@ -308,9 +309,9 @@ class TransaksiBarangController extends Controller
 
         DB::transaction(function () use ($data) {
             $warungIds = collect($data['transaksi'])->pluck('details.*.warung_id')->flatten()->unique();
+            // Pastikan kita ambil data warung terbaru di sini
             $warungs = Warung::with('area.laba')->whereIn('id', $warungIds)->get()->keyBy('id');
 
-            // Struktur untuk menampung total hutang per warung dalam satu request ini
             $rekapHutangWarung = [];
 
             foreach ($data['transaksi'] as $transaksiId => $transaksiData) {
@@ -342,42 +343,48 @@ class TransaksiBarangController extends Controller
                         ['id_warung' => $warungId, 'id_barang' => $transaksiBarang->id_barang],
                         ['jumlah' => 0]
                     );
-                    // 3. Buat Barang Masuk (dengan kolom 'total' sesuai migrasi baru)
+
+                    // 3. Buat Barang Masuk
                     $barangMasuk = BarangMasuk::create([
                         'id_transaksi_barang_masuk' => $transaksiBarang->id,
                         'id_stok_warung'      => $stokWarung->id,
-                        // 'id_barang  '           => $transaksiBarang->id_barang,
                         'jumlah'              => $jumlahKirim,
-                        'total'               => $totalHargaBarang, // Kolom baru
+                        'total'               => $totalHargaBarang,
                         'status'              => 'kirim',
                         'jenis'               => 'tambahan',
                         'tanggal_kadaluarsa'  => $transaksiBarang->tanggal_kadaluarsa,
                     ]);
 
-                    // 4. Kelola Hutang Warung (Induk)
-                    // Kita buat satu HutangWarung per warung dalam satu proses kirim ini
+                    // --- LOGIKA BARU: UPDATE HUTANG ---
+
+                    // 4. Update tabel HutangWarung (Riwayat)
                     if (!isset($rekapHutangWarung[$warungId])) {
                         $rekapHutangWarung[$warungId] = HutangWarung::create([
                             'id_warung' => $warungId,
-                            'total'  => 0, // Akan diupdate di bawah
-                            'jenis'  => 'barang masuk',
-                            'status' => 'belum lunas'
+                            'total'     => 0,
+                            'jenis'     => 'barang masuk',
+                            'status'    => 'belum lunas'
                         ]);
                     }
-
                     $hutangInduk = $rekapHutangWarung[$warungId];
                     $hutangInduk->increment('total', $totalHargaBarang);
 
-                    // 5. Buat Hutang Barang Masuk (Detail)
+                    // 5. Update atribut 'hutang' di tabel Warung (Akumulasi Saldo)
+                    // Menggunakan increment agar aman dari race condition
+                    $warung->increment('hutang', $totalHargaBarang);
+
+                    // ----------------------------------
+
+                    // 6. Buat Hutang Barang Masuk (Detail)
                     HutangBarangMasuk::create([
-                        'id_hutang_warung' => $hutangInduk->id, // Referensi ke master hutang
+                        'id_hutang_warung' => $hutangInduk->id,
                         'id_warung'        => $warungId,
                         'id_barang_masuk'  => $barangMasuk->id,
                         'total'            => $totalHargaBarang,
                         'status'           => 'belum lunas',
                     ]);
 
-                    // 6. Update Harga Jual
+                    // 7. Update Harga Jual (kode Anda sebelumnya...)
                     $laba = optional($warung->area)->laba()
                         ->where('input_minimal', '<=', $hargaModalWarung)
                         ->where('input_maksimal', '>=', $hargaModalWarung)
@@ -385,15 +392,12 @@ class TransaksiBarangController extends Controller
 
                     $hargaJualSatuan = optional($laba)->harga_jual ?? 0;
 
-
                     HargaJual::where('id_warung', $warungId)
                         ->where('id_barang', $transaksiBarang->id_barang)
                         ->whereNull('periode_akhir')
-                        ->orderByDesc('id')   // data TERAKHIR di-input
+                        ->orderByDesc('id')
                         ->limit(1)
-                        ->update([
-                            'periode_akhir' => now()
-                        ]);
+                        ->update(['periode_akhir' => now()]);
 
                     HargaJual::create([
                         'id_warung'              => $warungId,
@@ -408,11 +412,10 @@ class TransaksiBarangController extends Controller
                     ]);
                 }
 
-                // 7. Update Stok Sumber (TransaksiBarang)
+                // 8. Update Stok Sumber (TransaksiBarang)
                 $transaksiBarang->jumlah_terpakai += $totalPengiriman;
 
                 if (($transaksiBarang->jumlah - $transaksiBarang->jumlah_terpakai) > 0) {
-                    // Logika sisa stok (seperti kode Anda sebelumnya)
                     $sisa = $transaksiBarang->jumlah - $transaksiBarang->jumlah_terpakai;
                     $dataSisa = $transaksiBarang->toArray();
                     unset($dataSisa['id']);
