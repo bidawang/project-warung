@@ -48,7 +48,6 @@ class KasirControllerKasir extends Controller
             $hargaJual = HargaJual::where('id_warung', $idWarung)
                 ->where('id_barang', $stok->barang->id)
                 ->first();
-
             $stok->harga_jual = $hargaJual ? $hargaJual->harga_jual_range_akhir : 0;
 
             // --- 4. Tambahkan tanggal kadaluarsa (jika ada dari transaksi terakhir) ---

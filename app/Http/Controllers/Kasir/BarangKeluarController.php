@@ -238,11 +238,13 @@ class BarangKeluarController extends Controller
                     ->whereNull('periode_akhir')
                     ->latest('periode_awal')
                     ->first();
+                
 
                 // 3. Definisikan variabel pendukung (PASTIKAN DI ATAS PENGGUNAANNYA)
                 $hargaModalSatuan = $hargaAktif->harga_modal ?? 0;
                 $hargaJualSatuan  = $item['harga'];
                 $jumlahBarang     = $item['jumlah'];
+                // dd($hargaJualSatuan);
 
                 // 4. Hitung Laba untuk item ini
                 $labaBersihItem = ($hargaJualSatuan - $hargaModalSatuan) * $jumlahBarang;
