@@ -1,78 +1,153 @@
 @extends('layouts.admin')
 
 @section('content')
-<div class="p-6 bg-slate-50 min-h-screen">
-    <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-            <h1 class="text-2xl font-black text-slate-800 uppercase tracking-tight">
-                {{ $warung->nama_warung }}
-            </h1>
-            <p class="text-slate-500 text-sm">Laporan performa penjualan dan profitabilitas.</p>
-        </div>
-        <a href="{{ route('admin.laporan-laba.index') }}" class="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition shadow-sm">
-            <i class="fas fa-chevron-left mr-2"></i> Pilih Warung Lain
-        </a>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div class="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm relative overflow-hidden group">
-            <div class="relative z-10">
-                <span class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-wider">Total Penjualan</span>
-                <h3 class="text-gray-400 font-medium mt-4">Laba Kotor</h3>
-                <div class="text-3xl font-black text-slate-900 mt-1">
-                    Rp {{ number_format($laba_kotor, 0, ',', '.') }}
-                </div>
-            </div>
-            <div class="absolute -right-6 -bottom-6 text-slate-50 group-hover:text-blue-50 transition-colors duration-500">
-                <i class="fas fa-chart-bar text-9xl"></i>
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800">Detail Warung</h1>
+                <p class="text-slate-500 text-sm">Informasi lengkap dan performa keuangan unit bisnis.</p>
             </div>
         </div>
 
-        <div class="bg-indigo-600 rounded-3xl p-8 shadow-xl shadow-indigo-100 relative overflow-hidden group">
-            <div class="relative z-10">
-                <span class="text-xs font-bold text-indigo-200 bg-indigo-500/30 px-3 py-1 rounded-full uppercase tracking-wider">Keuntungan Bersih</span>
-                <h3 class="text-indigo-100 font-medium mt-4 text-wrap">Laba Bersih (Margin)</h3>
-                <div class="text-3xl font-black text-white mt-1">
-                    Rp {{ number_format($laba_bersih, 0, ',', '.') }}
-                </div>
-            </div>
-            <div class="absolute -right-6 -bottom-6 text-indigo-500/20">
-                <i class="fas fa-wallet text-9xl"></i>
-            </div>
-        </div>
-    </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-8">
 
-    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-        <div class="px-8 py-6 border-b border-slate-50 flex justify-between items-center">
-            <h4 class="font-bold text-slate-800 text-lg">Rincian Keuangan</h4>
-            <span class="text-xs font-semibold text-slate-400 italic">Data diambil secara real-time</span>
-        </div>
-        <div class="p-8">
-            <div class="flex flex-col space-y-5">
-                <div class="flex justify-between items-center">
-                    <span class="text-slate-500 font-medium">Laba Kotor (Total Penjualan)</span>
-                    <span class="text-slate-900 font-bold">Rp {{ number_format($laba_kotor, 0, ',', '.') }}</span>
-                </div>
-                <div class="flex justify-between items-center pb-5 border-b border-slate-50">
-                    <span class="text-slate-500 font-medium">Total Harga Modal</span>
-                    <span class="text-red-500 font-bold">- Rp {{ number_format($total_modal, 0, ',', '.') }}</span>
-                </div>
-                <div class="flex justify-between items-center pt-2">
-                    <div class="text-wrap">
-                        <span class="text-xl font-black text-slate-900">LABA BERSIH</span>
-                        <p class="text-xs text-slate-400 mt-1">Hasil pengurangan Penjualan dengan Modal tiap barang.</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <p class="text-sm font-medium text-slate-500">Modal Awal</p>
+                        <p class="text-xl font-bold text-slate-900 mt-2">Rp {{ number_format($warung->modal, 0, ',', '.') }}
+                        </p>
                     </div>
-                    <div class="text-right">
-                        <span class="text-3xl font-black text-indigo-600">
-                            Rp {{ number_format($laba_bersih, 0, ',', '.') }}
-                        </span>
-                        <div class="mt-1 text-xs font-bold text-green-500 bg-green-50 px-2 py-1 rounded-lg inline-block">
-                            Margin: @if($laba_kotor > 0) {{ number_format(($laba_bersih / $laba_kotor) * 100, 1) }}% @else 0% @endif
+
+                    <div class="bg-emerald-50 p-6 rounded-2xl border border-emerald-100">
+                        <p class="text-sm font-medium text-emerald-600">Laba Bersih</p>
+                        <p class="text-xl font-bold text-emerald-700 mt-2">Rp
+                            {{ number_format($warung->laba, 0, ',', '.') }}</p>
+                    </div>
+
+                    <div class="bg-rose-50 p-6 rounded-2xl border border-rose-100">
+                        <p class="text-sm font-medium text-rose-600">Total Hutang</p>
+                        <p class="text-xl font-bold text-rose-700 mt-2">Rp {{ number_format($warung->hutang, 0, ',', '.') }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-10">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                        <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                            <h3 class="font-bold text-slate-800">History Pendapatan Laba</h3>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-50">
+                                        <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">Tanggal</th>
+                                        <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">Barang</th>
+                                        <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase text-center">Qty
+                                        </th>
+                                        <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">Jenis</th>
+                                        <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase text-right">Laba
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-data">
+                                    @include('admin.laporanlaba._item_history')
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div id="ajax-load-status" class="hidden text-center py-4 bg-slate-50 text-slate-500 text-sm">
+                            <div
+                                class="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2">
+                            </div>
+                            Memuat data lebih banyak...
+                        </div>
+                    </div>
+                </div>
+
+                @push('scripts')
+                    <script>
+                        var page = 1;
+                        var hasMoreData = true;
+                        var loading = false;
+
+                        $(window).scroll(function() {
+                            // Jika scroll sudah mendekati bawah (100px dari bawah)
+                            if ($(window).scrollTop() + $(window).height() >= $(document).height() - 100) {
+                                if (!loading && hasMoreData) {
+                                    page++;
+                                    loadMoreData(page);
+                                }
+                            }
+                        });
+
+                        function loadMoreData(page) {
+                            loading = true;
+                            $('#ajax-load-status').show();
+
+                            $.ajax({
+                                    url: "?page=" + page,
+                                    type: "get",
+                                    beforeSend: function() {
+                                        // Bisa tambah animasi
+                                    }
+                                })
+                                .done(function(data) {
+                                    if (data.trim() == "") {
+                                        hasMoreData = false;
+                                        $('#ajax-load-status').html("Semua data telah dimuat.");
+                                        return;
+                                    }
+                                    $('#ajax-load-status').hide();
+                                    $("#history-data").append(data); // Tambahkan data ke bawah baris terakhir
+                                    loading = false;
+                                })
+                                .fail(function(jqXHR, ajaxOptions, thrownError) {
+                                    console.log('Server tidak merespon...');
+                                    loading = false;
+                                });
+                        }
+                    </script>
+                @endpush
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                        <h3 class="font-bold text-slate-800">Catatan & Keterangan</h3>
+                    </div>
+                    <div class="p-6">
+                        <p class="text-slate-600 leading-relaxed italic">
+                            "{{ $warung->keterangan ?? 'Tidak ada catatan tambahan untuk warung ini.' }}"
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-slate-800 mb-4">Informasi Unit</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center pb-3 border-b border-slate-50">
+                            <span class="text-sm text-slate-500">Nama Warung</span>
+                            <span class="text-sm font-semibold text-slate-900">{{ $warung->nama_warung }}</span>
+                        </div>
+                        <div class="flex justify-between items-center pb-3 border-b border-slate-50">
+                            <span class="text-sm text-slate-500">ID Area</span>
+                            <span
+                                class="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded">{{ $warung->id_area }}</span>
+                        </div>
+                        <div class="flex justify-between items-center pb-3 border-b border-slate-50">
+                            <span class="text-sm text-slate-500">Tanggal Input</span>
+                            <span class="text-sm text-slate-900">{{ $warung->created_at->format('d F Y') }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-slate-500">Update Terakhir</span>
+                            <span class="text-sm text-slate-900">{{ $warung->updated_at->diffForHumans() }}</span>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+
 @endsection

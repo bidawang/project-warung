@@ -29,12 +29,18 @@ class TransaksiKas extends Model
         return $this->belongsTo(KasWarung::class, 'id_kas_warung');
     }
 
+    public function barangKeluar()
+    {
+        return $this->belongsTo(BarangKeluar::class, 'id_barang_keluar');
+    }
+
     public function hutang()
     {
         return $this->belongsTo(Hutang::class, 'id_hutang');
     }
 
-    public function transaksiBarangKeluar(){
+    public function transaksiBarangKeluar()
+    {
         return $this->hasMany(transaksiBarangKeluar::class, 'id_transaksi_kas');
     }
 

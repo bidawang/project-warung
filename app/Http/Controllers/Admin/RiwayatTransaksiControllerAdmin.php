@@ -36,6 +36,7 @@ class RiwayatTransaksiControllerAdmin extends Controller
                 'transaksiBarangKeluar.barangKeluar.stokWarung.barang',
                 'hutang',
                 'uangPelanggan',
+                'barangKeluar'
             ])
                 ->where('id_kas_warung', $kasWarung->id)
                 ->latest();

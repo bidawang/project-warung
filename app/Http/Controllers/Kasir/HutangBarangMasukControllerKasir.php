@@ -12,6 +12,7 @@ use App\Models\TransaksiKas;
 use App\Models\KasWarung;
 use App\Models\HutangWarung;
 use Carbon\Carbon;
+use App\Models\Warung;
 
 class HutangBarangMasukControllerKasir extends Controller
 {
@@ -25,6 +26,10 @@ class HutangBarangMasukControllerKasir extends Controller
     {
         $user = Auth::user();
         $role = $user->role;
+
+        // ambil data total hutang warung
+        $warung = Warung::where('id_user', $user->id)->first();
+        session(['id_warung' => $warung->id]);
 
         // Query utama ke HutangWarung (Master)
         // Eager load ke detail (hutangBarangMasuk) dan barangnya
@@ -51,7 +56,7 @@ class HutangBarangMasukControllerKasir extends Controller
 
         $hutangList = $hutangQuery->orderBy('created_at', 'desc')->paginate(10);
 
-        return view('kasir.hutang_barang_masuk.index', compact('hutangList'));
+        return view('kasir.hutang_barang_masuk.index', compact('hutangList','warung'));
     }
     public function showDetailPembayaran($id)
     {
