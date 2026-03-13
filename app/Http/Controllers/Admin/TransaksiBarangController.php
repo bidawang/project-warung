@@ -368,6 +368,8 @@ class TransaksiBarangController extends Controller
                     }
                     $hutangInduk = $rekapHutangWarung[$warungId];
                     $hutangInduk->increment('total', $totalHargaBarang);
+                    // $warung->increment('hutang', $totalHargaBarang);
+
 
                     // 5. Update atribut 'hutang' di tabel Warung (Akumulasi Saldo)
                     // Menggunakan increment agar aman dari race condition

@@ -22,7 +22,7 @@ class RencanaBelanjaControllerAdmin extends Controller
     {
         $allTransactions = TransaksiBarangMasuk::with(['barang.satuan', 'areaPembelian'])
             ->where('jenis', 'rencana')
-            ->whereColumn('jumlah', '>', 'jumlah_terpakai')
+            ->where('status', 'pending')
             ->get()
             ->map(function ($trx) {
                 // 1. Ambil semua satuan milik barang ini
@@ -100,8 +100,9 @@ class RencanaBelanjaControllerAdmin extends Controller
 
     public function createRencana()
     {
+        // dd('create rencana');
         $rencanaBelanjas = RencanaBelanja::with(['barang', 'warung'])
-            ->whereColumn('jumlah_dibeli', '<', 'jumlah_awal')
+            ->where('status', 'pending')
             ->get();
 
         $totalKebutuhan = $rencanaBelanjas
@@ -228,111 +229,82 @@ class RencanaBelanjaControllerAdmin extends Controller
 
     public function store(Request $request)
     {
-        
-        //Fungsi setelah dari index rencana belanja (proses pembelian dari rencana)
-        // 1. Ambil data asli
-        // dd($request->all());
+        // 1. Ambil data asli & Bersihkan (Sama seperti sebelumnya)
         $items = $request->input('items', []);
-
-        // 2. Bersihkan & Konversi Data
         foreach ($items as $i => $item) {
-            // Jika item di-skip, hapus data purchases agar tidak divalidasi
             if (isset($item['skip']) && $item['skip'] == "1") {
                 unset($items[$i]['purchases']);
             } else if (isset($item['purchases'])) {
                 foreach ($item['purchases'] as $j => $purchase) {
-                    // Pastikan ID area adalah integer atau NULL jika kosong
                     if (isset($purchase['area_pembelian_id']) && $purchase['area_pembelian_id'] !== "") {
                         $items[$i]['purchases'][$j]['area_pembelian_id'] = (int) $purchase['area_pembelian_id'];
                     }
                 }
             }
         }
-
-        // 3. Timpa request dengan data yang sudah bersih
         $request->merge(['items' => $items]);
 
-        // 4. Validasi (Gunakan 'numeric' untuk ID jika masih bandel, tapi 'integer' seharusnya bisa setelah merge)
+        // 2. Validasi
         $validated = $request->validate([
             'items' => 'required|array',
             'items.*.id_barang'   => 'required|integer|exists:barang,id',
             'items.*.rencana_ids' => 'required|string',
             'items.*.skip'        => 'nullable|boolean',
-
-            // Validasi bersyarat: Jika 'skip' tidak ada, maka 'purchases' wajib
-            'items.*.purchases' => 'required_without:items.*.skip|array',
+            'items.*.purchases'   => 'required_without:items.*.skip|array',
             'items.*.purchases.*.area_pembelian_id' => 'required_without:items.*.skip|integer|exists:area_pembelian,id',
             'items.*.purchases.*.jumlah_beli'       => 'required_without:items.*.skip|numeric|min:1',
             'items.*.purchases.*.harga'             => 'required_without:items.*.skip|numeric|min:0',
             'items.*.purchases.*.tanggal_kadaluarsa' => 'nullable|date',
         ]);
-        // dd($validated,'asuuuuuuuuuuuuuuuu');
-
 
         $grandTotal = 0;
-        $keteranganTransaksi = "Pembelian Berdasarkan Rencana Belanja Warung";
-        $rencanaUpdates = [];
-
         DB::beginTransaction();
         try {
-
             $transaksi = TransaksiAwal::create([
                 'tanggal' => now(),
-                'keterangan' => $keteranganTransaksi,
+                'keterangan' => "Pembelian Berdasarkan Rencana Belanja Warung",
                 'total' => 0
             ]);
 
             foreach ($request->items as $itemData) {
-
-                /** SKIP barang — lewati total proses */
                 if (!empty($itemData['skip']) && $itemData['skip'] == 1) {
                     continue;
                 }
 
                 $idBarang = $itemData['id_barang'];
-                $rencanaIds = array_map('intval', explode(',', $itemData['rencana_ids']));
-                $totalDibeliPerGroup = 0;
 
-                /** Purchases bisa kosong → gunakan null-safe */
+                // --- BAGIAN INPUT DATA KE STOK (TransaksiBarangMasuk) ---
                 foreach ($itemData['purchases'] ?? [] as $purchase) {
-
                     $jumlahBeli = (int) $purchase['jumlah_beli'];
                     $hargaUnit  = (float) $purchase['harga'];
                     $totalHargaBaris = $jumlahBeli * $hargaUnit;
 
+                    // Ini adalah perintah yang memasukkan data belanja menjadi stok riil
                     TransaksiBarangMasuk::create([
                         'id_transaksi_awal' => $transaksi->id,
                         'id_area_pembelian' => $purchase['area_pembelian_id'],
                         'id_barang'         => $idBarang,
                         'jumlah'            => $jumlahBeli,
-                        'jumlah_terpakai'    => 0,
+                        'jumlah_terpakai'   => 0, // Awalnya 0 karena baru dibeli
                         'harga'             => $hargaUnit,
                         'tanggal_kadaluarsa' => $purchase['tanggal_kadaluarsa'] ?? null,
                         'jenis'             => 'rencana',
                     ]);
 
                     $grandTotal += $totalHargaBaris;
-                    $totalDibeliPerGroup += $jumlahBeli;
                 }
-
-                /** update semua rencana yang terkait */
-                foreach ($rencanaIds as $rencanaId) {
-                    $rencanaUpdates[$rencanaId] = ($rencanaUpdates[$rencanaId] ?? 0) + $totalDibeliPerGroup;
-                }
+                // -------------------------------------------------------
             }
 
-
-            // dd($rencanaUpdates,'asu');
             $transaksi->update(['total' => $grandTotal]);
-
             DB::table('dana_utama')->where('jenis_dana', 'wrb_old')->decrement('saldo', $grandTotal);
 
             DB::commit();
-            return redirect()->route('admin.rencana.index')->with('success', 'Transaksi rencana berhasil diproses.');
+            return redirect()->route('admin.rencana.index')->with('success', 'Transaksi berhasil diproses.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error($e);
-            return back()->withErrors(['process_error' => "Gagal memproses transaksi. Error: " . $e->getMessage()]);
+            return back()->withErrors(['process_error' => "Gagal: " . $e->getMessage()]);
         }
     }
 
@@ -406,7 +378,7 @@ class RencanaBelanjaControllerAdmin extends Controller
                     $barangMasuk = BarangMasuk::create([
                         'id_transaksi_barang_masuk' => $trxSourceId,
                         'id_stok_warung'      => $stokWarung->id,
-                        'id_barang'           => $barangId,
+                        // 'id_barang'           => $barangId,
                         'jumlah'              => $jumlahKirim,
                         'total'               => $totalHargaBarang, // Perbaikan: isi total
                         'status'              => 'kirim',
@@ -426,6 +398,8 @@ class RencanaBelanjaControllerAdmin extends Controller
 
                     $hutangInduk = $rekapHutangWarung[$warungId];
                     $hutangInduk->increment('total', $totalHargaBarang);
+                    $warung->increment('hutang', $totalHargaBarang);
+
 
                     // 4. Buat Hutang Barang Masuk (Detail refer ke Induk)
                     HutangBarangMasuk::create([

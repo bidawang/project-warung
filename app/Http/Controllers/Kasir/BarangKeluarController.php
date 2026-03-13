@@ -126,7 +126,7 @@ class BarangKeluarController extends Controller
             'keterangan'                => 'nullable|string',
             'tenggat'                   => 'nullable|date',
         ]);
-
+// dd($validated);
         $idWarung = session('id_warung');
         if (!$idWarung) {
             return redirect()->route('kasir.kasir')->with('error', 'ID warung tidak ditemukan di sesi.');
@@ -245,8 +245,8 @@ class BarangKeluarController extends Controller
                 // dd($hargaJualSatuan);
 
                 // 4. Hitung Laba untuk item ini
-                $labaBersihItem = ($hargaJualSatuan - $hargaModalSatuan) * $jumlahBarang;
-
+                $labaBersihItem = ($hargaJualSatuan/$jumlahBarang - $hargaModalSatuan) * $jumlahBarang;
+// dd($labaBersihItem, $hargaJualSatuan, $hargaModalSatuan, $jumlahBarang);
                 // 5. Tambahkan ke akumulasi total laba transaksi
                 $totalLabaTransaksiIni += $labaBersihItem;
 

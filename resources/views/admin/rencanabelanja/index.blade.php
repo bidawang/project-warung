@@ -175,7 +175,7 @@
                                                                 <select
                                                                     :name="'items[' + {{ $i->id }} +
                                                                         '][transactions][' + index +
-                                                                        '][id_transaksi_barang]'"
+                                                                        '][id_transaksi_barang_masuk]'"
                                                                     x-model="alloc.id_transaksi"
                                                                     @change="handleSelectChange('{{ $i->id }}', index, {{ $i->jumlah_awal }})"
                                                                     class="w-full px-3 py-2 rounded-xl border-gray-300 text-xs font-semibold border focus:ring-2 focus:ring-indigo-500 bg-white">

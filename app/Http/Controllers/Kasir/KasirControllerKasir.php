@@ -22,7 +22,7 @@ class KasirControllerKasir extends Controller
     public function index()
     {
         $idWarung = session('id_warung');
-
+        // dd($idWarung);
         if (!$idWarung) {
             return redirect()->route('kasir.kasir')
                 ->with('error', 'ID warung tidak ditemukan di sesi.');
@@ -45,9 +45,15 @@ class KasirControllerKasir extends Controller
             $transaksi = $stok->barang->transaksiBarang()->latest()->first();
 
             // --- 3. Ambil harga jual langsung dari tabel harga_jual ---
+            // $hargaJual = HargaJual::where('id_warung', $idWarung)
+            //     ->where('id_barang', $stok->barang->id)
+            //     ->first();
+
             $hargaJual = HargaJual::where('id_warung', $idWarung)
                 ->where('id_barang', $stok->barang->id)
+                ->orderBy('id', 'desc') // ambil id terbesar (paling baru)
                 ->first();
+
             $stok->harga_jual = $hargaJual ? $hargaJual->harga_jual_range_akhir : 0;
 
             // --- 4. Tambahkan tanggal kadaluarsa (jika ada dari transaksi terakhir) ---
@@ -129,10 +135,10 @@ class KasirControllerKasir extends Controller
     {
         $idWarung = session('id_warung');
         $items = $request->input('items');
-        $totalBayar = $request->input('total_bayar');
+        // $totalBayar = $request->input('total_bayar');
         $idMember = $request->input('id_member');
         $jenisPembayaran = $request->input('jenis_pembayaran', 'tunai'); // 'tunai' atau 'hutang'
-// dd($request->all());
+        // dd($request->all());
         if (!$idWarung) {
             return back()->with('error', 'ID warung tidak ditemukan di sesi.');
         }
