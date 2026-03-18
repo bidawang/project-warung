@@ -33,74 +33,179 @@
                     </a>
                 </div>
 
-                {{-- Top Stats: Info Warung & Laba --}}
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                    {{-- Detail Warung Card --}}
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between">
+
+                    {{-- ===================== --}}
+                    {{-- DETAIL WARUNG --}}
+                    {{-- ===================== --}}
+                    <div class="bg-white rounded-2xl shadow-sm border p-6 flex flex-col justify-between">
+
                         <div>
-                            <div class="flex items-center justify-between mb-4">
-                                <span
-                                    class="bg-blue-50 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Informasi
-                                    Bisnis</span>
-                                <span class="text-gray-400"><svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg></span>
-                            </div>
-                            <div class="space-y-3">
+                            <span class="bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1 rounded-full uppercase">
+                                Informasi Bisnis
+                            </span>
+
+                            <div class="mt-4 space-y-4">
+
                                 <div>
-                                    <p class="text-xs text-gray-400 uppercase font-bold tracking-widest">Pemilik / Area</p>
-                                    <p class="text-gray-800 font-medium">{{ $warung->user->name ?? '-' }} <span
-                                            class="text-gray-300 mx-1">|</span> {{ $warung->area->area ?? '-' }}</p>
+                                    <p class="text-xs text-gray-400 uppercase font-semibold">Pemilik / Area</p>
+                                    <p class="text-gray-800 font-semibold text-sm">
+                                        {{ $warung->user->name ?? '-' }}
+                                        <span class="text-gray-300 mx-1">•</span>
+                                        {{ $warung->area->area ?? '-' }}
+                                    </p>
                                 </div>
+
                                 <div>
-                                    <p class="text-xs text-gray-400 uppercase font-bold tracking-widest">Modal Awal</p>
-                                    <p class="text-2xl font-bold text-gray-900">Rp
-                                        {{ number_format($warung->modal, 0, ',', '.') }}</p>
+                                    <p class="text-xs text-gray-400 uppercase font-semibold">Modal Awal</p>
+                                    <p class="text-2xl font-bold text-gray-900">
+                                        Rp {{ number_format($warung->modal, 0, ',', '.') }}
+                                    </p>
                                 </div>
+
                             </div>
                         </div>
-                        <div class="mt-4 pt-4 border-t border-gray-50">
-                            <p class="text-sm text-gray-500 italic">
-                                "{{ $warung->keterangan ?? 'Tidak ada keterangan tambahan.' }}"</p>
+
+                        <div class="mt-6 pt-4 border-t">
+                            <p class="text-sm text-gray-500 italic leading-relaxed">
+                                "{{ $warung->keterangan ?? 'Tidak ada keterangan tambahan.' }}"
+                            </p>
                         </div>
+
                     </div>
 
-                    {{-- Laba Summary Card --}}
+
+                    {{-- ===================== --}}
+                    {{-- LABA SUMMARY --}}
+                    {{-- ===================== --}}
+                    @php
+                        $margin = $labaKotor > 0 ? ($labaBersih / $labaKotor) * 100 : 0;
+
+                        $status = 'Buruk';
+                        $color = 'text-red-300';
+
+                        if ($margin > 30) {
+                            $status = 'Sehat';
+                            $color = 'text-green-300';
+                        } elseif ($margin > 15) {
+                            $status = 'Cukup';
+                            $color = 'text-yellow-300';
+                        }
+                    @endphp
+
                     <div
-                        class="lg:col-span-2 bg-gradient-to-br from-indigo-700 to-blue-800 rounded-2xl shadow-lg p-6 text-white relative overflow-hidden">
-                        <div class="relative z-10 h-full flex flex-col justify-between">
-                            <div class="flex justify-between items-start">
-                                <h3 class="text-lg font-bold opacity-90 tracking-wide uppercase">Ringkasan Laba</h3>
-                                <div class="bg-white/20 px-3 py-1 rounded-lg text-sm font-bold backdrop-blur-md">
-                                    @if ($labaKotor > 0)
-                                        {{ number_format(($labaBersih / $labaKotor) * 100, 1) }}% Margin
-                                    @else
-                                        0% Margin
-                                    @endif
+                        class="lg:col-span-2 bg-gradient-to-br from-indigo-700 to-blue-800 rounded-2xl shadow-lg p-6 text-white">
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+
+                            {{-- ===================== --}}
+                            {{-- KIRI --}}
+                            {{-- ===================== --}}
+                            <div class="flex flex-col justify-between">
+
+                                {{-- HEADER --}}
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h3 class="text-lg font-bold uppercase tracking-wide">
+                                            Ringkasan Laba
+                                        </h3>
+                                        <p class="text-xs opacity-70">Realtime dari transaksi</p>
+                                    </div>
+
+                                    <div class="text-right">
+                                        <div class="bg-white/20 px-3 py-1 rounded text-sm font-bold">
+                                            {{ number_format($margin, 1) }}%
+                                        </div>
+                                        <p class="text-xs {{ $color }}">{{ $status }}</p>
+                                    </div>
                                 </div>
+
+                                {{-- ANGKA --}}
+                                <div class="mt-6 space-y-5">
+
+                                    <div>
+                                        <p class="text-indigo-200 text-xs">Total Penjualan</p>
+                                        <p class="text-2xl font-bold tracking-wide">
+                                            Rp {{ number_format($labaKotor, 0, ',', '.') }}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-indigo-200 text-xs">Total Modal</p>
+                                        <p class="text-xl font-semibold">
+                                            Rp {{ number_format($totalModal, 0, ',', '.') }}
+                                        </p>
+                                    </div>
+
+                                    <div class="bg-white/10 p-4 rounded-xl border border-white/10">
+                                        <p class="text-indigo-100 text-xs">Laba Bersih</p>
+                                        <p class="text-3xl font-black text-green-300">
+                                            Rp {{ number_format($labaBersih, 0, ',', '.') }}
+                                        </p>
+                                    </div>
+
+                                </div>
+
                             </div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 my-4">
-                                <div>
-                                    <p class="text-indigo-200 text-sm mb-1">Total Penjualan</p>
-                                    <p class="text-2xl font-bold">Rp {{ number_format($labaKotor, 0, ',', '.') }}</p>
+
+                            {{-- ===================== --}}
+                            {{-- KANAN: HISTORY --}}
+                            {{-- ===================== --}}
+                            <div class="bg-white/10 rounded-xl p-4 border border-white/10 flex flex-col">
+
+                                <div class="flex justify-between items-center mb-3">
+                                    <h4 class="text-sm font-bold">History Laba</h4>
+                                    <span class="text-xs opacity-70">Live</span>
                                 </div>
-                                <div>
-                                    <p class="text-indigo-200 text-sm mb-1">Total Modal</p>
-                                    <p class="text-2xl font-bold">Rp {{ number_format($totalModal, 0, ',', '.') }}</p>
+
+                                {{-- LIST --}}
+                                <div class="overflow-y-auto max-h-64 pr-2 space-y-3" id="history-data">
+
+                                    @forelse ($historyLaba as $item)
+                                        <div
+                                            class="flex items-center justify-between p-2.5 bg-white/5 hover:bg-white/10 border-b border-white/5 transition-all last:border-0">
+                                            {{-- Sisi Kiri: Nama & Waktu --}}
+                                            <div class="flex flex-col min-w-0">
+                                                <span class="text-sm font-bold text-white truncate">
+                                                    {{ $item->stokWarung->barang->nama_barang ?? '-' }}
+                                                </span>
+                                                <span class="text-[10px] text-white/50 uppercase tracking-tighter">
+                                                    {{ $item->created_at->format('d/m/y • H:i') }}
+                                                </span>
+                                            </div>
+
+                                            {{-- Sisi Kanan: Nominal Laba --}}
+                                            <div class="flex flex-col items-end shrink-0 ml-3">
+                                                <span
+                                                    class="text-[10px] text-green-400 font-black uppercase mb-0.5">Laba</span>
+                                                <div
+                                                    class="inline-flex items-center px-2 py-0.5 bg-green-500/10 border border-green-500/20 rounded-md">
+                                                    <span class="text-sm font-black text-green-400">
+                                                        +{{ number_format($item->laba_bersih, 0, ',', '.') }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @empty
+                                        <p class="text-center text-xs opacity-70">Belum ada transaksi</p>
+                                    @endforelse
+
                                 </div>
-                                <div class="bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-white/10">
-                                    <p class="text-indigo-100 text-sm mb-1">Laba Bersih</p>
-                                    <p class="text-3xl font-black text-green-300">Rp
-                                        {{ number_format($labaBersih, 0, ',', '.') }}</p>
+
+                                {{-- LOADING --}}
+                                <div id="ajax-load-status" class="hidden text-center py-2 text-xs opacity-70">
+                                    <div
+                                        class="animate-spin inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full mr-1">
+                                    </div>
+                                    Loading...
                                 </div>
+
                             </div>
+
                         </div>
-                        {{-- Decorative Circle --}}
-                        <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-white/5 rounded-full"></div>
                     </div>
+
                 </div>
 
                 {{-- Asset Warung Section --}}
@@ -187,9 +292,9 @@
                         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                             <h3 class="text-lg font-bold text-gray-800 mb-4">Filter & Summary</h3>
                             <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Pilih Periode</label>
-                            <input type="month" id="filter-bulan"
-                                class="w-full border-gray-200 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 mb-6">
-
+                            <input type="text" id="filter-bulan"
+                                class="w-full border-gray-200 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 mb-6"
+                                placeholder="Pilih bulan & tahun">
                             <div class="space-y-3">
                                 <div class="p-4 rounded-xl bg-gray-50 flex justify-between items-center">
                                     <span class="text-sm text-gray-500 font-medium">Total Estimasi</span>
@@ -361,7 +466,8 @@
                                                         <div class="text-gray-500">
                                                             Harga jual:
                                                             <span class="font-semibold text-gray-800">
-                                                                Rp {{ number_format($barang->harga_jual ?? 0, 0, ',', '.') }}
+                                                                Rp
+                                                                {{ number_format($barang->harga_jual ?? 0, 0, ',', '.') }}
                                                             </span>
                                                         </div>
 
@@ -486,16 +592,14 @@
             const el = document.getElementById(id)
             el.classList.toggle('hidden')
         }
+        flatpickr("#filter-bulan", {
+            plugins: [
+                new monthSelectPlugin({
+                    shorthand: true, // Jan, Feb
+                    dateFormat: "Y-m", // hasil: 2026-03
+                    altFormat: "F Y" // tampil: Maret 2026
+                })
+            ]
+        });
     </script>
-
-    <style>
-        [x-cloak] {
-            display: none !important;
-        }
-
-        input[type="month"]::-webkit-calendar-picker-indicator {
-            filter: invert(0.5);
-            cursor: pointer;
-        }
-    </style>
 @endsection
