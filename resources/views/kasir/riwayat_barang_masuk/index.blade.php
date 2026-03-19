@@ -45,8 +45,6 @@
                         @forelse($riwayatBarangMasuk as $bm)
                         @php
                             $barang   = optional($bm->stokWarung->barang);
-                            $harga    = $bm->transaksiBarang->harga ?? 0;
-                            // $subtotal = $bm->$harga;
                         @endphp
                         <tr>
                             <td class="text-center fw-bold text-muted">
@@ -77,7 +75,7 @@
                             </td>
 
                             <td class="text-end fw-bold text-success">
-                                Rp {{ number_format($harga,0,',','.') }}
+                                Rp {{ number_format($bm->total,0,',','.') }}
                             </td>
 
                             <td class="text-center">
@@ -125,8 +123,8 @@
 
                 <p><strong>Barang:</strong> {{ $barang->nama_barang }}</p>
                 <p><strong>Jumlah:</strong> {{ $bm->jumlah }}</p>
-                <p><strong>Harga:</strong> Rp {{ number_format($harga,0,',','.') }}</p>
-                <p><strong>Subtotal:</strong> Rp {{ number_format($bm->$harga,0,',','.') }}</p>
+                {{-- <p><strong>Harga:</strong> Rp {{ number_format($harga,0,',','.') }}</p> --}}
+                <p><strong>Subtotal:</strong> Rp {{ number_format($bm->total,0,',','.') }}</p>
                 <p><strong>Status:</strong> {{ strtoupper($bm->status ?? '-') }}</p>
 
                 @if($bm->tanggal_kadaluarsa)

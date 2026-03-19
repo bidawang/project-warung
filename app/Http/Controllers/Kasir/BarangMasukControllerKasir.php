@@ -177,6 +177,9 @@ class BarangMasukControllerKasir extends Controller
                         StokWarung::where('id', $item->id_stok_warung)
                             ->increment('jumlah', $jumlahMasuk);
                     }
+// dd($item->id_stok_warung);
+                    TransaksiBarangMasuk::where('id', $item->id_transaksi_barang_masuk)
+                        ->update(['status' => 'terima']);
                 }
 
                 $message .= ' dan stok barang berhasil ditambahkan.';

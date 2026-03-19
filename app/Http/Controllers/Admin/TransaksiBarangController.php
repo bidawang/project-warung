@@ -363,7 +363,7 @@ class TransaksiBarangController extends Controller
                             'id_warung' => $warungId,
                             'total'     => 0,
                             'jenis'     => 'barang masuk',
-                            'status'    => 'belum lunas'
+                            // 'status'    => 'belum lunas'
                         ]);
                     }
                     $hutangInduk = $rekapHutangWarung[$warungId];
@@ -383,7 +383,7 @@ class TransaksiBarangController extends Controller
                         'id_warung'        => $warungId,
                         'id_barang_masuk'  => $barangMasuk->id,
                         'total'            => $totalHargaBarang,
-                        'status'           => 'belum lunas',
+                        // 'status'           => 'belum lunas',
                     ]);
 
                     // 7. Update Harga Jual (kode Anda sebelumnya...)

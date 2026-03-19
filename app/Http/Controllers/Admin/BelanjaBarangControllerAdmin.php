@@ -34,7 +34,7 @@ class BelanjaBarangControllerAdmin extends Controller
         $groupedRiwayat = $riwayatBelanja->groupBy(function ($item) {
             return $item->stokWarung->warung->nama_warung . ' - ' . $item->created_at->format('Y-m-d');
         });
-
+// dd($groupedRiwayat);    
         return view('admin.belanjabarang.index', compact('riwayatBelanja', 'groupedRiwayat', 'search'));
     }
 }

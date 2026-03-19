@@ -208,143 +208,165 @@
 
                 </div>
 
-                {{-- Asset Warung Section --}}
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-8">
-                    <div class="p-6 border-b border-gray-50 flex justify-between items-center bg-white">
-                        <div>
-                            <h3 class="text-xl font-bold text-gray-800">Manajemen Asset</h3>
-                            <p class="text-sm text-gray-500">Daftar inventaris dan progres pelunasan asset</p>
-                        </div>
-                        <span
-                            class="bg-gray-100 text-gray-600 text-xs font-bold px-3 py-1.5 rounded-lg">{{ $assets->count() }}
-                            Items</span>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-100">
-                            <thead class="bg-gray-50/50">
-                                <tr>
-                                    <th
-                                        class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                        Tgl Pembelian</th>
-                                    <th
-                                        class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                        Nama Asset</th>
-                                    <th
-                                        class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                        Total Harga</th>
-                                    <th
-                                        class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-widest text-green-600">
-                                        Terbayar</th>
-                                    <th
-                                        class="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-widest text-red-500">
-                                        Sisa</th>
-                                    <th
-                                        class="px-6 py-4 text-center text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                        Status Pelunasan</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100">
-                                @forelse ($assets as $asset)
-                                    @php
-                                        $persen =
-                                            $asset->harga_asset > 0
-                                                ? ($asset->total_dibayar / $asset->harga_asset) * 100
-                                                : 0;
-                                    @endphp
-                                    <tr class="hover:bg-blue-50/30 transition-colors">
-                                        <td class="px-6 py-4 text-sm text-gray-600">
-                                            {{ \Carbon\Carbon::parse($asset->tanggal_pembelian)->format('d/m/Y') }}</td>
-                                        <td class="px-6 py-4 text-sm font-bold text-gray-800">{{ $asset->nama }}</td>
-                                        <td class="px-6 py-4 text-sm font-medium">Rp
-                                            {{ number_format($asset->harga_asset, 0, ',', '.') }}</td>
-                                        <td class="px-6 py-4 text-sm font-bold text-green-600">Rp
-                                            {{ number_format($asset->total_dibayar, 0, ',', '.') }}</td>
-                                        <td class="px-6 py-4 text-sm font-bold text-red-500">Rp
-                                            {{ number_format($asset->sisa_pembayaran, 0, ',', '.') }}</td>
-                                        <td class="px-6 py-4">
-                                            <div class="flex flex-col items-center min-w-[120px]">
-                                                <div
-                                                    class="flex justify-between w-full mb-1 text-[10px] font-bold text-gray-500 uppercase">
-                                                    <span>{{ $asset->volume_pelunasan }}x Bayar</span>
-                                                    <span>{{ number_format($persen, 0) }}%</span>
-                                                </div>
-                                                <div class="w-full bg-gray-100 rounded-full h-1.5">
-                                                    <div class="bg-blue-600 h-1.5 rounded-full transition-all duration-500"
-                                                        style="width: {{ $persen }}%"></div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="6" class="px-6 py-10 text-center text-gray-400 italic">Belum ada
-                                            data asset tercatat.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
 
-                {{-- Pengeluaran Pokok Section --}}
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                    <div class="lg:col-span-1 space-y-4">
-                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                            <h3 class="text-lg font-bold text-gray-800 mb-4">Filter & Summary</h3>
-                            <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Pilih Periode</label>
-                            <input type="text" id="filter-bulan"
-                                class="w-full border-gray-200 rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 mb-6"
-                                placeholder="Pilih bulan & tahun">
-                            <div class="space-y-3">
-                                <div class="p-4 rounded-xl bg-gray-50 flex justify-between items-center">
-                                    <span class="text-sm text-gray-500 font-medium">Total Estimasi</span>
-                                    <span id="totalPengeluaran" class="font-bold text-gray-900">-</span>
-                                </div>
-                                <div class="p-4 rounded-xl bg-green-50 flex justify-between items-center">
-                                    <span class="text-sm text-green-700 font-medium">Terbayar</span>
-                                    <span id="totalTerpenuhi" class="font-bold text-green-700">-</span>
-                                </div>
-                                <div
-                                    class="p-4 rounded-xl bg-red-50 flex justify-between items-center border border-red-100">
-                                    <span class="text-sm text-red-700 font-medium">Tunggakan</span>
-                                    <span id="totalBelum" class="font-bold text-red-700">-</span>
-                                </div>
+                    {{-- ===================== --}}
+                    {{-- ASSET (KIRI BESAR) --}}
+                    {{-- ===================== --}}
+                    <div class="xl:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+
+                        <div class="p-5 border-b border-gray-50 flex justify-between items-center">
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-800">Manajemen Asset</h3>
+                                <p class="text-xs text-gray-500">Inventaris & progres cicilan</p>
                             </div>
+                            <span class="bg-gray-100 text-gray-600 text-xs font-bold px-3 py-1 rounded-lg">
+                                {{ $assets->count() }} Items
+                            </span>
                         </div>
-                    </div>
 
-                    <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div class="p-5 border-b border-gray-50 flex items-center gap-2 font-bold text-gray-800">
-                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
-                                </path>
-                            </svg>
-                            Log Pengeluaran Pokok
-                        </div>
-                        <div class="overflow-x-auto max-h-[400px]">
+                        <div class="overflow-auto max-h-[420px]">
                             <table class="min-w-full text-sm divide-y divide-gray-100">
-                                <thead class="bg-gray-50/50 sticky top-0">
+
+                                <thead class="bg-gray-50 sticky top-0 text-[11px] uppercase text-gray-400">
                                     <tr>
-                                        <th class="px-6 py-3 text-left font-bold text-gray-400 uppercase text-[10px]">
-                                            Tanggal</th>
-                                        <th class="px-6 py-3 text-left font-bold text-gray-400 uppercase text-[10px]">
-                                            Keterangan/Redaksi</th>
-                                        <th class="px-6 py-3 text-left font-bold text-gray-400 uppercase text-[10px]">
-                                            Nominal</th>
-                                        <th class="px-6 py-3 text-center font-bold text-gray-400 uppercase text-[10px]">
-                                            Status</th>
+                                        <th class="px-4 py-3 text-left">Tanggal</th>
+                                        <th class="px-4 py-3 text-left">Asset</th>
+                                        <th class="px-4 py-3 text-left">Harga</th>
+                                        <th class="px-4 py-3 text-left text-green-600">Bayar</th>
+                                        <th class="px-4 py-3 text-left text-red-500">Sisa</th>
+                                        <th class="px-4 py-3 text-center">Progress</th>
                                     </tr>
                                 </thead>
-                                <tbody id="tablePengeluaran" class="divide-y divide-gray-50">
-                                    <tr>
-                                        <td colspan="4" class="px-6 py-10 text-center text-gray-400">Memproses data...
-                                        </td>
-                                    </tr>
+
+                                <tbody class="divide-y divide-gray-50">
+                                    @forelse ($assets as $asset)
+                                        @php
+                                            $persen =
+                                                $asset->harga_asset > 0
+                                                    ? ($asset->total_dibayar / $asset->harga_asset) * 100
+                                                    : 0;
+                                        @endphp
+
+                                        <tr class="hover:bg-blue-50/30">
+
+                                            <td class="px-4 py-3 text-gray-500">
+                                                {{ \Carbon\Carbon::parse($asset->tanggal_pembelian)->format('d/m/Y') }}
+                                            </td>
+
+                                            <td class="px-4 py-3 font-semibold text-gray-800">
+                                                {{ $asset->nama }}
+                                            </td>
+
+                                            <td class="px-4 py-3 text-gray-700">
+                                                Rp {{ number_format($asset->harga_asset, 0, ',', '.') }}
+                                            </td>
+
+                                            <td class="px-4 py-3 text-green-600 font-bold">
+                                                Rp {{ number_format($asset->total_dibayar, 0, ',', '.') }}
+                                            </td>
+
+                                            <td class="px-4 py-3 text-red-500 font-bold">
+                                                Rp {{ number_format($asset->sisa_pembayaran, 0, ',', '.') }}
+                                            </td>
+
+                                            <td class="px-4 py-3 w-[150px]">
+                                                <div class="text-[10px] flex justify-between mb-1 text-gray-500">
+                                                    <span>{{ $asset->volume_pelunasan }}x</span>
+                                                    <span>{{ number_format($persen, 0) }}%</span>
+                                                </div>
+                                                <div class="w-full bg-gray-100 h-1.5 rounded-full">
+                                                    <div class="bg-blue-600 h-1.5 rounded-full"
+                                                        style="width: {{ $persen }}%">
+                                                    </div>
+                                                </div>
+                                            </td>
+
+                                        </tr>
+
+                                    @empty
+                                        <tr>
+                                            <td colspan="6" class="text-center py-10 text-gray-400 italic">
+                                                Belum ada data asset
+                                            </td>
+                                        </tr>
+                                    @endforelse
                                 </tbody>
+
                             </table>
                         </div>
                     </div>
+
+
+                    {{-- ===================== --}}
+                    {{-- PENGELUARAN (KANAN) --}}
+                    {{-- ===================== --}}
+                    <div class="xl:col-span-1 flex flex-col gap-4">
+
+                        {{-- FILTER + SUMMARY --}}
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+
+                            <h3 class="text-sm font-bold text-gray-700 mb-3">Filter</h3>
+
+                            <input type="text" id="filter-bulan"
+                                class="w-full border-gray-200 rounded-xl text-sm shadow-sm focus:ring-blue-500 focus:border-blue-500 mb-4"
+                                placeholder="Pilih bulan & tahun">
+
+                            <div class="space-y-2 text-sm">
+
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Estimasi</span>
+                                    <span id="totalPengeluaran" class="font-bold text-gray-800">-</span>
+                                </div>
+
+                                <div class="flex justify-between">
+                                    <span class="text-green-600">Terbayar</span>
+                                    <span id="totalTerpenuhi" class="font-bold text-green-600">-</span>
+                                </div>
+
+                                <div class="flex justify-between">
+                                    <span class="text-red-500">Tunggakan</span>
+                                    <span id="totalBelum" class="font-bold text-red-500">-</span>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        {{-- TABLE --}}
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex-1">
+
+                            <div class="p-4 border-b text-sm font-bold text-gray-700">
+                                Log Pengeluaran
+                            </div>
+
+                            <div class="overflow-auto max-h-[250px]">
+                                <table class="min-w-full text-xs divide-y divide-gray-100">
+
+                                    <thead class="bg-gray-50 sticky top-0 text-gray-400 uppercase">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left">Tgl</th>
+                                            <th class="px-4 py-2 text-left">Ket</th>
+                                            <th class="px-4 py-2 text-left">Nominal</th>
+                                            <th class="px-4 py-2 text-center">Status</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody id="tablePengeluaran" class="divide-y divide-gray-50">
+                                        <tr>
+                                            <td colspan="4" class="text-center py-8 text-gray-400">
+                                                Memproses...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+
+                                </table>
+                            </div>
+
+                        </div>
+
+                    </div>
+
                 </div>
 
                 {{-- Inventory Section --}}
