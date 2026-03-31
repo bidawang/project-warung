@@ -192,6 +192,8 @@ Route::prefix('/admin')->name('admin.')->group(function () {
         ->parameters([
             'asalbarang' => 'idArea' // supaya edit($idArea)
         ]);
+    Route::post('/hutang/update-bunga', [HutangControllerAdmin::class, 'updateBunga'])->name('hutang.update-bunga');
+
     Route::get('asalbarang/filter', [AsalBarangControllerAdmin::class, 'filterBarang'])->name('asalbarang.filter');
     // Ubah juga route create Anda jika belum sesuai dengan name()
     Route::get('asalbarang/create', [AsalBarangControllerAdmin::class, 'create'])->name('asalbarang.create');

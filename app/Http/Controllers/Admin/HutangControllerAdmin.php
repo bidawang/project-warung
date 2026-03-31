@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\Hutang;
-use App\Models\Warung;
 use App\Models\AturanTenggat;
+use App\Models\Hutang;
 use App\Models\LogPembayaranHutang;
+use App\Models\Warung;
+use Illuminate\Http\Request;
 
 class HutangControllerAdmin extends Controller
 {
@@ -47,11 +47,10 @@ class HutangControllerAdmin extends Controller
         return view('admin.hutang.index', compact('hutangList', 'aturanTenggats'));
     }
 
-
     /**
      * Menampilkan detail Hutang tertentu dari warung manapun.
      *
-     * @param  int  $id ID Hutang
+     * @param  int  $id  ID Hutang
      * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
     public function detailAllWarung($id)
@@ -79,15 +78,65 @@ class HutangControllerAdmin extends Controller
     {
         $user = \App\Models\User::findOrFail($userId);
 
-        // Sekarang pembayarans sudah terdaftar di model
-        $hutangList = Hutang::with(['warung', 'pembayarans'])
+        // Ambil hutang dengan relasi warung dan aturan_tenggat
+        $hutangRaw = Hutang::with(['warung.aturanTenggat', 'pembayarans'])
             ->where('id_user', $userId)
             ->orderBy('created_at', 'desc')
             ->get();
+
+        // Mapping data untuk menghitung bunga di level Controller
+        $hutangList = $hutangRaw->map(function ($h) {
+            $isOverdue = \Carbon\Carbon::now()->gt(\Carbon\Carbon::parse($h->tenggat)) && $h->status != 'lunas';
+
+            $aturan = $h->warung->aturanTenggat ?? null;
+            $nominalRekomendasi = 0;
+
+            if ($aturan && $isOverdue) {
+                $nilaiBungaDB = (float) $aturan->bunga;
+                $tipeBungaDB = $aturan->tipe_bunga;
+
+                if ($tipeBungaDB === 'persen') {
+                    // Hitung: (5 / 100) * 40000 = 2000
+                    $nominalRekomendasi = ($nilaiBungaDB / 100) * (float) $h->jumlah_sisa_hutang;
+                } else {
+                    $nominalRekomendasi = $nilaiBungaDB;
+                }
+            }
+
+            // Tambahkan atribut virtual ke object hutang agar bisa dipanggil di View
+            $h->is_overdue = $isOverdue;
+            $h->rekomendasi_bunga = $nominalRekomendasi;
+
+            return $h;
+        });
+
 
         $totalSisa = $hutangList->sum('jumlah_sisa_hutang');
         $totalHutang = $hutangList->sum('jumlah_hutang_awal');
 
         return view('admin.hutang.user_detail', compact('user', 'hutangList', 'totalSisa', 'totalHutang'));
+    }
+
+    public function updateBunga(Request $request)
+    {
+        // 1. Validasi input
+        $request->validate([
+            'hutang_id' => 'required|exists:hutang,id',
+            'nominal_bunga' => 'required|numeric|min:0',
+        ]);
+
+        // 2. Cari data hutang
+        $hutang = Hutang::findOrFail($request->hutang_id);
+
+        // 3. Update total_bunga dan jumlah_sisa_hutang
+        // Bunga ditambahkan ke sisa hutang yang ada
+        $bungaBaru = $request->nominal_bunga;
+
+        $hutang->total_bunga += $bungaBaru;
+        $hutang->jumlah_sisa_hutang += $bungaBaru;
+        $hutang->save();
+
+        // 4. Redirect kembali dengan pesan sukses
+        return redirect()->back()->with('success', 'Bunga sebesar Rp ' . number_format($bungaBaru, 0, ',', '.') . ' berhasil ditambahkan.');
     }
 }

@@ -16,7 +16,7 @@ class Warung extends Model
         'id_area',
         'nama_warung',
         'modal',
-        'keterangan'
+        'keterangan',
     ];
 
     public function user()
@@ -37,5 +37,11 @@ class Warung extends Model
     public function kasWarung()
     {
         return $this->hasMany(KasWarung::class, 'id_warung');
+    }
+
+    public function aturanTenggat()
+    {
+        // Pastikan foreign key-nya adalah id_warung
+        return $this->hasOne(AturanTenggat::class, 'id_warung', 'id');
     }
 }
