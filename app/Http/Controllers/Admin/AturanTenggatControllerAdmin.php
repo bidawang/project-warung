@@ -119,7 +119,6 @@ class AturanTenggatControllerAdmin extends Controller
      */
     public function destroy(AturanTenggat $aturanTenggat)
     {
-        dd($aturanTenggat);
         $aturanTenggat->delete();
         return back()->with('success', 'Aturan tenggat berhasil dihapus.');
     }
