@@ -369,9 +369,371 @@
 
                 </div>
 
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+
+                    {{-- ================= LEFT: TRANSAKSI ================= --}}
+                    <div class="lg:col-span-2">
+                        <div x-data="{ openRow: null }"
+                            class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+
+                            {{-- HEADER --}}
+                            <div class="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
+                                <h3 class="text-lg font-bold text-gray-800">
+                                    Monitoring Transaksi
+                                </h3>
+
+                                <a href="{{ route('admin.riwayat_transaksi.index') }}"
+                                    class="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-indigo-700">
+                                    Lihat Semua
+                                </a>
+                            </div>
+
+                            {{-- TABLE --}}
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm">
+                                    <thead class="bg-gray-100 text-gray-600 uppercase text-[11px]">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left">Waktu</th>
+                                            <th class="px-4 py-2 text-left">Jenis</th>
+                                            <th class="px-4 py-2 text-left">Deskripsi</th>
+                                            <th class="px-4 py-2 text-right">Nominal</th>
+                                            <th class="px-4 py-2 text-center w-16">#</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody class="divide-y">
+                                        @forelse($riwayatTransaksi as $index => $trx)
+
+                                            {{-- ROW --}}
+                                            <tr class="hover:bg-indigo-50 cursor-pointer transition"
+                                                @click="openRow === {{ $index }} ? openRow = null : openRow = {{ $index }}">
+
+                                                <td class="px-4 py-2 text-xs text-gray-500">
+                                                    {{ $trx->tanggal->translatedFormat('d M H:i') }}
+                                                </td>
+
+                                                <td class="px-4 py-2">
+                                                    <span
+                                                        class="px-2 py-0.5 rounded-full text-[10px] font-bold
+                                        {{ (float) $trx->total >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
+                                                        {{ $trx->jenis_transaksi }}
+                                                    </span>
+                                                </td>
+
+                                                <td class="px-4 py-2 text-gray-600 truncate max-w-[200px]">
+                                                    {{ $trx->deskripsi }}
+                                                </td>
+
+                                                <td
+                                                    class="px-4 py-2 text-right font-bold
+                                    {{ (float) $trx->total >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                                                    Rp {{ number_format((float) $trx->total, 0, ',', '.') }}
+                                                </td>
+
+                                                <td class="px-4 py-2 text-center text-indigo-500 text-xs">
+                                                    ▼
+                                                </td>
+                                            </tr>
+
+                                            {{-- DETAIL --}}
+                                            <tr x-show="openRow === {{ $index }}" x-transition>
+                                                <td colspan="5" class="bg-gray-50 px-5 py-4">
+
+                                                    <div class="grid md:grid-cols-2 gap-4">
+
+                                                        {{-- ITEMS --}}
+                                                        @if (count($trx->items))
+                                                            <div>
+                                                                <div class="text-xs font-bold text-gray-500 mb-2">Item
+                                                                </div>
+
+                                                                <div class="space-y-1 text-sm">
+                                                                    @foreach ($trx->items as $item)
+                                                                        <div class="flex justify-between">
+                                                                            <span>
+                                                                                {{ $item->nama_barang }}
+                                                                                <span class="text-xs text-gray-400">
+                                                                                    x{{ $item->jumlah }}
+                                                                                </span>
+                                                                            </span>
+                                                                            <span>
+                                                                                Rp
+                                                                                {{ number_format($item->subtotal, 0, ',', '.') }}
+                                                                            </span>
+                                                                        </div>
+                                                                    @endforeach
+                                                                </div>
+                                                            </div>
+                                                        @endif
+
+                                                        {{-- PEMBAYARAN --}}
+                                                        <div>
+                                                            <div class="text-xs font-bold text-gray-500 mb-2">Pembayaran
+                                                            </div>
+
+                                                            <div class="space-y-1 text-sm">
+                                                                @if ($trx->uang_dibayar)
+                                                                    <div class="flex justify-between">
+                                                                        <span>Dibayar</span>
+                                                                        <span>Rp
+                                                                            {{ number_format($trx->uang_dibayar, 0, ',', '.') }}</span>
+                                                                    </div>
+                                                                @endif
+
+                                                                @if ($trx->uang_kembalian)
+                                                                    <div class="flex justify-between">
+                                                                        <span>Kembalian</span>
+                                                                        <span>Rp
+                                                                            {{ number_format($trx->uang_kembalian, 0, ',', '.') }}</span>
+                                                                    </div>
+                                                                @endif
+
+                                                                <div
+                                                                    class="flex justify-between font-bold border-t pt-2 mt-2">
+                                                                    <span>Total</span>
+                                                                    <span>Rp
+                                                                        {{ number_format((float) $trx->total, 0, ',', '.') }}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                    </div>
+
+                                                </td>
+                                            </tr>
+
+                                        @empty
+                                            <tr>
+                                                <td colspan="5" class="text-center py-6 text-gray-400 text-sm">
+                                                    Belum ada transaksi
+                                                </td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+
+                        </div>
+                    </div>
+
+
+                    {{-- ================= RIGHT: HUTANG ================= --}}
+                    <div class="lg:col-span-1">
+                        <div x-data="{ activeTab: 'belum' }"
+                            class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden h-full">
+
+                            {{-- HEADER --}}
+                            <div class="px-5 py-4 border-b flex justify-between items-center">
+                                <h3 class="text-lg font-bold text-gray-800">Hutang</h3>
+
+                                <a href="{{ route('admin.hutang.index') }}"
+                                    class="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-indigo-700">
+                                    Lihat Semua
+                                </a>
+                            </div>
+
+                            {{-- TAB --}}
+                            <div class="px-4 pt-3">
+                                <div class="flex space-x-1 bg-gray-100 p-1 rounded-lg text-xs w-fit">
+                                    <button @click="activeTab='belum'"
+                                        :class="activeTab === 'belum' ? 'bg-white text-red-600 shadow' : 'text-gray-600'"
+                                        class="px-3 py-1 rounded-md font-semibold">Belum</button>
+
+                                    <button @click="activeTab='lunas'"
+                                        :class="activeTab === 'lunas' ? 'bg-white text-green-600 shadow' : 'text-gray-600'"
+                                        class="px-3 py-1 rounded-md font-semibold">Lunas</button>
+
+                                    <button @click="activeTab='semua'"
+                                        :class="activeTab === 'semua' ? 'bg-white text-indigo-600 shadow' : 'text-gray-600'"
+                                        class="px-3 py-1 rounded-md font-semibold">Semua</button>
+                                </div>
+                            </div>
+
+                            {{-- STAT --}}
+                            <div class="grid grid-cols-3 gap-2 px-4 py-3 text-xs">
+                                <div class="bg-red-50 border rounded-lg p-2 text-center">
+                                    <div>Total</div>
+                                    <div class="font-bold text-red-600">
+                                        Rp {{ number_format($totalHutang ?? 0, 0, ',', '.') }}
+                                    </div>
+                                </div>
+
+                                <div class="bg-yellow-50 border rounded-lg p-2 text-center">
+                                    <div>Sisa</div>
+                                    <div class="font-bold text-yellow-600">
+                                        Rp {{ number_format($totalSisa ?? 0, 0, ',', '.') }}
+                                    </div>
+                                </div>
+
+                                <div class="bg-green-50 border rounded-lg p-2 text-center">
+                                    <div>Lunas</div>
+                                    <div class="font-bold text-green-600">
+                                        Rp {{ number_format($totalLunas ?? 0, 0, ',', '.') }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- LIST --}}
+                            <div class="px-4 pb-4 space-y-2 max-h-[350px] overflow-y-auto text-sm">
+                                @forelse ($hutangList as $item)
+                                    @php $isLunas = $item->total_sisa <= 0; @endphp
+
+                                    <div x-show="
+                        activeTab==='semua' ||
+                        (activeTab==='belum' && {{ $isLunas ? 'false' : 'true' }})
+||
+                        (activeTab==='lunas' && {{ $isLunas ? 'true' : 'false' }})
+                    "
+                                        class="flex justify-between items-center px-3 py-2 rounded-lg border
+                    {{ $isLunas ? 'bg-green-50' : 'bg-red-50' }}">
+
+                                        <div>
+                                            <div class="font-semibold text-sm">
+                                                {{ $item->user->name ?? '-' }}
+                                            </div>
+                                            <div class="text-[10px] text-gray-500">
+                                                {{ $item->total_nota }} nota
+                                            </div>
+                                        </div>
+
+                                        <div class="text-right">
+                                            <div
+                                                class="font-bold text-sm
+                                {{ $isLunas ? 'text-green-600' : 'text-red-600' }}">
+                                                Rp {{ number_format($item->total_sisa, 0, ',', '.') }}
+                                            </div>
+                                            <div class="text-[10px] text-gray-400">
+                                                / {{ number_format($item->total_awal, 0, ',', '.') }}
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                @empty
+                                    <div class="text-center text-gray-400 py-4 text-xs">
+                                        Tidak ada data
+                                    </div>
+                                @endforelse
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+
+                {{-- ================= HUTANG BARANG MASUK ================= --}}
+                <div x-data="{ open: null }"
+                    class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-8">
+
+                    {{-- HEADER --}}
+                    <div class="px-4 py-4 border-b flex justify-between items-center">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800">
+                                Hutang Barang Masuk
+                            </h3>
+                            <div class="text-xs text-gray-500">
+                                Total:
+                                <span class="font-bold text-yellow-600">
+                                    Rp {{ number_format($totalHutangBarangMasuk ?? 0, 0, ',', '.') }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <a href="#"
+                            class="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-indigo-700">
+                            Lihat Semua (Masih dalam pengembangan)
+                        </a>
+                    </div>
+
+                    {{-- LIST --}}
+                    <div class="divide-y max-h-[400px] overflow-y-auto">
+
+                        @forelse($hutangBarangMasuk as $i => $hutang)
+
+                            {{-- HEADER ITEM --}}
+                            <div class="p-4 cursor-pointer hover:bg-gray-50"
+                                @click="open === {{ $i }} ? open = null : open = {{ $i }}">
+
+                                <div class="flex justify-between items-center">
+
+                                    <div>
+                                        <div class="text-sm font-bold text-gray-800">
+                                            #HTG-{{ str_pad($hutang->id, 5, '0', STR_PAD_LEFT) }}
+                                        </div>
+
+                                        <div class="text-xs text-gray-500">
+                                            {{ $hutang->created_at->translatedFormat('d M Y') }}
+                                        </div>
+                                    </div>
+
+                                    <div class="text-right">
+                                        <div class="text-sm font-bold text-yellow-600">
+                                            Rp {{ number_format($hutang->total, 0, ',', '.') }}
+                                        </div>
+
+                                        <div class="text-[10px] text-gray-400">
+                                            {{ $hutang->status }}
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            {{-- DETAIL --}}
+                            <div x-show="open === {{ $i }}" x-transition class="bg-gray-50 px-4 pb-4">
+
+                                <div class="text-xs font-bold text-gray-500 mb-2">
+                                    DETAIL BARANG
+                                </div>
+
+                                <div class="space-y-2 text-sm">
+
+                                    @foreach ($hutang->hutangBarangMasuk as $detail)
+                                        <div class="flex justify-between">
+
+                                            <div>
+                                                {{ $detail->barangMasuk->transaksiBarang->barang->nama_barang ?? '-' }}
+                                                <div class="text-[10px] text-gray-400">
+                                                    Exp: {{ $detail->barangMasuk->tanggal_kadaluarsa ?? '-' }}
+                                                </div>
+                                            </div>
+
+                                            <div class="text-right">
+                                                <div>
+                                                    x{{ $detail->barangMasuk->jumlah }}
+                                                </div>
+                                                <div class="text-xs text-gray-500">
+                                                    Rp {{ number_format($detail->total, 0, ',', '.') }}
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    @endforeach
+
+                                </div>
+
+                                {{-- TOTAL --}}
+                                <div class="flex justify-between border-t pt-2 mt-3 font-bold text-sm">
+                                    <span>Total</span>
+                                    <span>
+                                        Rp {{ number_format($hutang->total, 0, ',', '.') }}
+                                    </span>
+                                </div>
+                            </div>
+
+                        @empty
+                            <div class="text-center text-gray-400 py-6 text-sm">
+                                Tidak ada data hutang
+                            </div>
+                        @endforelse
+
+                    </div>
+                </div>
+
                 {{-- Inventory Section --}}
                 <div x-data="{ activeTab: 'tersedia' }"
-                    class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-8">
                     <div class="p-6 border-b border-gray-100">
                         <h3 class="text-xl font-bold text-gray-800 mb-4">Inventaris Barang</h3>
                         <nav class="flex space-x-2 bg-gray-100 p-1 rounded-xl w-fit">
@@ -389,6 +751,7 @@
                                 class="px-4 py-2 text-sm font-bold rounded-lg transition-all">Semua Barang</button>
                         </nav>
                     </div>
+                    {{-- <pre>{{ json_encode($barangWithStok, JSON_PRETTY_PRINT) }}</pre> --}}
 
                     <div class="p-0">
                         @php
@@ -397,7 +760,6 @@
                             $kosong = $barangWithStok->filter(fn($barang) => ($barang->stok_saat_ini ?? 0) <= 0);
                             $tabs = ['semua' => $semua, 'tersedia' => $tersedia, 'kosong' => $kosong];
                         @endphp
-
                         @foreach ($tabs as $status => $dataList)
                             <div x-show="activeTab === '{{ $status }}'" class="overflow-x-auto">
                                 <table class="min-w-full divide-y divide-gray-100">
@@ -433,17 +795,46 @@
                                                 <td class="px-6 py-4 text-sm font-medium text-gray-800">
                                                     Rp
                                                     {{ number_format($barang->harga_jual_range_awal ?? 0, 0, ',', '.') }} -
-                                                    Rp {{ number_format($barang->harga_jual ?? 0, 0, ',', '.') }}
+                                                    Rp
+                                                    {{ number_format($barang->harga_jual_range_akhir ?? 0, 0, ',', '.') }}
                                                 </td>
                                                 <td class="px-6 py-4">
-                                                    <div class="text-sm font-bold text-blue-600">
-                                                        {{ $barang->persentase_laba }}</div>
                                                     @php
-                                                        $labaUnit =
-                                                            ($barang->harga_jual ?? 0) - ($barang->harga_satuan ?? 0);
+                                                        $hargaSatuan = $barang->harga_satuan ?? 0;
+
+                                                        $hargaAwal = $barang->harga_jual_range_awal ?? 0;
+                                                        $hargaAkhir = $barang->harga_jual_range_akhir ?? 0;
+
+                                                        $labaAwal = $hargaAwal - $hargaSatuan;
+                                                        $labaAkhir = $hargaAkhir - $hargaSatuan;
+
+                                                        $persenAwal =
+                                                            $hargaAwal > 0 ? ($labaAwal / $hargaAwal) * 100 : 0;
+                                                        $persenAkhir =
+                                                            $hargaAkhir > 0 ? ($labaAkhir / $hargaAkhir) * 100 : 0;
+
+                                                        $isSame = $hargaAwal == $hargaAkhir;
                                                     @endphp
-                                                    <div class="text-xs font-medium text-green-600">+Rp
-                                                        {{ number_format($labaUnit, 0, ',', '.') }}</div>
+
+                                                    {{-- Persen --}}
+                                                    <div class="text-sm font-bold text-blue-600">
+                                                        @if ($isSame)
+                                                            {{ number_format($persenAwal, 1) }}%
+                                                        @else
+                                                            {{ number_format($persenAwal, 1) }}% -
+                                                            {{ number_format($persenAkhir, 1) }}%
+                                                        @endif
+                                                    </div>
+
+                                                    {{-- Nominal --}}
+                                                    <div class="text-xs font-medium text-green-600">
+                                                        @if ($isSame)
+                                                            +Rp {{ number_format($labaAwal, 0, ',', '.') }}
+                                                        @else
+                                                            +Rp {{ number_format($labaAwal, 0, ',', '.') }} -
+                                                            Rp {{ number_format($labaAkhir, 0, ',', '.') }}
+                                                        @endif
+                                                    </div>
                                                 </td>
                                                 <td class="px-6 py-4 relative">
 
@@ -471,39 +862,108 @@
 
                                                     {{-- Popup Chat Bubble --}}
                                                     <div id="inflasi-{{ $status }}-{{ $barang->id }}"
-                                                        class="hidden absolute z-50 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-xs">
+                                                        class="hidden absolute z-50 mt-2 w-72 bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-xs">
 
-                                                        <div class="font-bold text-gray-700 mb-1">
-                                                            Analisis Margin
+                                                        <div class="font-bold text-gray-700 mb-2">
+                                                            Riwayat Margin
                                                         </div>
 
-                                                        <div class="text-gray-500">
-                                                            Harga modal:
-                                                            <span class="font-semibold text-gray-800">
-                                                                Rp
-                                                                {{ number_format($barang->harga_satuan ?? 0, 0, ',', '.') }}
-                                                            </span>
-                                                        </div>
+                                                        @foreach ($barang->riwayat_harga as $index => $item)
+                                                            @php
+                                                                $isNow = $loop->last;
 
-                                                        <div class="text-gray-500">
-                                                            Harga jual:
-                                                            <span class="font-semibold text-gray-800">
-                                                                Rp
-                                                                {{ number_format($barang->harga_jual ?? 0, 0, ',', '.') }}
-                                                            </span>
-                                                        </div>
+                                                                $modal = $item->harga_modal ?? 0;
+
+                                                                $jualAwal = $item->harga_jual_range_awal ?? 0;
+                                                                $jualAkhir = $item->harga_jual_range_akhir ?? 0;
+
+                                                                $labaAwal = $jualAwal - $modal;
+                                                                $labaAkhir = $jualAkhir - $modal;
+
+                                                                $persenAwal =
+                                                                    $jualAwal > 0 ? ($labaAwal / $jualAwal) * 100 : 0;
+                                                                $persenAkhir =
+                                                                    $jualAkhir > 0
+                                                                        ? ($labaAkhir / $jualAkhir) * 100
+                                                                        : 0;
+
+                                                                $isSame = $jualAwal == $jualAkhir;
+                                                            @endphp
+
+                                                            <div
+                                                                class="mb-2 p-2 rounded-md 
+    {{ $isNow ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50' }}">
+
+                                                                {{-- LABEL --}}
+                                                                <div class="text-gray-500 text-[10px] mb-1">
+                                                                    {{ $isNow ? 'Saat ini' : 'Sebelumnya #' . $loop->iteration }}
+                                                                </div>
+
+                                                                {{-- ATAS: MODAL | JUAL --}}
+                                                                <div class="flex justify-between items-start gap-2">
+
+                                                                    {{-- MODAL (KIRI) --}}
+                                                                    <div class="text-left">
+                                                                        <div class="text-[10px] text-gray-400">Modal</div>
+                                                                        <div class="font-semibold text-gray-800">
+                                                                            Rp {{ number_format($modal, 0, ',', '.') }}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {{-- JUAL (KANAN) --}}
+                                                                    <div class="text-right">
+                                                                        <div class="text-[10px] text-gray-400">Jual</div>
+                                                                        <div class="font-semibold text-gray-800">
+                                                                            @if ($isSame)
+                                                                                Rp
+                                                                                {{ number_format($jualAwal, 0, ',', '.') }}
+                                                                            @else
+                                                                                Rp
+                                                                                {{ number_format($jualAwal, 0, ',', '.') }}
+                                                                                <span class="text-gray-400">-</span>
+                                                                                Rp
+                                                                                {{ number_format($jualAkhir, 0, ',', '.') }}
+                                                                            @endif
+                                                                        </div>
+                                                                    </div>
+
+                                                                </div>
+
+                                                                {{-- BAWAH: LABA --}}
+                                                                <div
+                                                                    class="mt-2 text-[11px] font-bold 
+        {{ $labaAkhir >= 0 ? 'text-green-600' : 'text-red-600' }}">
+
+                                                                    @if ($isSame)
+                                                                        {{ number_format($persenAwal, 1) }}%
+                                                                        ({{ $labaAwal >= 0 ? '+' : '' }}Rp
+                                                                        {{ number_format($labaAwal, 0, ',', '.') }})
+                                                                    @else
+                                                                        {{ number_format($persenAwal, 1) }}%
+                                                                        <span class="text-gray-400">-</span>
+                                                                        {{ number_format($persenAkhir, 1) }}%
+                                                                        <br>
+                                                                        ({{ $labaAwal >= 0 ? '+' : '' }}Rp
+                                                                        {{ number_format($labaAwal, 0, ',', '.') }}
+                                                                        <span class="text-gray-400">-</span>
+                                                                        {{ $labaAkhir >= 0 ? '+' : '' }}Rp
+                                                                        {{ number_format($labaAkhir, 0, ',', '.') }})
+                                                                    @endif
+
+                                                                </div>
+
+                                                            </div>
+                                                        @endforeach
 
                                                         <div class="mt-2 text-gray-600">
                                                             @if ($barang->inflasi_laba > 0)
                                                                 Margin naik
-                                                                <b>{{ number_format($barang->inflasi_laba, 1) }}%</b>.
-                                                                Potensi laba meningkat.
+                                                                <b>{{ number_format($barang->inflasi_laba, 1) }}%</b>
                                                             @elseif($barang->inflasi_laba < 0)
                                                                 Margin turun
-                                                                <b>{{ number_format(abs($barang->inflasi_laba), 1) }}%</b>.
-                                                                Perlu evaluasi harga jual.
+                                                                <b>{{ number_format(abs($barang->inflasi_laba), 1) }}%</b>
                                                             @else
-                                                                Margin stabil.
+                                                                Margin stabil
                                                             @endif
                                                         </div>
 

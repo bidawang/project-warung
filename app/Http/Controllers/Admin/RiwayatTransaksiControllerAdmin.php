@@ -145,7 +145,7 @@ class RiwayatTransaksiControllerAdmin extends Controller
                 'nama_barang' => $barang->nama_barang ?? '-',
                 'jumlah'      => $qty,
                 'harga'       => $harga,
-                'subtotal'    => $qty * $harga,
+                'subtotal'    => $harga,
             ];
         }
 

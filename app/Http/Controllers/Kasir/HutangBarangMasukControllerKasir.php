@@ -26,7 +26,7 @@ class HutangBarangMasukControllerKasir extends Controller
     {
         $user = Auth::user();
         $role = $user->role;
-
+// dd($user, $role);
         // ambil data total hutang warung
         $warung = Warung::where('id_user', $user->id)->first();
         session(['id_warung' => $warung->id]);
@@ -56,8 +56,14 @@ class HutangBarangMasukControllerKasir extends Controller
 
         $hutangList = $hutangQuery->orderBy('created_at', 'desc')->paginate(10);
 
-        return view('kasir.hutang_barang_masuk.index', compact('hutangList','warung'));
+        $hutangwarung = HutangWarung::where('jenis', 'barang masuk')
+            ->where('id_warung', $warung->id)
+            ->get();
+        $totalHutang = $hutangwarung->sum('total');
+
+        return view('kasir.hutang_barang_masuk.index', compact('hutangList','warung', 'totalHutang'));
     }
+
     public function showDetailPembayaran($id)
     {
         $idWarung = session('id_warung');

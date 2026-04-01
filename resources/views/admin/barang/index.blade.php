@@ -75,6 +75,8 @@
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-5 py-5 border-b border-gray-200 text-sm">
                                         <p class="text-gray-900 whitespace-no-wrap">{{ $barang->subKategori->kategori->kategori }}</p>
+                                        <p class="text-gray-900 whitespace-no-wrap">{{ $barang->id }}</p>
+
                                     </td>
                                     <td class="px-5 py-5 border-b border-gray-200 text-sm">
                                         <p class="text-gray-900 whitespace-no-wrap">{{ $barang->subKategori->sub_kategori }}</p>

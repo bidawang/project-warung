@@ -43,7 +43,7 @@ class HutangControllerAdmin extends Controller
         }
 
         $hutangList = $query->paginate(10);
-
+// dd($hutangList);
         return view('admin.hutang.index', compact('hutangList', 'aturanTenggats'));
     }
 
@@ -68,7 +68,7 @@ class HutangControllerAdmin extends Controller
         $logPembayaran = LogPembayaranHutang::where('id_hutang', $hutang->id)
             ->orderBy('created_at', 'desc')
             ->get();
-
+// dd($hutang, $logPembayaran);
         // Mengembalikan view detail dengan data hutang dan log pembayaran
         // Asumsi view berada di 'admin.hutang.detail'
         return view('admin.hutang.detail', compact('hutang', 'logPembayaran'));
@@ -77,7 +77,7 @@ class HutangControllerAdmin extends Controller
     public function userDetail($userId)
     {
         $user = \App\Models\User::findOrFail($userId);
-
+// dd($user);
         // Ambil hutang dengan relasi warung dan aturan_tenggat
         $hutangRaw = Hutang::with(['warung.aturanTenggat', 'pembayarans'])
             ->where('id_user', $userId)
@@ -93,14 +93,11 @@ class HutangControllerAdmin extends Controller
 
             if ($aturan && $isOverdue) {
                 $nilaiBungaDB = (float) $aturan->bunga;
-                $tipeBungaDB = $aturan->tipe_bunga;
 
-                if ($tipeBungaDB === 'persen') {
                     // Hitung: (5 / 100) * 40000 = 2000
                     $nominalRekomendasi = ($nilaiBungaDB / 100) * (float) $h->jumlah_sisa_hutang;
-                } else {
-                    $nominalRekomendasi = $nilaiBungaDB;
-                }
+                    // dd($h->jumlah_sisa_hutang, $nilaiBungaDB, $nominalRekomendasi);
+                
             }
 
             // Tambahkan atribut virtual ke object hutang agar bisa dipanggil di View
@@ -110,7 +107,7 @@ class HutangControllerAdmin extends Controller
             return $h;
         });
 
-
+// dd($hutangList);
         $totalSisa = $hutangList->sum('jumlah_sisa_hutang');
         $totalHutang = $hutangList->sum('jumlah_hutang_awal');
 

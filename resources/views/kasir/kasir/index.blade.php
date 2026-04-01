@@ -3,7 +3,8 @@
 @section('title', 'Halaman Kasir - Transaksi Cepat')
 
 @section('content')
-    <div class="container-fluid mt-4" x-data="kasirApp()">
+{{-- <pre>{{ json_encode($products, JSON_PRETTY_PRINT) }}</pre> --}}
+    <div class="container-fluid mt-4" x-data="kasirApp">
 
         <div class="row g-4">
             {{-- BAGIAN DAFTAR PRODUK (KIRI) --}}
@@ -315,7 +316,8 @@
         function kasirApp() {
             return {
                 search: '',
-                products: @json($products).map(p => ({
+                // products: @json($products).map(p => ({
+                products: Object.values(@json($products)).map(p => ({
                     id: p.id,
                     nama: p.barang?.nama_barang || '-',
                     stok: p.stok_saat_ini,

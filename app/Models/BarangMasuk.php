@@ -35,7 +35,7 @@ class BarangMasuk extends Model
 
     public function transaksiBarang(): BelongsTo
     {
-        return $this->belongsTo(TransaksiBarangMasuk::class, 'id_transaksi_barang');
+        return $this->belongsTo(TransaksiBarangMasuk::class, 'id_transaksi_barang_masuk');
     }
 
     public function stokWarung(): BelongsTo
