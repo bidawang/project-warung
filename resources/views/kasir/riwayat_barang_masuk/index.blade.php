@@ -3,139 +3,151 @@
 @section('title', 'Riwayat Barang Masuk')
 
 @section('content')
-<div class="container-fluid">
-    <div class="card border border-dark shadow-sm">
 
-        {{-- HEADER --}}
-        <div class="card-header bg-white border-bottom border-dark d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-bold text-dark">RIWAYAT BARANG MASUK</h5>
+<div class="max-w-7xl mx-auto px-4 py-6">
 
-            <form method="GET" class="d-flex gap-2">
-                <input type="text"
-                       name="search"
-                       class="form-control form-control-sm border-dark"
-                       placeholder="Cari barang"
-                       value="{{ request('search') }}">
-                <button class="btn btn-sm btn-dark">Cari</button>
-
-                @if(request('search'))
-                    <a href="{{ route('kasir.riwayat-barang-masuk.index') }}"
-                       class="btn btn-sm btn-outline-dark">Reset</a>
-                @endif
-            </form>
+    {{-- HEADER --}}
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+        <div>
+            <h3 class="text-2xl font-bold text-gray-800">Riwayat Barang Masuk</h3>
+            <p class="text-sm text-gray-500">Daftar transaksi barang yang masuk ke stok.</p>
         </div>
 
-        {{-- BODY --}}
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover mb-0 align-middle">
-                    <thead class="table-dark text-center">
-                        <tr>
-                            <th>REF</th>
-                            <th>WAKTU</th>
-                            <th>JENIS</th>
-                            <th>BARANG</th>
-                            <th>JUMLAH</th>
-                            <th>SUBTOTAL</th>
-                            <th>AKSI</th>
-                        </tr>
-                    </thead>
+        <form method="GET" class="flex gap-2 w-full md:w-auto">
+            <input 
+                type="text"
+                name="search"
+                value="{{ request('search') }}"
+                placeholder="Cari barang..."
+                class="w-full md:w-64 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            >
 
-                    <tbody>
-                        @forelse($riwayatBarangMasuk as $bm)
-                        @php
-                            $barang   = optional($bm->stokWarung->barang);
-                        @endphp
-                        <tr>
-                            <td class="text-center fw-bold text-muted">
-                                BM-{{ $bm->id }}
-                            </td>
+            <button class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 rounded-full text-sm">
+                Cari
+            </button>
 
-                            <td>
-                                <div class="small text-muted">
-                                    {{ $bm->created_at->format('d M Y') }}
-                                </div>
-                                <div class="fw-bold">
-                                    {{ $bm->created_at->format('H:i') }}
-                                </div>
-                            </td>
-
-                            <td class="text-center">
-                                <span class="badge bg-success">
-                                    {{ strtoupper($bm->jenis ?? 'MASUK') }}
-                                </span>
-                            </td>
-
-                            <td>
-                                <strong>{{ $barang->nama_barang ?? '-' }}</strong>
-                            </td>
-
-                            <td class="text-center fw-bold">
-                                {{ $bm->jumlah }}
-                            </td>
-
-                            <td class="text-end fw-bold text-success">
-                                Rp {{ number_format($bm->total,0,',','.') }}
-                            </td>
-
-                            <td class="text-center">
-                                <button class="btn btn-sm btn-outline-dark"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#bm{{ $bm->id }}">
-                                    DETAIL
-                                </button>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="7" class="text-center py-4 text-muted">
-                                Tidak ada data barang masuk
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        {{-- FOOTER --}}
-        <div class="card-footer bg-white border-top border-dark">
-            {{ $riwayatBarangMasuk->links() }}
-        </div>
-
+            @if(request('search'))
+                <a href="{{ route('kasir.riwayat-barang-masuk.index') }}"
+                   class="border border-gray-300 px-4 rounded-full text-sm flex items-center hover:bg-gray-100">
+                    Reset
+                </a>
+            @endif
+        </form>
     </div>
-</div>
 
-{{-- MODAL DETAIL --}}
-@foreach($riwayatBarangMasuk as $bm)
-@php
-    $barang   = optional($bm->stokWarung->barang);
-    $harga    = $bm->transaksiBarang->harga ?? 0;
-@endphp
-<div class="modal fade" id="bm{{ $bm->id }}" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border border-dark">
-            <div class="modal-body p-4">
+    <h5 class="font-bold text-gray-700 mb-4">Daftar Transaksi</h5>
 
-                <div class="text-center border-bottom border-dark pb-2 mb-3">
-                    <h6 class="fw-bold mb-0">DETAIL BARANG MASUK</h6>
+    {{-- LIST --}}
+    <div class="space-y-4" x-data="{ open: null }">
+
+        @forelse($riwayatBarangMasuk as $bm)
+
+            @php
+                $barang = optional($bm->stokWarung->barang);
+                $id = 'bm'.$bm->id;
+            @endphp
+
+            <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+
+                {{-- HEADER --}}
+                <button 
+                    @click="open === '{{ $id }}' ? open = null : open = '{{ $id }}'"
+                    class="w-full text-left px-4 py-4 hover:bg-gray-50 transition"
+                >
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 items-center">
+
+                        <div>
+                            <div class="text-xs text-gray-500">Ref</div>
+                            <div class="font-semibold text-gray-800">
+                                BM-{{ $bm->id }}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="text-xs text-gray-500">Tanggal</div>
+                            <div class="font-semibold text-gray-800">
+                                {{ $bm->created_at->format('d M Y') }}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="text-xs text-gray-500">Waktu</div>
+                            <div class="font-semibold text-gray-800">
+                                {{ $bm->created_at->format('H:i') }}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="text-xs text-gray-500">Barang</div>
+                            <div class="font-semibold text-gray-800">
+                                {{ $barang->nama_barang ?? '-' }}
+                            </div>
+                        </div>
+
+                        <div class="text-right">
+                            <div class="text-xs text-gray-500">Subtotal</div>
+                            <div class="font-bold text-green-600">
+                                Rp {{ number_format($bm->total,0,',','.') }}
+                            </div>
+                        </div>
+
+                    </div>
+                </button>
+
+                {{-- DETAIL --}}
+                <div x-show="open === '{{ $id }}'" x-transition class="bg-gray-50 px-4 pb-4">
+
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm mt-3">
+
+                        <div>
+                            <div class="text-gray-500 text-xs">Jenis</div>
+                            <div class="font-semibold text-green-600">
+                                {{ strtoupper($bm->jenis ?? 'MASUK') }}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="text-gray-500 text-xs">Jumlah</div>
+                            <div class="font-semibold">
+                                {{ $bm->jumlah }}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="text-gray-500 text-xs">Status</div>
+                            <div class="font-semibold">
+                                {{ strtoupper($bm->status ?? '-') }}
+                            </div>
+                        </div>
+
+                        @if($bm->tanggal_kadaluarsa)
+                        <div>
+                            <div class="text-gray-500 text-xs">Kadaluarsa</div>
+                            <div class="font-semibold">
+                                {{ \Carbon\Carbon::parse($bm->tanggal_kadaluarsa)->format('d M Y') }}
+                            </div>
+                        </div>
+                        @endif
+
+                    </div>
+
                 </div>
 
-                <p><strong>Barang:</strong> {{ $barang->nama_barang }}</p>
-                <p><strong>Jumlah:</strong> {{ $bm->jumlah }}</p>
-                {{-- <p><strong>Harga:</strong> Rp {{ number_format($harga,0,',','.') }}</p> --}}
-                <p><strong>Subtotal:</strong> Rp {{ number_format($bm->total,0,',','.') }}</p>
-                <p><strong>Status:</strong> {{ strtoupper($bm->status ?? '-') }}</p>
-
-                @if($bm->tanggal_kadaluarsa)
-                    <p><strong>Kadaluarsa:</strong>
-                        {{ \Carbon\Carbon::parse($bm->tanggal_kadaluarsa)->format('d M Y') }}
-                    </p>
-                @endif
-
             </div>
-        </div>
+
+        @empty
+            <div class="text-center py-10 bg-white rounded-xl shadow-sm border">
+                <p class="text-gray-500">Tidak ada data barang masuk</p>
+            </div>
+        @endforelse
+
     </div>
+
+    {{-- PAGINATION --}}
+    <div class="mt-6">
+        {{ $riwayatBarangMasuk->links() }}
+    </div>
+
 </div>
-@endforeach
+
 @endsection

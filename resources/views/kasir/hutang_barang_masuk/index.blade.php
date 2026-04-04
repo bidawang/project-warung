@@ -4,191 +4,150 @@
 
 @section('content')
 
-<div class="bs-scope">
-<div class="container py-4">
+<div class="max-w-7xl mx-auto px-4 py-6">
 
     {{-- HEADER --}}
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
         <div>
-            <h3 class="fw-bold text-dark mb-1">Manajemen Hutang</h3>
-            <p class="text-muted small mb-0">Nota hutang per pengiriman stok barang.</p>
+            <h3 class="text-2xl font-bold text-gray-800">Manajemen Hutang</h3>
+            <p class="text-sm text-gray-500">Nota hutang per pengiriman stok barang.</p>
         </div>
 
-        <div class="bg-warning-subtle p-3 rounded-4 border">
-            <small class="text-warning-emphasis fw-bold d-block">Total Hutang Aktif</small>
-            <h4 class="fw-black text-warning mb-0">
+        <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+            <small class="block text-yellow-700 font-semibold">Total Hutang Aktif</small>
+            <h4 class="text-xl font-black text-yellow-600">
                 Rp {{ number_format($totalHutang, 0, ',', '.') }}
             </h4>
         </div>
     </div>
 
     {{-- FILTER --}}
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-body">
-            <div class="row g-3 align-items-center">
-                <div class="col-md-4">
-                    <form method="GET" class="input-group">
-                        <input type="text" name="q" value="{{ request('q') }}"
-                               class="form-control rounded-pill-start"
-                               placeholder="Cari ID Nota...">
+    <div class="bg-white shadow-sm rounded-xl border p-4 mb-6">
+        <form method="GET" class="flex gap-2">
+            <input 
+                type="text" 
+                name="q" 
+                value="{{ request('q') }}"
+                placeholder="Cari ID Nota..."
+                class="w-full border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            >
 
-                        <button class="btn btn-warning text-white rounded-pill-end">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
+            <button class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 rounded-full">
+                <i class="fas fa-search"></i>
+            </button>
+        </form>
     </div>
 
-    <h5 class="fw-bold mb-3">Histori Hutang</h5>
+    <h5 class="font-bold text-gray-700 mb-4">Histori Hutang</h5>
 
     {{-- ACCORDION --}}
-    <div class="accordion" id="accordionHutang">
+    <div class="space-y-4" x-data="{ open: null }">
 
         @forelse($hutangList as $hutang)
 
-        <div class="accordion-item border-0 shadow-sm rounded-4 mb-3 overflow-hidden">
+            @php
+                $collapseId = 'hutang' . $hutang->id;
+            @endphp
 
-            {{-- HEADER --}}
-            <h2 class="accordion-header">
-                <button class="accordion-button collapsed bg-white py-3"
-                        type="button"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#collapse{{ $hutang->id }}">
+            <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
 
-                    <div class="row w-100 align-items-center">
+                {{-- HEADER --}}
+                <button 
+                    @click="open === '{{ $collapseId }}' ? open = null : open = '{{ $collapseId }}'"
+                    class="w-full text-left px-4 py-4 flex flex-col md:flex-row md:items-center md:justify-between hover:bg-gray-50 transition"
+                >
+                    <div class="grid grid-cols-1 md:grid-cols-3 w-full gap-3">
 
-                        <div class="col-md-4">
-                            <div class="text-muted small">Nota</div>
-                            <div class="fw-bold">
+                        <div>
+                            <div class="text-xs text-gray-500">Nota</div>
+                            <div class="font-semibold text-gray-800">
                                 #HTG-{{ str_pad($hutang->id, 5, '0', STR_PAD_LEFT) }}
                             </div>
                         </div>
 
-                        <div class="col-md-4">
-                            <div class="text-muted small">Tanggal</div>
-                            <div class="fw-bold">
+                        <div>
+                            <div class="text-xs text-gray-500">Tanggal</div>
+                            <div class="font-semibold text-gray-800">
                                 {{ $hutang->created_at->translatedFormat('d M Y') }}
                             </div>
                         </div>
 
-                        <div class="col-md-4 text-md-end">
-                            <div class="text-muted small">Total</div>
-                            <div class="fw-bold text-warning">
+                        <div class="md:text-right">
+                            <div class="text-xs text-gray-500">Total</div>
+                            <div class="font-bold text-yellow-600">
                                 Rp {{ number_format($hutang->total, 0, ',', '.') }}
                             </div>
                         </div>
 
                     </div>
                 </button>
-            </h2>
 
-            {{-- BODY --}}
-            <div id="collapse{{ $hutang->id }}"
-                 class="accordion-collapse collapse">
+                {{-- BODY --}}
+                <div x-show="open === '{{ $collapseId }}'" x-transition class="bg-gray-50 px-4 pb-4">
 
-                <div class="accordion-body bg-light-subtle">
-
-                    {{-- TABLE --}}
-                    <div class="table-responsive">
-                        <table class="table table-sm align-middle">
-                            <thead class="small text-muted text-uppercase">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm mt-2">
+                            <thead class="text-xs text-gray-500 uppercase border-b">
                                 <tr>
-                                    <th>Barang</th>
-                                    <th class="text-center">Qty</th>
-                                    <th class="text-end">Subtotal</th>
+                                    <th class="text-left py-2">Barang</th>
+                                    <th class="text-center py-2">Qty</th>
+                                    <th class="text-right py-2">Subtotal</th>
                                 </tr>
                             </thead>
 
                             <tbody>
-                                @foreach($hutang->hutangBarangMasuk as $detail)
-                                <tr>
-                                    <td>
-                                        <div class="fw-bold">
-                                            {{ $detail->barangMasuk->transaksiBarang->barang->nama_barang ?? '-' }}
-                                        </div>
-                                        <small class="text-muted">
-                                            Exp: {{ $detail->barangMasuk->tanggal_kadaluarsa ?? '-' }}
-                                        </small>
-                                    </td>
+                                @foreach ($hutang->hutangBarangMasuk as $detail)
+                                    <tr class="border-b last:border-0">
+                                        <td class="py-2">
+                                            <div class="font-semibold text-gray-800">
+                                                {{ $detail->barangMasuk->transaksiBarang->barang->nama_barang ?? '-' }}
+                                            </div>
+                                            <div class="text-xs text-gray-500">
+                                                Exp: {{ $detail->barangMasuk->tanggal_kadaluarsa ?? '-' }}
+                                            </div>
+                                        </td>
 
-                                    <td class="text-center">
-                                        {{ $detail->barangMasuk->jumlah }}
-                                    </td>
+                                        <td class="text-center">
+                                            {{ $detail->barangMasuk->jumlah ?? 0 }}
+                                        </td>
 
-                                    <td class="text-end fw-bold">
-                                        Rp {{ number_format($detail->total, 0, ',', '.') }}
-                                    </td>
-                                </tr>
+                                        <td class="text-right font-semibold">
+                                            Rp {{ number_format($detail->total ?? 0, 0, ',', '.') }}
+                                        </td>
+                                    </tr>
                                 @endforeach
                             </tbody>
 
                             <tfoot>
-                                <tr class="border-top">
-                                    <td colspan="2" class="text-end small text-muted">
+                                <tr class="border-t">
+                                    <td colspan="2" class="text-right text-xs text-gray-500 py-2">
                                         Total
                                     </td>
-                                    <td class="text-end fw-bold">
+                                    <td class="text-right font-bold py-2">
                                         Rp {{ number_format($hutang->total, 0, ',', '.') }}
                                     </td>
                                 </tr>
                             </tfoot>
-
                         </table>
-                    </div>
-
-                    {{-- ACTION --}}
-                    <div class="text-end mt-2">
-                        <a href="#"
-                           class="btn btn-outline-secondary rounded-pill px-4">
-                            <i class="fas fa-print me-2"></i>Cetak
-                        </a>
                     </div>
 
                 </div>
             </div>
-        </div>
 
         @empty
-        <div class="text-center py-5 bg-white rounded-4 shadow-sm">
-            <i class="fas fa-file-invoice-dollar fa-3x text-light mb-3"></i>
-            <p class="text-muted">Tidak ada data hutang</p>
-        </div>
+            <div class="text-center py-10 bg-white rounded-xl shadow-sm border">
+                <i class="fas fa-file-invoice-dollar text-4xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500">Tidak ada data hutang</p>
+            </div>
         @endforelse
 
     </div>
 
     {{-- PAGINATION --}}
-    <div class="mt-4">
-        {{ $hutangList->withQueryString()->links('pagination::bootstrap-5') }}
+    <div class="mt-6">
+        {{ $hutangList->withQueryString()->links() }}
     </div>
 
 </div>
-</div>
-
-{{-- STYLE ISOLATION --}}
-<style>
-.bs-scope {
-    font-family: inherit;
-}
-
-.bs-scope .accordion-button:not(.collapsed) {
-    background-color: #fffdf5;
-    box-shadow: none;
-}
-
-.bs-scope .rounded-pill-start {
-    border-radius: 50px 0 0 50px !important;
-}
-
-.bs-scope .rounded-pill-end {
-    border-radius: 0 50px 50px 0 !important;
-}
-
-.bs-scope .fw-black {
-    font-weight: 900;
-}
-</style>
 
 @endsection
