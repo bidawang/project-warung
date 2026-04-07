@@ -102,51 +102,39 @@ class AsalBarangControllerAdmin extends Controller
     public function filterBarang(Request $request)
     {
         $areaId = $request->area_id;
-        $kategoriId = $request->kategori_id;
-        $subkategoriId = $request->subkategori_id;
-        $search = $request->search;
 
-        // Tambahkan withCount untuk menghitung berapa banyak area yang nge-claim
-        $query = Barang::query()->with(['subKategori.kategori', 'areaPembelian'])
+        $query = Barang::query()
+            ->with(['subKategori.kategori', 'areaPembelian'])
             ->withCount('areaPembelian');
 
-        if ($kategoriId) {
-            $query->whereHas('subKategori', function ($q) use ($kategoriId) {
-                $q->where('id_kategori', $kategoriId);
+        if ($request->kategori_id) {
+            $query->whereHas('subKategori', function ($q) use ($request) {
+                $q->where('id_kategori', $request->kategori_id);
             });
         }
 
-        if ($subkategoriId) {
-            $query->where('id_sub_kategori', $subkategoriId);
+        if ($request->subkategori_id) {
+            $query->where('id_sub_kategori', $request->subkategori_id);
         }
 
-        if ($search) {
-            $query->where('nama_barang', 'LIKE', '%' . $search . '%');
+        if ($request->search) {
+            $query->where('nama_barang', 'like', "%{$request->search}%");
         }
 
-        // Ambil data dan urutkan menggunakan Collection
-        $barangs = $query->get()->sortBy(function ($barang) {
-            // Logika urutan:
-            // 1. Barang dengan count 0 akan di paling atas
-            // 2. Semakin besar count area_pembelian_count, semakin bawah posisinya
-            return $barang->area_pembelian_count;
-        });
+        // 🔥 sorting pindah ke DB
+        $barangs = $query->orderBy('area_pembelian_count', 'asc')->get();
 
-        $selectedFromRequest = json_decode($request->selected, true);
-// dd($selectedFromRequest);
+        // 🔥 aman dari null
+        $selectedFromRequest = json_decode($request->selected ?? '[]', true);
+
         if (!empty($selectedFromRequest)) {
+            // kalau ada isi dari frontend → pakai itu
             $selected = $selectedFromRequest;
         } else {
-            $selected = [];
-
-            if ($areaId) {
-                $area = AreaPembelian::find($areaId);
-                if ($area) {
-                    $selected = $area->barangs->pluck('id')->toArray();
-                }
-            }
+            // kalau kosong → ambil dari DB
+            $selected = AreaPembelian::find($areaId)?->barangs->pluck('id')->toArray() ?? [];
         }
-        // dd($selected);
+
         return view('admin.asalbarang.partials.barang-list', [
             'barangs' => $barangs,
             'selected' => $selected,
@@ -171,28 +159,10 @@ class AsalBarangControllerAdmin extends Controller
             ->with('success', 'Asal barang berhasil diperbarui!');
     }
 
-    // Edit
-    public function edit($idArea)
-    {
-        $area = AreaPembelian::findOrFail($idArea);
-        $barangs = Barang::with('subKategori.kategori')->get();
-        $kategoris = \App\Models\Kategori::all();
-        $subkategoris = \App\Models\Subkategori::all();
-
-        $selected = $area->barangs->pluck('id')->toArray();
-
-        return view('admin.asalbarang.edit', compact(
-            'area',
-            'barangs',
-            'selected',
-            'kategoris',
-            'subkategoris'
-        ));
-    }
-
     // Update + konfirmasi perubahan
     public function update(Request $request, $idArea)
     {
+        dd($request->all(), $idArea);
         $request->validate([
             'barangs' => 'array',
         ]);

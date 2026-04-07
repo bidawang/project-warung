@@ -31,10 +31,7 @@ class RencanaBelanjaControllerKasir extends Controller
 
         switch ($status) {
             case 'pending':
-                $query->where(function ($q) {
-                    $q->whereNull('jumlah_dibeli')
-                        ->orWhere('jumlah_dibeli', 0);
-                });
+                $query->where('status', 'pending');
                 break;
 
             case 'dibeli':

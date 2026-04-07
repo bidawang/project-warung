@@ -41,24 +41,6 @@ class HargaPulsaControllerAdmin extends Controller
         return view('admin.harga_pulsa.create',compact('jenisPulsa'));
     }
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'jumlah_pulsa' => 'required|integer|min:1000',
-            'harga' => 'required|integer|min:1000',
-            'jenis_pulsa_id' => 'required',
-        ]);
-
-
-        HargaPulsa::create([
-            'jumlah_pulsa' => $request->jumlah_pulsa,
-            'harga' => $request->harga,
-            'jenis_pulsa_id' => $request->jenis_pulsa_id
-        ]);
-
-        return redirect()->route('admin.harga-pulsa.index')->with('success', 'Harga pulsa berhasil ditambahkan.');
-    }
-
     public function destroy($id)
     {
         $hargaPulsa = HargaPulsa::findOrFail($id);
@@ -74,18 +56,39 @@ class HargaPulsaControllerAdmin extends Controller
         return view('admin.harga_pulsa.edit', compact('hargaPulsa', 'jenisPulsa'));
     }
 
+    public function store(Request $request)
+    {
+        $request->validate([
+            'jumlah_pulsa' => 'required|integer|min:1',
+            'harga' => 'required|integer|min:1',
+            'harga_hutang' => 'required|integer|min:1', // Tambahkan ini
+            'jenis_pulsa_id' => 'required|exists:jenis_pulsa,id',
+        ]);
+
+        HargaPulsa::create([
+            'jumlah_pulsa' => $request->jumlah_pulsa,
+            'harga' => $request->harga,
+            'harga_hutang' => $request->harga_hutang, // Tambahkan ini
+            'jenis_pulsa_id' => $request->jenis_pulsa_id
+        ]);
+
+        return redirect()->route('admin.harga-pulsa.index')->with('success', 'Harga pulsa berhasil ditambahkan.');
+    }
+
     public function update(Request $request, $id)
     {
         $request->validate([
             'jenis_pulsa_id' => 'required|exists:jenis_pulsa,id',
-            'jumlah_pulsa' => 'required|integer|min:1000',
-            'harga' => 'required|integer|min:1000',
+            'jumlah_pulsa' => 'required|integer|min:1',
+            'harga' => 'required|integer|min:1',
+            'harga_hutang' => 'required|integer|min:1', // Tambahkan ini
         ]);
 
         $hargaPulsa = HargaPulsa::findOrFail($id);
         $hargaPulsa->update([
             'jumlah_pulsa' => $request->jumlah_pulsa,
             'harga' => $request->harga,
+            'harga_hutang' => $request->harga_hutang, // Tambahkan ini
             'jenis_pulsa_id' => $request->jenis_pulsa_id
         ]);
 

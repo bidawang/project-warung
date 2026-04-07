@@ -27,6 +27,7 @@ class RencanaBelanja extends Model
         'jumlah_dibeli',
         'jumlah_diterima',
         'status', //batal, pending, selesai
+        'keterangan',
     ];
 
     /**

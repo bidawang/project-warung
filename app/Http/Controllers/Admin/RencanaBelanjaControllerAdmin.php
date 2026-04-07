@@ -66,7 +66,7 @@ class RencanaBelanjaControllerAdmin extends Controller
     public function index()
     {
         $data = $this->getStockData();
-        // dd($data);
+        dd($data);
         $rencanaCollection = RencanaBelanja::with(['barang', 'warung'])
             ->where('status', 'pending')
             ->get();

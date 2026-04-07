@@ -18,6 +18,7 @@ class HargaJual extends Model
         'harga_modal',
         'harga_jual_range_awal',
         'harga_jual_range_akhir',
+        'harga_hutang',
         'periode_awal',
         'periode_akhir',
         'total_barang',

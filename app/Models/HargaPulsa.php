@@ -26,6 +26,7 @@ class HargaPulsa extends Model
     protected $fillable = [
         'jumlah_pulsa',
         'harga',
+        'harga_hutang',
         'jenis_pulsa_id',
     ];
 

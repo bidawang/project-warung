@@ -115,15 +115,30 @@
                         </div>
 
                         {{-- Input Harga Jual --}}
-                        <div class="mb-5">
-                            <label for="harga" class="block text-sm font-medium text-gray-700 mb-2">Harga Jual (contoh:
-                                12000)</label>
-                            <input type="number" name="harga" id="harga" value="{{ old('harga') }}"
-                                class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('harga') border-red-500 @enderror"
-                                placeholder="Masukkan harga jual pulsa (tanpa titik atau koma)" required min="1">
-                            @error('harga')
-                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
+                        {{-- Ganti bagian Input Harga Jual dan tambahkan Harga Hutang --}}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                            <div>
+                                <label for="harga" class="block text-sm font-medium text-gray-700 mb-2">Harga Jual
+                                    Tunai</label>
+                                <input type="number" name="harga" id="harga" value="{{ old('harga') }}"
+                                    class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:ring-2 focus:ring-blue-500 @error('harga') border-red-500 @enderror"
+                                    placeholder="Contoh: 12000" required>
+                                @error('harga')
+                                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label for="harga_hutang" class="block text-sm font-medium text-gray-700 mb-2">Harga Jual
+                                    Hutang</label>
+                                <input type="number" name="harga_hutang" id="harga_hutang"
+                                    value="{{ old('harga_hutang') }}"
+                                    class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:ring-2 focus:ring-blue-500 @error('harga_hutang') border-red-500 @enderror"
+                                    placeholder="Contoh: 13000" required>
+                                @error('harga_hutang')
+                                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
                         </div>
 
                         {{-- Tombol Submit --}}
@@ -150,24 +165,45 @@
 
         function submitJenisPulsa() {
             const input = document.querySelector('input[name="jenis_pulsa_baru"]');
+
             if (!input.value.trim()) {
                 alert('Nama jenis pulsa tidak boleh kosong');
                 return;
             }
 
+            console.log('Mengirim data:', input.value); // Log data yang dikirim
+
             fetch("{{ route('admin.jenis-pulsa.store') }}", {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json' // Penting agar Laravel kirim error dalam bentuk JSON
                     },
                     body: JSON.stringify({
                         nama_jenis: input.value
                     })
                 })
-                .then(res => res.json())
-                .then(() => location.reload())
-                .catch(() => alert('Gagal menambah jenis pulsa'));
+                .then(async res => {
+                    // Log status HTTP (misal: 200, 422, 500)
+                    console.log('HTTP Status:', res.status);
+
+                    if (!res.ok) {
+                        // Jika error, ambil detail pesannya
+                        const errorData = await res.json();
+                        console.error('Detail Kesalahan Server:', errorData);
+                        throw new Error(errorData.message || 'Terjadi kesalahan pada server');
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    console.log('Berhasil:', data);
+                    location.reload();
+                })
+                .catch(error => {
+                    console.error('Fetch Error:', error); // Log error koneksi atau throw dari atas
+                    alert('Gagal menambah jenis pulsa: ' + error.message);
+                });
         }
     </script>
 

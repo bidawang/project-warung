@@ -109,8 +109,9 @@
     </div>
 
     <script>
-        // 🔥 ambil langsung dari Laravel (source of truth)
         let selectedItems = new Set((@json($selected ?? [])).map(Number));
+        let isFirstLoad = true; // 🔥 kontrol agar tidak override terus
+
         const allSubkategoris = @json($allSubkategoris);
         const areaSelect = document.getElementById('areaSelect');
         const filterContainer = document.getElementById('filterContainer');
@@ -121,17 +122,66 @@
         const searchInput = document.getElementById('searchInput');
         const saveButton = document.getElementById('saveButton');
 
-        // 🔥 sync checkbox UI dengan state JS
+        // ✅ Sync checkbox UI
         function syncCheckboxUI() {
             document.querySelectorAll('input[name="barangs[]"]').forEach(cb => {
                 const val = Number(cb.value);
-                if (selectedItems.has(val)) {
-                    cb.checked = true;
-                }
+                cb.checked = selectedItems.has(val);
             });
         }
 
-        // 🔥 FIRST LOAD
+        // ✅ FETCH DATA (VERSI FIX)
+        function fetchBarang() {
+            const areaId = areaSelect.value;
+            if (!areaId) return;
+
+            const params = new URLSearchParams({
+                area_id: areaId,
+                kategori_id: kategoriSelect.value,
+                subkategori_id: subkategoriSelect.value,
+                search: searchInput.value,
+                selected: JSON.stringify([...selectedItems])
+            });
+
+            barangList.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+                <p class="text-gray-500 text-sm">Memproses data barang...</p>
+            </div>
+        `;
+
+            fetch(`{{ route('admin.asalbarang.filter') }}?${params.toString()}`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(res => res.text())
+                .then(html => {
+                    barangList.innerHTML = html;
+
+                    const el = document.getElementById('selectedData');
+
+                    if (el) {
+                        const fromServer = JSON.parse(el.dataset.selected || '[]');
+
+                        // 🔥 FIX INTI:
+                        // hanya set dari server saat first load ATAU memang ada isi
+                        if (isFirstLoad || fromServer.length > 0) {
+                            selectedItems = new Set(fromServer.map(Number));
+                        }
+
+                        isFirstLoad = false;
+                    }
+
+                    syncCheckboxUI();
+                })
+                .catch(() => {
+                    barangList.innerHTML =
+                        '<p class="p-4 text-center text-red-500 bg-white rounded-xl border">Gagal memuat barang.</p>';
+                });
+        }
+
+        // ✅ FIRST LOAD
         document.addEventListener('DOMContentLoaded', () => {
             if (areaSelect.value) {
                 filterContainer.classList.remove('hidden');
@@ -139,15 +189,11 @@
                 saveButton.classList.remove('hidden');
                 saveButton.classList.add('flex');
 
-                // 🔥 pastikan UI sesuai data awal Laravel
-                syncCheckboxUI();
-
-                // 🔥 fetch setelah state aman
                 fetchBarang();
             }
         });
 
-        // 🔥 HANDLE CHECKBOX CHANGE
+        // ✅ HANDLE CHECKBOX
         document.addEventListener('change', function(e) {
             if (e.target.name === 'barangs[]') {
                 const val = Number(e.target.value);
@@ -160,12 +206,13 @@
             }
         });
 
-        // 🔥 AREA CHANGE
+        // ✅ AREA CHANGE
         areaSelect.addEventListener('change', function() {
             const areaId = this.value;
 
-            // reset state (karena beda area)
-            selectedItems = new Set((@json($selected ?? [])).map(Number));
+            selectedItems = new Set(); // reset total
+            isFirstLoad = true; // 🔥 reset juga flag
+
             if (areaId) {
                 filterContainer.classList.remove('hidden');
                 barangListContainer.classList.remove('hidden');
@@ -186,7 +233,7 @@
             }
         });
 
-        // 🔥 FILTER KATEGORI
+        // ✅ FILTER KATEGORI
         kategoriSelect.addEventListener('change', function() {
             const selectedKategoriId = Number(this.value);
             subkategoriSelect.innerHTML = '<option value="">Semua Subkategori</option>';
@@ -205,65 +252,14 @@
             fetchBarang();
         });
 
-        // 🔥 FILTER SUBKATEGORI
         subkategoriSelect.addEventListener('change', fetchBarang);
 
-        // 🔥 SEARCH (debounce)
+        // ✅ SEARCH debounce
         let searchTimeout;
         searchInput.addEventListener('input', function() {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(fetchBarang, 400);
         });
-
-        // 🔥 FETCH DATA
-        function fetchBarang() {
-            const areaId = areaSelect.value;
-            if (!areaId) return;
-
-            const params = new URLSearchParams({
-                area_id: areaId,
-                kategori_id: kategoriSelect.value,
-                subkategori_id: subkategoriSelect.value,
-                search: searchInput.value,
-                selected: JSON.stringify([...selectedItems])
-            });
-
-            barangList.innerHTML = `
-        <div class="flex flex-col items-center justify-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-            <p class="text-gray-500 text-sm">Memproses data barang...</p>
-        </div>
-    `;
-
-            fetch(`{{ route('admin.asalbarang.filter') }}?${params.toString()}`, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(res => res.text())
-                .then(html => {
-                    barangList.innerHTML = html;
-
-                    // 🔥 AMBIL DATA SELECTED DARI SERVER
-                    const el = document.getElementById('selectedData');
-
-                    if (el) {
-                        const fromServer = JSON.parse(el.dataset.selected || '[]');
-
-                        // 🔥 MERGE (bukan replace)
-                        fromServer.forEach(id => {
-                            selectedItems.add(Number(id));
-                        });
-                    }
-
-                    // 🔥 sync ulang checkbox
-                    syncCheckboxUI();
-                })
-                .catch(() => {
-                    barangList.innerHTML =
-                        '<p class="p-4 text-center text-red-500 bg-white rounded-xl border">Gagal memuat barang.</p>';
-                });
-        }
     </script>
 
     <style>

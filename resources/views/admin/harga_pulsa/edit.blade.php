@@ -86,17 +86,31 @@
                             @enderror
                         </div>
 
-                        {{-- Input Harga Jual --}}
-                        <div class="mb-5">
-                            <label for="harga" class="block text-sm font-medium text-gray-700 mb-2">Harga Jual (contoh:
-                                12000)</label>
-                            <input type="number" name="harga" id="harga" {{-- Menggunakan old() atau nilai dari database untuk mengisi input --}}
-                                value="{{ old('harga', $hargaPulsa->harga) }}"
-                                class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('harga') border-red-500 @enderror"
-                                placeholder="Masukkan harga jual pulsa (tanpa titik atau koma)" required min="1">
-                            @error('harga')
-                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
+                        {{-- Ganti bagian Input Harga Jual dan tambahkan Harga Hutang --}}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                            <div>
+                                <label for="harga" class="block text-sm font-medium text-gray-700 mb-2">Harga Jual
+                                    Tunai</label>
+                                <input type="number" name="harga" id="harga"
+                                    value="{{ old('harga', $hargaPulsa->harga) }}"
+                                    class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:ring-2 focus:ring-blue-500 @error('harga') border-red-500 @enderror"
+                                    required>
+                                @error('harga')
+                                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label for="harga_hutang" class="block text-sm font-medium text-gray-700 mb-2">Harga Jual
+                                    Hutang</label>
+                                <input type="number" name="harga_hutang" id="harga_hutang"
+                                    value="{{ old('harga_hutang', $hargaPulsa->harga_hutang) }}"
+                                    class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:ring-2 focus:ring-blue-500 @error('harga_hutang') border-red-500 @enderror"
+                                    required>
+                                @error('harga_hutang')
+                                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
                         </div>
 
                         {{-- Tombol Submit --}}
