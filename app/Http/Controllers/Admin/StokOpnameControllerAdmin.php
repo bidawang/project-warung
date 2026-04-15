@@ -21,7 +21,7 @@ class StokOpnameControllerAdmin extends Controller
     {
         // dd($request->all());
         $listWarung = Warung::all();
-        $activeWarungId = $request->get('warung_id');
+        $activeWarungId = $request->get('id_warung');
         $activeWarung = null;
 
         // --- 1. Logika Penentuan Warung Aktif ---
@@ -201,7 +201,7 @@ class StokOpnameControllerAdmin extends Controller
 
         if (!$hasAnyInput) {
             return redirect()
-                ->route('admin.stokopname.index', ['warung_id' => $idWarung])
+                ->route('admin.stokopname.index', ['id_warung' => $idWarung])
                 ->with('error', 'Silakan masukkan jumlah fisik untuk setidaknya satu barang.');
         }
 
@@ -314,14 +314,14 @@ class StokOpnameControllerAdmin extends Controller
             if (!$isOpnamePerformed) {
                 DB::rollBack();
                 return redirect()
-                    ->route('admin.stokopname.index', ['warung_id' => $idWarung])
+                    ->route('admin.stokopname.index', ['id_warung' => $idWarung])
                     ->with('warning', 'Tidak ada stok yang diinput. Opname tidak disimpan.');
             }
 
             DB::commit();
 
             return redirect()
-                ->route('admin.stokopname.index', ['warung_id' => $idWarung])
+                ->route('admin.stokopname.index', ['id_warung' => $idWarung])
                 ->with(
                     'success',
                     "Hasil opname berhasil disimpan. Ditemukan {$totalItemsChanged} item dengan selisih."

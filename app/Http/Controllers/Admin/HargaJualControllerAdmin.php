@@ -88,7 +88,7 @@ class HargaJualControllerAdmin extends Controller
                     }
 
                     $warungPrices->push((object)[
-                        'warung_id' => $warung->id,
+                        'id_warung' => $warung->id,
                         'nama_warung' => $warung->nama_warung,
                         'area' => $warung->area->area ?? '-',
                         'stok_saat_ini' => $stokSaatIni,

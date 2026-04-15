@@ -154,7 +154,7 @@ class KasirControllerKasir extends Controller
             // $idTransaksiKas = 1; // ID sementara
 
             foreach ($items as $item) {
-                $stokWarung = StokWarung::findOrFail($item['stok_warung_id']);
+                $stokWarung = StokWarung::findOrFail($item['stok_id_warung']);
                 $jumlahJual = $item['jumlah'];
                 $hargaJualSatuan = $item['harga_jual'];
 

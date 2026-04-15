@@ -21,7 +21,7 @@ class TransaksiBarangMasuk extends Model
         'status',
         'jenis',
         'tanggal_kadaluarsa',
-        'keterangan'
+        'box'
     ];
 
     public function transaksiKas()

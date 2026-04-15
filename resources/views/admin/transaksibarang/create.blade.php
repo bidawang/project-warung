@@ -4,16 +4,6 @@
 
 @section('content')
     <div x-data="transaksiBarang()" class="flex-1 flex flex-col overflow-hidden">
-
-        {{-- HEADER --}}
-        <header class="flex justify-between items-center p-6 bg-white border-b">
-            <h1 class="text-2xl font-bold text-gray-800">Rencana Belanja</h1>
-            <div class="flex items-center gap-3">
-                <span class="font-semibold text-gray-600">Admin</span>
-                <div class="w-10 h-10 bg-blue-600 rounded-full"></div>
-            </div>
-        </header>
-
         {{-- MAIN --}}
         <main class="flex-1 overflow-y-auto bg-gray-100 p-8">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -23,8 +13,7 @@
                     <h2 class="font-bold text-lg mb-4">Rencana Belanja</h2>
 
                     <div class="flex gap-2 mb-4">
-                        <button @click="view='warung'"
-                            :class="view === 'warung' ? 'bg-blue-600 text-white' : 'bg-gray-200'"
+                        <button @click="view='warung'" :class="view === 'warung' ? 'bg-blue-600 text-white' : 'bg-gray-200'"
                             class="flex-1 py-2 rounded-lg text-sm font-semibold">
                             Warung
                         </button>
@@ -114,7 +103,7 @@
                                                 {{-- BARANG SEARCH --}}
                                                 <td class="border p-1 relative">
                                                     <input type="hidden" :name="`id_barang[${aIndex}][]`"
-                                                        :value="item.barang_id">
+                                                        :value="item.id_barang">
 
                                                     <div @click="item.open=!item.open"
                                                         class="border rounded px-2 py-1 cursor-pointer bg-white">
@@ -204,7 +193,7 @@
                 transaksi: [{
                     area_id: '',
                     items: [{
-                        barang_id: '',
+                        id_barang: '',
                         barang_nama: '',
                         jumlah: 1,
                         harga: 0,
@@ -218,7 +207,7 @@
                     this.transaksi.push({
                         area_id: '',
                         items: [{
-                            barang_id: '',
+                            id_barang: '',
                             barang_nama: '',
                             jumlah: 1,
                             harga: 0,
@@ -231,7 +220,7 @@
 
                 addItem(a) {
                     this.transaksi[a].items.push({
-                        barang_id: '',
+                        id_barang: '',
                         barang_nama: '',
                         jumlah: 1,
                         harga: 0,
@@ -252,7 +241,7 @@
 
                 pilihBarang(a, i, b) {
                     const item = this.transaksi[a].items[i];
-                    item.barang_id = b.id;
+                    item.id_barang = b.id;
                     item.barang_nama = b.nama;
                     item.open = false;
                     this.hitungTotal(a, i);
@@ -261,14 +250,14 @@
                 hitungTotal(a, i) {
                     const item = this.transaksi[a].items[i];
                     const b = this.barangByArea[this.transaksi[a].area_id]
-                        ?.find(x => x.id == item.barang_id);
+                        ?.find(x => x.id == item.id_barang);
                     if (b) item.harga = b.harga * item.jumlah;
                 },
 
                 hitungJumlahDariTotal(a, i) {
                     const item = this.transaksi[a].items[i];
                     const b = this.barangByArea[this.transaksi[a].area_id]
-                        ?.find(x => x.id == item.barang_id);
+                        ?.find(x => x.id == item.id_barang);
                     if (b && b.harga > 0)
                         item.jumlah = Math.max(1, Math.round(item.harga / b.harga));
                 },
