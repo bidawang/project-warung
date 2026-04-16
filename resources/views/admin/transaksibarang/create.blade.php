@@ -35,7 +35,17 @@
                                     <h3 class="font-bold text-indigo-700" x-text="warung"></h3>
                                     <ul class="text-sm list-disc list-inside">
                                         <template x-for="i in items">
-                                            <li x-text="i.barang.nama_barang + ' : ' + i.jumlah_awal"></li>
+                                            <li>
+                                                <div class="flex justify-between">
+                                                    <span x-text="i.barang.nama_barang"></span>
+                                                    <span x-text="i.jumlah_awal"></span>
+                                                </div>
+
+                                                <div class="text-xs"
+                                                    :class="getStatusClassRencana(i.id_barang, i.jumlah_awal)">
+                                                    • <span x-text="getStatusRencana(i.id_barang, i.jumlah_awal)"></span>
+                                                </div>
+                                            </li>
                                         </template>
                                     </ul>
                                 </div>
@@ -56,7 +66,17 @@
                                     </h3>
                                     <ul class="text-sm list-disc list-inside">
                                         <template x-for="i in items">
-                                            <li x-text="i.warung.nama_warung + ' : ' + i.jumlah_awal"></li>
+                                            <li>
+                                                <div class="flex justify-between">
+                                                    <span x-text="i.warung.nama_warung"></span>
+                                                    <span x-text="i.jumlah_awal"></span>
+                                                </div>
+
+                                                <div class="text-xs"
+                                                    :class="getStatusClassRencana(i.id_barang, i.jumlah_awal)">
+                                                    • <span x-text="getStatusRencana(i.id_barang, i.jumlah_awal)"></span>
+                                                </div>
+                                            </li>
                                         </template>
                                     </ul>
                                 </div>
@@ -182,6 +202,7 @@
 
     <script>
         function transaksiBarang() {
+
             return {
                 view: 'warung',
                 search: '',
@@ -189,6 +210,41 @@
                 rencanaByBarang: @json($rencanaBelanjaByBarang),
                 areas: @json($areas),
                 barangByArea: @json($barangByArea),
+                rencanaRaw: @json($rencanaBelanjaRaw),
+
+                // 🔥 Ambil total input dari form (REAL TIME)
+                getJumlahInput(barangId) {
+                    let total = 0;
+
+                    this.transaksi.forEach(area => {
+                        area.items.forEach(item => {
+                            if (item.id_barang == barangId) {
+                                total += parseInt(item.jumlah) || 0;
+                            }
+                        });
+                    });
+
+                    return total;
+                },
+
+                // 🔥 Status dinamis
+                getStatusRencana(barangId, target) {
+                    const input = this.getJumlahInput(barangId);
+
+                    if (input === 0) return 'Belum diinput';
+                    if (input < target) return `Kurang ${target - input}`;
+                    if (input === target) return 'Pas';
+                    return `Lebih ${input - target}`;
+                },
+
+                getStatusClassRencana(barangId, target) {
+                    const input = this.getJumlahInput(barangId);
+
+                    if (input === 0) return 'text-gray-400';
+                    if (input < target) return 'text-yellow-600 font-bold';
+                    if (input === target) return 'text-green-600 font-bold';
+                    return 'text-red-600 font-bold';
+                },
 
                 transaksi: [{
                     area_id: '',

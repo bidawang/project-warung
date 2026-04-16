@@ -3,174 +3,240 @@
 @section('title', 'Notifikasi Barang Masuk')
 
 @section('content')
-<div class="container py-5">
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-2">
-                    <li class="breadcrumb-item"><a href="{{ url('/kasir/stok-barang') }}" class="text-decoration-none text-muted">Stok Barang</a></li>
-                    <li class="breadcrumb-item active fw-bold text-primary">Barang Masuk</li>
-                </ol>
-            </nav>
-            <h2 class="fw-bold text-dark mb-0">Verifikasi Barang Masuk</h2>
-            <p class="text-muted small">Konfirmasi barang yang baru datang untuk memperbarui stok warung secara otomatis.</p>
-        </div>
-    </div>
+    <div class="container py-5">
 
-    {{-- Pesan Sukses atau Error --}}
-    @if(session('success'))
-    <div class="alert alert-success border-0 shadow-sm alert-dismissible fade show mb-4 rounded-4" role="alert">
-        <i class="fas fa-check-circle me-2"></i> {{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    @endif
-
-    @if(session('error'))
-    <div class="alert alert-danger border-0 shadow-sm alert-dismissible fade show mb-4 rounded-4" role="alert">
-        <i class="fas fa-exclamation-triangle me-2"></i> {{ session('error') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    @endif
-
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        {{-- Form pembungkus tabel --}}
-        <form action="{{ route('kasir.barang-masuk.konfirmasi') }}" method="POST" id="formVerifikasi">
-            @csrf
-
-            <div class="card-header bg-white py-4 px-4 border-0 border-bottom">
-                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-                    <div class="text-muted small fw-bold text-uppercase">
-                        <i class="fas fa-list me-2"></i>Daftar Tunggu Konfirmasi
-                    </div>
-
-                    {{-- Tombol aksi --}}
-                    @if($barangMasuk->count() > 0)
-                    <div class="d-flex gap-2">
-                        <button type="submit" name="status_baru" value="tolak"
-                                class="btn btn-outline-danger btn-sm rounded-pill px-4"
-                                onclick="return confirm('Apakah Anda yakin ingin menolak item terpilih?')">
-                            <i class="fas fa-times-circle me-1"></i> Tolak
-                        </button>
-                        <button type="submit" name="status_baru" value="terima"
-                                class="btn btn-success btn-sm rounded-pill px-4 shadow-sm fw-bold">
-                            <i class="fas fa-check-circle me-1"></i> Terima & Masukkan Stok
-                        </button>
-                    </div>
-                    @endif
-                </div>
+        {{-- HEADER --}}
+        <div class="row mb-4 align-items-center">
+            <div class="col-md-4">
+                <h2 class="fw-bold text-dark mb-1">Verifikasi Barang Masuk</h2>
+                <p class="text-muted small mb-0">Kelola konfirmasi stok masuk untuk sinkronisasi harga dan jumlah.</p>
             </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a href="{{ route('kasir.rencanabelanja.create') }}" class="btn btn-success rounded-pill px-4 shadow-sm">
+                    <i class="fas fa-plus-circle me-2"></i>Buat Rencana Belanja
+                </a>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <button type="submit" form="form-konfirmasi" name="status_baru" value="terima"
+                    class="btn btn-primary rounded-pill px-4 shadow-sm" id="btn-submit-all" disabled>
+                    <i class="fas fa-check-circle me-2"></i>Konfirmasi Terpilih
+                </button>
+            </div>
+        </div>
 
-            <div class="card-body p-0">
+        {{-- FILTER & TABS --}}
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-header bg-white border-0 pt-4 px-4">
+                <ul class="nav nav-tabs-custom nav-tabs nav-line-tabs nav-line-tabs-2x border-bottom-0 fw-bold">
+                    <li class="nav-item">
+                        <a class="nav-link text-active-primary py-3 {{ request('status') == 'kirim' || !request('status') ? 'active border-bottom border-primary border-3' : 'text-muted' }}"
+                            href="{{ request()->fullUrlWithQuery(['status' => 'kirim']) }}">
+                            Perlu Verifikasi
+                        </a>
+                    </li>
+                    <li class="nav-item ms-3">
+                        <a class="nav-link text-active-primary py-3 {{ request('status') == 'terima' ? 'active border-bottom border-primary border-3' : 'text-muted' }}"
+                            href="{{ request()->fullUrlWithQuery(['status' => 'terima']) }}">
+                            Riwayat
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body px-4 pb-4">
+                <form method="GET" action="">
+                    {{-- Keep status in query --}}
+                    <input type="hidden" name="status" value="{{ request('status', 'kirim') }}">
+
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-0"><i
+                                        class="fas fa-search text-muted"></i></span>
+                                <input type="text" name="search" value="{{ request('search') }}"
+                                    class="form-control bg-light border-0"
+                                    placeholder="Cari nama barang atau ID transaksi...">
+                            </div>
+                        </div>
+
+                        <div class="col-md-5">
+                            <div class="input-group">
+                                <input type="date" name="from" value="{{ request('from') }}"
+                                    class="form-control bg-light border-0">
+                                <span class="input-group-text bg-light border-0 text-muted small">s/d</span>
+                                <input type="date" name="to" value="{{ request('to') }}"
+                                    class="form-control bg-light border-0">
+                            </div>
+                        </div>
+
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-dark w-100 rounded-3">Filter</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {{-- FILTER JENIS (Nav Tabs) --}}
+        <div class="mb-3 px-4">
+            <div class="d-flex align-items-center gap-3">
+                <span class="text-muted small fw-bold text-uppercase">Tipe:</span>
+                <ul class="nav nav-pills nav-pills-custom gap-2">
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-sm rounded-pill px-3 {{ !request('jenis') ? 'btn-dark active' : 'btn-outline-secondary border-0' }}"
+                            href="{{ request()->fullUrlWithQuery(['jenis' => null]) }}">
+                            Semua
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-sm rounded-pill px-3 {{ request('jenis') == 'rencana' ? 'btn-success active text-white' : 'btn-outline-secondary border-0' }}"
+                            href="{{ request()->fullUrlWithQuery(['jenis' => 'rencana']) }}">
+                            <i class="fas fa-calendar-check me-1"></i> Rencana
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-sm rounded-pill px-3 {{ request('jenis') == 'tambahan' ? 'btn-primary active text-white' : 'btn-outline-secondary border-0' }}"
+                            href="{{ request()->fullUrlWithQuery(['jenis' => 'tambahan']) }}">
+                            <i class="fas fa-plus-circle me-1"></i> Tambahan
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        {{-- DATA TABLE --}}
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <form id="form-konfirmasi" action="{{ route('kasir.barang-masuk.konfirmasi') }}" method="POST">
+                @csrf
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light">
-                            <tr class="small fw-bold text-muted text-uppercase">
-                                <th width="60" class="text-center ps-4">
-                                    <div class="form-check d-flex justify-content-center">
-                                        <input class="form-check-input" type="checkbox" id="select-all">
+                        <thead class="bg-light-subtle">
+                            <tr class="text-muted small text-uppercase">
+                                {{-- Di dalam <thead> --}}
+                                <th width="50" class="ps-4">
+                                    <div class="form-check custom-checkbox">
+                                        <input type="checkbox" class="form-check-input" id="select-all"
+                                            {{ request('status') == 'terima' ? 'disabled' : '' }}>
                                     </div>
                                 </th>
-                                <th width="50">#</th>
-                                <th>Informasi Barang</th>
+                                <th>Info Barang</th>
                                 <th class="text-center">Jumlah</th>
-                                <th>Tanggal Masuk</th>
-                                <th class="pe-4">Keterangan</th>
+                                <th>Estimasi Harga (Final)</th>
+                                <th>Waktu Kirim</th>
+                                <th class="pe-4 text-end">Status</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($barangMasuk as $bm)
-                            <tr class="hover-row">
-                                <td class="text-center ps-4">
-                                    <div class="form-check d-flex justify-content-center">
-                                        <input class="form-check-input item-checkbox" type="checkbox" name="barangMasuk[]" value="{{ $bm->id }}">
-                                    </div>
-                                </td>
-                                <td class="text-muted small">
-                                    {{ $loop->iteration + ($barangMasuk->currentPage() - 1) * $barangMasuk->perPage() }}
-                                </td>
-                                <td>
-                                    <div class="fw-bold text-dark">{{ $bm->stokWarung->barang->nama_barang ?? '-' }}</div>
-                                    <div class="text-muted small">Ref ID: #BM-{{ $bm->id }}</div>
-                                </td>
-                                <td class="text-center">
-                                    <span class="badge bg-soft-primary text-primary rounded-pill px-3 py-2 fw-bold fs-6">
-                                        +{{ $bm->jumlah }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="small text-dark">{{ $bm->created_at?->format('d M Y') ?? '-' }}</div>
-                                    <div class="text-muted small" style="font-size: 11px;">{{ $bm->created_at?->format('H:i') }} WIB</div>
-                                </td>
-                                <td class="pe-4">
-                                    <div class="p-2 rounded bg-light small text-muted border-start border-3 border-warning">
-                                        {{ $bm->keterangan ?? 'Tanpa keterangan' }}
-                                    </div>
-                                </td>
-                            </tr>
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="form-check custom-checkbox">
+                                            <input type="checkbox" name="barangMasuk[]" value="{{ $bm->id }}"
+                                                {{ $bm->status !== 'kirim' ? 'disabled' : '' }}
+                                                class="form-check-input item-checkbox">
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm me-3 bg-light rounded text-center py-2 px-3">
+                                                <i class="fas fa-box text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold text-dark">
+                                                    {{ $bm->stokWarung->barang->nama_barang ?? 'Barang Terhapus' }}</div>
+                                                {{-- <div class="text-muted small">ID: #{{ $bm->id }}</div> --}}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge rounded-pill bg-soft-info px-3 py-2 text-info fs-6">
+                                            {{ $bm->jumlah }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {{-- Harga Dasar (Kecil/Muted) --}}
+                                        <div class="text-muted small"
+                                            style="text-decoration: line-through; font-size: 11px;">
+                                            Dasar: Rp {{ number_format($bm->harga_dasar_satuan, 0, ',', '.') }}
+                                        </div>
+
+                                        {{-- Harga Final (Besar/Tebal) --}}
+                                        <div class="fw-bold text-success">
+                                            Rp {{ number_format($bm->harga_final_satuan, 0, ',', '.') }}
+                                        </div>
+
+                                        {{-- Info Total --}}
+                                        <div class="text-muted" style="font-size: 10px;">
+                                            Total: Rp {{ number_format($bm->harga_final_total, 0, ',', '.') }}
+                                            (+{{ $bm->markup_percent }}%)
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="text-dark small">{{ $bm->created_at?->translatedFormat('d M Y') }}
+                                        </div>
+                                        <div class="text-muted small">{{ $bm->created_at?->format('H:i') }}</div>
+                                    </td>
+                                    <td class="pe-4 text-end">
+                                        <div class="mt-1">
+                                            @if ($bm->jenis == 'tambahan')
+                                                <span class="badge bg-primary-subtle text-primary border-0 small"
+                                                    style="font-size: 10px;">TAMBAHAN</span>
+                                            @else
+                                                <span class="badge bg-success-subtle text-success border-0 small"
+                                                    style="font-size: 10px;">RENCANA</span>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
                             @empty
-                            <tr>
-                                <td colspan="6" class="text-center py-5">
-                                    <div class="mb-3">
-                                        <i class="fas fa-clipboard-check fa-3x text-light"></i>
-                                    </div>
-                                    <h5 class="text-muted fw-normal">Semua barang sudah terverifikasi!</h5>
-                                    <p class="small text-muted">Belum ada notifikasi barang masuk yang perlu dikonfirmasi saat ini.</p>
-                                    <a href="{{ url('/kasir/stok-barang') }}" class="btn btn-outline-primary btn-sm rounded-pill px-4 mt-2">
-                                        <i class="fas fa-arrow-left me-1"></i> Kembali ke Stok
-                                    </a>
-                                </td>
-                            </tr>
+                                <tr>
+                                    <td colspan="6" class="text-center py-5">
+                                        <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" width="80"
+                                            class="mb-3 opacity-25">
+                                        <h6 class="text-muted">Tidak ada data barang masuk ditemukan</h6>
+                                        <p class="text-muted small">Coba ubah filter atau status pencarian Anda</p>
+                                    </td>
+                                </tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
-            </div>
 
-            @if($barangMasuk->hasPages())
-            <div class="card-footer bg-white border-0 py-4 d-flex justify-content-center">
-                {{ $barangMasuk->links() }}
-            </div>
-            @endif
-        </form>
+                @if ($barangMasuk->hasPages())
+                    <div class="card-footer bg-white border-0 py-4">
+                        {{ $barangMasuk->links() }}
+                    </div>
+                @endif
+            </form>
+        </div>
     </div>
-</div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectAll = document.getElementById('select-all');
+            // Filter: hanya ambil checkbox yang tidak disabled
+            const checkboxes = document.querySelectorAll('.item-checkbox:not(:disabled)');
+            const btnSubmit = document.getElementById('btn-submit-all');
 
-<style>
-    /* Styling khusus verifikasi */
-    .bg-soft-primary { background-color: #e7f1ff; color: #0d6efd; }
-    .hover-row:hover { background-color: #f8faff; transition: 0.2s; }
-    .form-check-input { cursor: pointer; border-color: #dee2e6; }
-    .form-check-input:checked { background-color: #198754; border-color: #198754; }
+            function updateButtonState() {
+                // Hanya hitung yang dicentang DAN tidak disabled
+                const checkedCount = document.querySelectorAll('.item-checkbox:checked:not(:disabled)').length;
 
-    /* Breadcrumb styling */
-    .breadcrumb-item + .breadcrumb-item::before { content: "›"; font-size: 1.2rem; line-height: 1; vertical-align: middle; }
+                btnSubmit.disabled = checkedCount === 0;
+                if (checkedCount > 0) {
+                    btnSubmit.innerHTML =
+                        `<i class="fas fa-check-circle me-2"></i>Konfirmasi (${checkedCount}) Barang`;
+                } else {
+                    btnSubmit.innerHTML = `<i class="fas fa-check-circle me-2"></i>Konfirmasi Terpilih`;
+                }
+            }
 
-    /* Responsive adjustment */
-    @media (max-width: 768px) {
-        .card-header .d-flex { flex-direction: column; align-items: stretch !important; }
-        .card-header .d-flex .d-flex { justify-content: space-between; }
-    }
-</style>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const selectAll = document.getElementById('select-all');
-        const checkboxes = document.querySelectorAll('.item-checkbox');
-
-        if (selectAll) {
-            selectAll.addEventListener('change', function() {
+            selectAll?.addEventListener('change', function() {
                 checkboxes.forEach(cb => {
                     cb.checked = this.checked;
-                    cb.closest('tr').classList.toggle('bg-light', this.checked);
                 });
+                updateButtonState();
             });
-        }
 
-        checkboxes.forEach(cb => {
-            cb.addEventListener('change', function() {
-                this.closest('tr').classList.toggle('bg-light', this.checked);
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', updateButtonState);
             });
         });
-    });
-</script>
+    </script>
 @endsection

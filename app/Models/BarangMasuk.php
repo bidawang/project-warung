@@ -42,4 +42,5 @@ class BarangMasuk extends Model
     {
         return $this->belongsTo(StokWarung::class, 'id_stok_warung');
     }
+
 }

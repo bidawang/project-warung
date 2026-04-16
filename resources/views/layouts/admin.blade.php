@@ -152,7 +152,7 @@
                 <div class="pt-4 pb-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest px-4">Transaksi &
                     Keuangan</div>
 
-                <div x-data="{ open: {{ request()->is('admin/rencana*', 'admin/transaksi-barang/rencana/create') ? 'true' : 'false' }} }">
+                {{-- <div x-data="{ open: {{ request()->is('admin/rencana*', 'admin/transaksi-barang/rencana/create') ? 'true' : 'false' }} }">
                     <button @click="open = !open"
                         class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg hover:bg-gray-800 hover:text-white transition group">
                         <div class="flex items-center">
@@ -181,7 +181,7 @@
                             Kirim Rencana
                         </a>
                     </div>
-                </div>
+                </div> --}}
                 <div x-data="{ open: {{ request()->is('admin/transaksibarang*') ? 'true' : 'false' }} }">
                     <button @click="open = !open"
                         class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg hover:bg-gray-800 hover:text-white transition group">
@@ -191,7 +191,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                             </svg>
-                            <span class="text-sm font-medium">Belanja Tambahan</span>
+                            <span class="text-sm font-medium">Stok Global</span>
                         </div>
                         <svg class="w-4 h-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''"
                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -208,10 +208,12 @@
 
                         <a href="{{ route('admin.transaksibarang.index') }}"
                             class="block px-4 py-2 text-sm {{ request()->routeIs('admin.transaksibarang.index') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">
-                            Data Belanja
+                            Sortir Barang
                         </a>
-
-
+                        <a href="{{ route('admin.transaksibarang.riwayat') }}"
+                            class="block px-4 py-2 text-sm {{ request()->routeIs('admin.transaksibarang.riwayat') ? 'text-blue-400 font-semibold' : 'hover:text-white' }}">
+                            Riwayat Pengiriman
+                        </a>
                     </div>
                 </div>
 

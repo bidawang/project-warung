@@ -139,6 +139,7 @@ Route::prefix('/admin')->name('admin.')->group(function () {
 
     Route::resource('/barang', BarangControllerAdmin::class);
     Route::resource('transaksibarang', TransaksiBarangController::class)->except(['show']);
+    Route::get('transaksibarang/riwayat', [TransaksiBarangController::class, 'riwayat'])->name('transaksibarang.riwayat');
 
     Route::resource('rencana', RencanaBelanjaControllerAdmin::class)->except(['show']);
 

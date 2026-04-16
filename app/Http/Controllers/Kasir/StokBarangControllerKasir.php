@@ -117,24 +117,25 @@ class StokBarangControllerKasir extends Controller
     {
         $status = $request->get('status', 'kirim');
         $search = $request->get('search');
-        // dd($request->All());
-        //         $barangMasuk = BarangMasuk::with([
-        //     'transaksiBarang.areaPembelian',
-        //     'stokWarung.barang',
-        //     'stokWarung.warung.user'
-        // ])->get();
-        // dd($barangMasuk);
         $barangMasuk = BarangMasuk::with([
             'transaksiBarang.areaPembelian',
             'stokWarung.barang',
             'stokWarung.warung.user'
         ])
-            ->where('jenis', 'tambahan')
+            ->whereIn('jenis', ['tambahan', 'rencana']) // 🔥 penting
             ->whereHas('stokWarung.warung', function ($query) {
                 $query->where('id_user', Auth::id());
             })
             ->when($status, function ($query) use ($status) {
                 $query->where('status', $status);
+            })->when(request('jenis'), function ($q) {
+                $q->where('jenis', request('jenis'));
+            })
+            ->when(request('from'), function ($q) {
+                $q->whereDate('created_at', '>=', request('from'));
+            })
+            ->when(request('to'), function ($q) {
+                $q->whereDate('created_at', '<=', request('to'));
             })
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
@@ -153,18 +154,23 @@ class StokBarangControllerKasir extends Controller
 
         // Hitung harga final dengan markup
         $barangMasuk->getCollection()->transform(function ($bm) {
-            // Gunakan ?-> untuk setiap level relasi
+            // 1. Ambil data dasar
             $hargaTotalBeli = $bm->transaksiBarang?->harga ?? 0;
-
-            // Rantai ini aman sekarang: jika transaksiBarang null, dia berhenti. 
-            // Jika areaPembelian null, dia berhenti.
             $markupPercent = $bm->transaksiBarang?->areaPembelian?->markup ?? 0;
+            $jumlah = max($bm->jumlah ?? 1, 1);
 
+            // 2. Hitung Harga DASAR (Sebelum Markup)
+            // Harga total beli dibagi jumlah
+            $bm->harga_dasar_satuan = $hargaTotalBeli > 0 ? ($hargaTotalBeli / $jumlah) : 0;
+
+            // 3. Hitung Harga FINAL (Setelah Markup)
             $bm->markup_percent = $markupPercent;
             $bm->harga_final_total = $hargaTotalBeli + ($hargaTotalBeli * $markupPercent / 100);
-
-            $jumlah = max($bm->jumlah ?? 1, 1);
             $bm->harga_final_satuan = $bm->harga_final_total > 0 ? ($bm->harga_final_total / $jumlah) : 0;
+
+            // 4. FLAG Jenis
+            $bm->is_tambahan = $bm->jenis === 'tambahan';
+            $bm->is_rencana  = $bm->jenis === 'rencana';
 
             return $bm;
         });

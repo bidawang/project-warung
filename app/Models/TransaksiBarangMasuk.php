@@ -16,7 +16,7 @@ class TransaksiBarangMasuk extends Model
         'id_barang',
         'id_area_pembelian',
         'jumlah',
-        'jumlah_terpakai',  
+        'jumlah_terpakai',
         'harga',
         'status',
         'jenis',
@@ -28,7 +28,6 @@ class TransaksiBarangMasuk extends Model
     {
         return $this->belongsTo(TransaksiKas::class, 'id_transaksi_kas');
     }
-
 
     public function barang()
     {
@@ -43,5 +42,11 @@ class TransaksiBarangMasuk extends Model
     public function areaPembelian()
     {
         return $this->belongsTo(AreaPembelian::class, 'id_area_pembelian');
+    }
+    // App\Models\TransaksiBarangMasuk.php
+
+    public function detailTransaksiBarangMasuk()
+    {
+        return $this->hasMany(BarangMasuk::class, 'id_transaksi_barang_masuk');
     }
 }

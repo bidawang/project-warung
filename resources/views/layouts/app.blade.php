@@ -235,13 +235,13 @@
                     </a>
                 </li>
 
-                <li class="nav-item">
+                {{-- <li class="nav-item">
                     <a href="{{ route('kasir.rencanabelanja.index') }}"
                         class="nav-link @if (Request::is('*rencana-belanja*')) active @endif">
                         <i class="fas fa-clipboard-list"></i>
                         <span>Rencana Belanja</span>
                     </a>
-                </li>
+                </li> --}}
 
                 <li class="nav-item">
                     <a href="{{ url('kasir/pulsa') }}"
