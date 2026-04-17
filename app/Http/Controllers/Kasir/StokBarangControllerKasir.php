@@ -10,6 +10,7 @@ use App\Models\BarangKeluar;
 use App\Models\StokWarung; // Pastikan model ini tersedia
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use App\Models\RencanaBelanja; // Pastikan model ini diimport
 
 class StokBarangControllerKasir extends Controller
 {
@@ -154,21 +155,36 @@ class StokBarangControllerKasir extends Controller
 
         // Hitung harga final dengan markup
         $barangMasuk->getCollection()->transform(function ($bm) {
-            // 1. Ambil data dasar
+
+            // =============================
+            // 🔥 AMBIL JUMLAH PERMINTAAN
+            // =============================
+            if ($bm->jenis === 'rencana') {
+                $rencana = RencanaBelanja::where('id_warung', $bm->stokWarung->id_warung ?? null)
+                    ->where('id_barang', $bm->stokWarung->id_barang ?? null)
+                    ->latest()
+                    ->first();
+
+                $bm->jumlah_permintaan = $rencana->jumlah_awal ?? $bm->jumlah;
+                $bm->jumlah_dibeli = $rencana->jumlah_dibeli ?? 0;
+            } else {
+                $bm->jumlah_permintaan = $bm->jumlah;
+                $bm->jumlah_dibeli = $bm->jumlah;
+            }
+
+            // =============================
+            // 💰 HITUNG HARGA (existing)
+            // =============================
             $hargaTotalBeli = $bm->transaksiBarang?->harga ?? 0;
             $markupPercent = $bm->transaksiBarang?->areaPembelian?->markup ?? 0;
             $jumlah = max($bm->jumlah ?? 1, 1);
 
-            // 2. Hitung Harga DASAR (Sebelum Markup)
-            // Harga total beli dibagi jumlah
             $bm->harga_dasar_satuan = $hargaTotalBeli > 0 ? ($hargaTotalBeli / $jumlah) : 0;
 
-            // 3. Hitung Harga FINAL (Setelah Markup)
             $bm->markup_percent = $markupPercent;
             $bm->harga_final_total = $hargaTotalBeli + ($hargaTotalBeli * $markupPercent / 100);
             $bm->harga_final_satuan = $bm->harga_final_total > 0 ? ($bm->harga_final_total / $jumlah) : 0;
 
-            // 4. FLAG Jenis
             $bm->is_tambahan = $bm->jenis === 'tambahan';
             $bm->is_rencana  = $bm->jenis === 'rencana';
 

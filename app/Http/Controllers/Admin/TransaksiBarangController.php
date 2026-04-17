@@ -452,7 +452,7 @@ class TransaksiBarangController extends Controller
                     // dd('gagal');
                     $jumlahFinal = (int) $detail['jumlah'];
 
-                    $totalHargaBarang = ceil($hargaModalWarung * $jumlahFinal) * 500;
+                    $totalHargaBarang = ceil($hargaModalWarung * $jumlahFinal);
 
                     // 1. Stok Warung
                     $stokWarung = StokWarung::firstOrCreate(

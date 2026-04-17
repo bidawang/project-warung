@@ -146,9 +146,39 @@
                                         </div>
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge rounded-pill bg-soft-info px-3 py-2 text-info fs-6">
-                                            {{ $bm->jumlah }}
-                                        </span>
+                                        @if ($bm->is_rencana)
+                                            <div class="d-flex flex-column align-items-center gap-1">
+
+                                                {{-- Permintaan --}}
+                                                <div class="d-flex flex-column align-items-center">
+                                                    <span class="badge bg-soft-secondary text-secondary rounded-pill px-3">
+                                                        {{ number_format($bm->jumlah_permintaan ?? ($bm->jumlah ?? 0), 0, ',', '.') }}
+                                                    </span>
+                                                    <small class="text-muted" style="font-size: 10px;">Permintaan</small>
+                                                </div>
+
+                                                {{-- Dibeli --}}
+                                                <div class="d-flex align-items-center gap-1">
+                                                    <span class="badge bg-soft-info text-info rounded-pill px-3 py-2">
+                                                        {{ number_format($bm->jumlah_dibeli ?? 0, 0, ',', '.') }}
+                                                    </span>
+
+                                                    @if (!empty($bm->keterangan))
+                                                        <small class="text-primary fw-bold text-uppercase lh-1"
+                                                            style="font-size: 0.6rem;">
+                                                            Tambahan
+                                                        </small>
+                                                    @endif
+                                                </div>
+                                                <small class="text-muted" style="font-size: 10px;">Dibeli</small>
+
+                                            </div>
+                                        @else
+                                            {{-- Non rencana --}}
+                                            <span class="badge rounded-pill bg-soft-info px-3 py-2 text-info fs-6">
+                                                {{ number_format($bm->jumlah ?? 0, 0, ',', '.') }}
+                                            </span>
+                                        @endif
                                     </td>
                                     <td>
                                         {{-- Harga Dasar (Kecil/Muted) --}}
