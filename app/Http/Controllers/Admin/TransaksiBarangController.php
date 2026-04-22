@@ -424,8 +424,8 @@ class TransaksiBarangController extends Controller
                     : 0;
 
                 $markupPercent = optional($transaksiBarang->areaPembelian)->markup ?? 0;
-                $hargaModalWarung = $hargaBeliPerUnit * (1 + ($markupPercent / 100));
-
+                $hargaModalWarung = ceil($hargaBeliPerUnit * (1 + ($markupPercent / 100)));
+                $hargaModalWarung = ceil($hargaModalWarung / 500) * 500;
                 foreach ($transaksiData['details'] as $detail) {
 
                     $warungId = $detail['id_warung'];
@@ -514,7 +514,7 @@ class TransaksiBarangController extends Controller
                         'id_warung'              => $warungId,
                         'id_barang'              => $barangId,
                         'harga_sebelum_markup'   => $hargaBeliPerUnit,
-                        'harga_modal'            => ceil($hargaModalWarung) * 1000,
+                        'harga_modal'            => ceil($hargaModalWarung),
                         'harga_jual_range_awal'  => $hargaJualSatuan,
                         'harga_jual_range_akhir' => $hargaJualSatuan,
                         'total_barang'           => $jumlahFinal,
@@ -523,9 +523,12 @@ class TransaksiBarangController extends Controller
                     ]);
                 }
 
+
+
+                //KEMUNGKINAN KDA TEPAKAI
                 // 7. Update stok sumber
                 $transaksiBarang->jumlah_terpakai += $totalPengiriman;
-
+// dd($transaksiBarang->jumlah, $transaksiBarang->jumlah_terpakai);
                 if (($transaksiBarang->jumlah - $transaksiBarang->jumlah_terpakai) > 0) {
                     $sisa = $transaksiBarang->jumlah - $transaksiBarang->jumlah_terpakai;
 
@@ -535,6 +538,7 @@ class TransaksiBarangController extends Controller
                     $dataSisa['jumlah'] = $sisa;
                     $dataSisa['jumlah_terpakai'] = 0;
                     $dataSisa['harga'] = ceil($hargaBeliPerUnit * $sisa) * 500;
+                    dd($dataSisa['harga']);
                     $dataSisa['status'] = 'pending';
 
                     TransaksiBarangMasuk::create($dataSisa);

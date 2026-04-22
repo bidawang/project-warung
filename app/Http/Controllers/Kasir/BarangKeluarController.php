@@ -126,7 +126,7 @@ class BarangKeluarController extends Controller
             'keterangan'                => 'nullable|string',
             'tenggat'                   => 'nullable|date',
         ]);
-// dd($validated);
+        // dd($validated);
         $idWarung = session('id_warung');
         if (!$idWarung) {
             return redirect()->route('kasir.kasir')->with('error', 'ID warung tidak ditemukan di sesi.');
@@ -235,27 +235,59 @@ class BarangKeluarController extends Controller
                     ->where('id_barang', $stokFisik->id_barang)
                     ->whereNull('periode_akhir')
                     ->latest('periode_awal')
+                    ->where('status', true) // Pastikan hanya yang aktif
                     ->first();
-                
+                // dd($hargaAktif);
 
                 // 3. Definisikan variabel pendukung (PASTIKAN DI ATAS PENGGUNAANNYA)
                 $hargaModalSatuan = $hargaAktif->harga_modal ?? 0;
                 $hargaJualSatuan  = $item['harga'];
                 $jumlahBarang     = $item['jumlah'];
-                // dd($hargaJualSatuan);
-
+                // dd($hargaJualSatuan/$jumlahBarang, $hargaModalSatuan);
+                // dd($hargaJualSatuan, $hargaModalSatuan, $jumlahBarang);
                 // 4. Hitung Laba untuk item ini
-                $labaBersihItem = ($hargaJualSatuan/$jumlahBarang - $hargaModalSatuan) * $jumlahBarang;
-// dd($labaBersihItem, $hargaJualSatuan, $hargaModalSatuan, $jumlahBarang);
-                // 5. Tambahkan ke akumulasi total laba transaksi
-                $totalLabaTransaksiIni += $labaBersihItem;
+                // Ambil id_warung dari stok
+                $stokWarung = \App\Models\StokWarung::find($item['id_stok_warung']);
+                $idWarung = $stokWarung->id_warung;
 
-                // 6. Simpan ke tabel barang_keluar
+                // Ambil data warung (yang ada pembagian_laba, misal: "70|30")
+                $warung = \App\Models\Warung::find($idWarung);
+
+                // Pecah "70|30"
+                [$persenOwner, $persenWarung] = explode('|', $warung->pembagian_laba);
+
+                // =======================
+                // HITUNG LABA BERSIH
+                // =======================
+                $labaBersihItem = ($hargaJualSatuan / $jumlahBarang - $hargaModalSatuan / $jumlahBarang) * $jumlahBarang;
+
+                // =======================
+                // OPSI 1 (PRESISI - hasil bisa desimal)
+                // =======================
+                // $labaOwner  = $labaBersihItem * ($persenOwner / 100);
+                // $labaWarung = $labaBersihItem * ($persenWarung / 100);
+
+                // =======================
+                // OPSI 2 (BULAT - pakai ceil, total bisa sedikit lebih)
+                // =======================
+                $labaOwner  = ceil($labaBersihItem * ($persenOwner / 100));
+                $labaWarung = ceil($labaBersihItem * ($persenWarung / 100));
+
+                // Alternatif biar total tetap konsisten (recommended kalau pakai bulat)
+                // $labaOwner  = ceil($labaBersihItem * ($persenOwner / 100));
+                // $labaWarung = $labaBersihItem - $labaOwner;
+
+
+                // =======================
+                // SIMPAN
+                // =======================
                 $barangKeluar = \App\Models\BarangKeluar::create([
                     'id_stok_warung' => $item['id_stok_warung'],
                     'jumlah'         => $jumlahBarang,
                     'harga_jual'     => $hargaJualSatuan,
                     'laba_bersih'    => $labaBersihItem,
+                    'laba_owner'     => $labaOwner,
+                    'laba_warung'    => $labaWarung,
                     'jenis'          => $jenis,
                     'keterangan'     => $finalKeterangan,
                 ]);

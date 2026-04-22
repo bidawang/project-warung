@@ -17,6 +17,8 @@ class Warung extends Model
         'nama_warung',
         'modal',
         'keterangan',
+        'kategori',
+        'pembagian_laba',
     ];
 
     public function user()

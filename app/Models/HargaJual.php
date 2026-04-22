@@ -23,6 +23,7 @@ class HargaJual extends Model
         'periode_akhir',
         'total_barang',
         'barang_terjual',
+        'status',
     ];
 
     // Relasi ke model Warung

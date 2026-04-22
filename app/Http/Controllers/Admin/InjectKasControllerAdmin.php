@@ -38,7 +38,7 @@ class InjectKasControllerAdmin extends Controller
             'total' => 'required|numeric',
             'keterangan' => 'required|string|max:255',
         ]);
-// dd('asu');
+// dd('cek');
         DB::beginTransaction();
         try {
             // 1. Cari atau Buat KasWarung tersebut

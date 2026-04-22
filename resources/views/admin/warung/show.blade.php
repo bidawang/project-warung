@@ -39,14 +39,17 @@
                     {{-- DETAIL WARUNG --}}
                     {{-- ===================== --}}
                     <div class="bg-white rounded-2xl shadow-sm border p-6 flex flex-col justify-between">
-
                         <div>
-                            <span class="bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1 rounded-full uppercase">
-                                Informasi Bisnis
-                            </span>
+                            <div class="flex justify-between items-start">
+                                <span class="bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1 rounded-full uppercase">
+                                    Informasi Bisnis
+                                </span>
+                                <span class="bg-gray-100 text-gray-600 text-xs font-medium px-2 py-1 rounded border">
+                                    {{ $warung->kategori ?? 'Umum' }}
+                                </span>
+                            </div>
 
                             <div class="mt-4 space-y-4">
-
                                 <div>
                                     <p class="text-xs text-gray-400 uppercase font-semibold">Pemilik / Area</p>
                                     <p class="text-gray-800 font-semibold text-sm">
@@ -56,13 +59,32 @@
                                     </p>
                                 </div>
 
-                                <div>
-                                    <p class="text-xs text-gray-400 uppercase font-semibold">Modal Awal</p>
-                                    <p class="text-2xl font-bold text-gray-900">
-                                        Rp {{ number_format($warung->modal, 0, ',', '.') }}
-                                    </p>
-                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="text-xs text-gray-400 uppercase font-semibold">Modal Awal</p>
+                                        <p class="text-xl font-bold text-gray-900">
+                                            Rp {{ number_format($warung->modal, 0, ',', '.') }}
+                                        </p>
+                                    </div>
 
+                                    <div>
+                                        <p class="text-xs text-gray-400 uppercase font-semibold">Pembagian Laba</p>
+                                        <div class="flex items-center gap-1 mt-1">
+                                            @php
+                                                $laba = explode('|', $warung->pembagian_laba ?? '0|0');
+                                            @endphp
+                                            <div class="flex items-center shadow-sm rounded-lg overflow-hidden border">
+                                                <span class="bg-green-500 text-white text-[10px] px-2 py-1 font-bold">
+                                                    {{ $laba[0] }}%
+                                                </span>
+                                                <span class="bg-orange-500 text-white text-[10px] px-2 py-1 font-bold">
+                                                    {{ $laba[1] ?? 0 }}%
+                                                </span>
+                                            </div>
+                                            <span class="text-[10px] text-gray-400 ml-1 italic">(Pengelola|Owner)</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -71,7 +93,6 @@
                                 "{{ $warung->keterangan ?? 'Tidak ada keterangan tambahan.' }}"
                             </p>
                         </div>
-
                     </div>
 
 

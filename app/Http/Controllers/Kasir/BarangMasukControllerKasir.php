@@ -7,6 +7,7 @@ use App\Models\BarangMasuk;
 use App\Events\BarangMasukUpdated;
 use App\Models\StokWarung;
 use App\Models\TransaksiBarangMasuk;
+use App\Models\HargaJual;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Exception;
@@ -98,6 +99,43 @@ class BarangMasukControllerKasir extends Controller
                             }
                         }
                     }
+// dd('cek',$item->id, $jumlahMasuk, $stokWarung->id_warung, $stokWarung->id_barang);
+                    // ==================================================
+                    // 🔥 UPDATE STATUS HARGA JUAL (AKTIF / NONAKTIF)
+                    // ==================================================
+
+                    $stokWarung = $item->stokWarung;
+
+                    if ($stokWarung) {
+
+                        // Ambil semua harga jual untuk barang & warung ini (urut terbaru)
+                        $hargaJualList = HargaJual::where('id_warung', $stokWarung->id_warung)
+                            ->where('id_barang', $stokWarung->id_barang)
+                            ->orderByDesc('id')
+                            ->get();
+// dd($hargaJualList);
+                        if ($hargaJualList->isNotEmpty()) {
+
+                            // 👉 harga jual TERBARU = true
+                            $hargaJualTerbaru = $hargaJualList->first();
+                            // dd($hargaJualTerbaru->id, $hargaJualTerbaru->status);
+                            $hargaJualTerbaru->update([
+                                'status' => true
+                            ]);
+// dd($hargaJualTerbaru->id, $hargaJualTerbaru->status);
+                            // 👉 harga jual SEBELUMNYA = false
+                            $hargaJualSebelumnya = $hargaJualList->skip(1);
+
+                            foreach ($hargaJualSebelumnya as $harga) {
+                                $harga->update([
+                                    'status' => false
+                                ]);
+                            }
+                        }
+                        // dd('cek');
+                        // dd($hargaJualList->pluck('id', 'status')->toArray(), $hargaJualTerbaru->id, $hargaJualTerbaru->status, $hargaJualSebelumnya->status);
+                    }
+
 
                     // ==================================================
                 }

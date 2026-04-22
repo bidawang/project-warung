@@ -196,18 +196,18 @@ class KasirControllerKasir extends Controller
                     // ]);
                 }
 
-                // 4. Catat Laba
-                Laba::create([
-                    'id_warung' => $idWarung,
-                    'id_barang' => $stokWarung->id_barang,
-                    'jenis' => 'penjualan',
-                    'jumlah_laba' => $labaKotor,
-                    'jumlah_barang' => $jumlahJual,
-                    'harga_jual' => $hargaJualSatuan,
-                    'hpp_satuan' => $hargaBeliTerakhir,
-                ]);
+                // // 4. Catat Laba
+                // Laba::create([
+                //     'id_warung' => $idWarung,
+                //     'id_barang' => $stokWarung->id_barang,
+                //     'jenis' => 'penjualan',
+                //     'jumlah_laba' => $labaKotor,
+                //     'jumlah_barang' => $jumlahJual,
+                //     'harga_jual' => $hargaJualSatuan,
+                //     'hpp_satuan' => $hargaBeliTerakhir,
+                // ]);
 
-                // 5. Update Stok Warung
+                // 4. Update Stok Warung
                 // Periksa stok sebelum dikurangi
                 if ($stokWarung->jumlah < $jumlahJual) {
                     DB::rollBack();
