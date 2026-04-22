@@ -259,8 +259,8 @@ class BarangKeluarController extends Controller
                 // =======================
                 // HITUNG LABA BERSIH
                 // =======================
-                $labaBersihItem = ($hargaJualSatuan / $jumlahBarang - $hargaModalSatuan / $jumlahBarang) * $jumlahBarang;
-
+                $labaBersihItem = ($hargaJualSatuan / $jumlahBarang - $hargaModalSatuan) * $jumlahBarang;
+// dd($labaBersihItem, $hargaJualSatuan, $hargaModalSatuan, $jumlahBarang);
                 // =======================
                 // OPSI 1 (PRESISI - hasil bisa desimal)
                 // =======================
@@ -274,8 +274,8 @@ class BarangKeluarController extends Controller
                 $labaWarung = ceil($labaBersihItem * ($persenWarung / 100));
 
                 // Alternatif biar total tetap konsisten (recommended kalau pakai bulat)
-                // $labaOwner  = ceil($labaBersihItem * ($persenOwner / 100));
-                // $labaWarung = $labaBersihItem - $labaOwner;
+                $labaOwner  = ceil($labaBersihItem * ($persenOwner / 100));
+                $labaWarung = $labaBersihItem - $labaOwner;
 
 
                 // =======================
