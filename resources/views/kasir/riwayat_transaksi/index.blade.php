@@ -3,186 +3,219 @@
 @section('title', 'Riwayat Transaksi')
 
 @section('content')
-<div class="container-fluid py-4" style="background-color: #f4f7fe; min-height: 100vh;">
-
-    {{-- Ringkasan Statistik Singkat --}}
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-4 text-white" style="background: linear-gradient(45deg, #4e73df, #224abe);">
-                <div class="card-body p-3">
-                    <small class="opacity-75">Total Transaksi Hari Ini</small>
-                    <h4 class="fw-bold mb-0">{{ $riwayatTransaksi->total() }} Transaksi</h4>
+<div class="min-h-screen bg-[#f8fafc] pb-20">
+    {{-- Header & Statistik --}}
+    <div class="bg-indigo-600 pt-8 pb-16 px-4">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div>
+                    <h3 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-history text-indigo-200"></i>
+                        Riwayat Transaksi
+                    </h3>
+                    <p class="text-indigo-100 text-sm opacity-80">Pantau semua arus kas warung Anda</p>
+                </div>
+                
+                {{-- Card Statistik Kecil --}}
+                <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl flex items-center gap-4">
+                    <div class="bg-white/20 p-3 rounded-xl">
+                        <i class="fas fa-receipt text-white"></i>
+                    </div>
+                    <div>
+                        <p class="text-indigo-100 text-[10px] uppercase font-bold tracking-wider">Total Hari Ini</p>
+                        <p class="text-white font-black text-xl">{{ $riwayatTransaksi->total() }} <span class="text-sm font-normal">Trx</span></p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm rounded-4">
-        {{-- HEADER: Menggunakan warna Biru Indigo yang soft --}}
-        <div class="card-header bg-white border-0 py-3 mt-2">
-            <div class="row align-items-center g-3">
-                <div class="col-md-4">
-                    <h5 class="mb-0 fw-bold text-primary">
-                        <i class="fas fa-list-ul me-2"></i>Riwayat Transaksi
-                    </h5>
-                </div>
-                <div class="col-md-8">
-                    <form method="GET" class="d-flex gap-2 justify-content-md-end">
-                        <select name="filter_jenis" class="form-select form-select-sm border-light-subtle shadow-sm w-auto rounded-pill">
+    {{-- Main Content --}}
+    <div class="max-w-7xl mx-auto px-4 -mt-10">
+        <div class="bg-white rounded-3xl shadow-xl shadow-indigo-100 border border-gray-100 overflow-hidden">
+            
+            {{-- Filter Area --}}
+            <div class="p-4 md:p-6 border-b border-gray-50">
+                <form method="GET" class="flex flex-col md:flex-row gap-3">
+                    <div class="relative flex-1">
+                        <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="text" name="search" value="{{ request('search') }}"
+                               placeholder="Cari ID Ref atau deskripsi..."
+                               class="w-full pl-11 pr-4 py-3 bg-gray-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all">
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <select name="filter_jenis" 
+                                class="flex-1 md:w-48 py-3 px-4 bg-gray-50 border-none rounded-2xl text-sm font-bold text-gray-600 focus:ring-2 focus:ring-indigo-500">
                             <option value="">Semua Kategori</option>
                             <option value="Penjualan" {{ request('filter_jenis') == 'Penjualan' ? 'selected' : '' }}>Penjualan</option>
                             <option value="Piutang" {{ request('filter_jenis') == 'Piutang' ? 'selected' : '' }}>Piutang</option>
                             <option value="Keluar" {{ request('filter_jenis') == 'Keluar' ? 'selected' : '' }}>Pengeluaran</option>
                         </select>
+                        
+                        <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-2xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-100">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
 
-                        <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden" style="max-width: 250px;">
-                            <input type="text" name="search" class="form-control border-0 ps-3"
-                                   placeholder="Cari transaksi..." value="{{ request('search') }}">
-                            <button class="btn btn-primary px-3" type="submit"><i class="fas fa-search"></i></button>
+            {{-- Mobile View (Card List) - Visible on Mobile only --}}
+            <div class="block md:hidden divide-y divide-gray-100">
+                @forelse($riwayatTransaksi as $trx)
+                <div class="p-4 active:bg-gray-50 transition-colors" data-bs-toggle="modal" data-bs-target="#struk{{ $trx->id_ref }}">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <span class="text-[10px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded uppercase tracking-tighter">#{{ $trx->id_ref }}</span>
+                            <h4 class="font-bold text-gray-800 mt-1">{{ $trx->jenis_transaksi }}</h4>
                         </div>
+                        <div class="text-right">
+                            <p class="font-black {{ $trx->total >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                                {{ $trx->total >= 0 ? '+' : '-' }} Rp {{ number_format(abs($trx->total),0,',','.') }}
+                            </p>
+                            <p class="text-[10px] text-gray-400 uppercase font-bold">{{ $trx->metode_pembayaran ?? 'CASH' }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between items-end">
+                        <div class="flex items-center gap-2 text-gray-400">
+                            <i class="far fa-clock text-xs"></i>
+                            <span class="text-xs">{{ $trx->tanggal->format('d M, H:i') }} WIB</span>
+                        </div>
+                        <span class="text-xs text-indigo-600 font-bold">Lihat Detail <i class="fas fa-chevron-right ml-1"></i></span>
+                    </div>
+                </div>
+                @empty
+                <div class="py-20 text-center">
+                    <i class="fas fa-search text-gray-200 text-5xl mb-4"></i>
+                    <p class="text-gray-400">Tidak ada transaksi ditemukan</p>
+                </div>
+                @endforelse
+            </div>
 
-                        @if(request()->anyFilled(['search', 'filter_jenis']))
-                            <a href="{{ route('kasir.riwayat-transaksi.index') }}" class="btn btn-sm btn-light rounded-pill border shadow-sm">
-                                <i class="fas fa-sync-alt"></i>
-                            </a>
-                        @endif
-                    </form>
+            {{-- Desktop View (Table) - Hidden on Mobile --}}
+            <div class="hidden md:block">
+                <div class="table-responsive">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b">
+                            <tr>
+                                <th class="px-6 py-4 text-left">ID Ref</th>
+                                <th class="px-6 py-4 text-left">Waktu</th>
+                                <th class="px-6 py-4 text-left">Jenis</th>
+                                <th class="px-6 py-4 text-left">Deskripsi</th>
+                                <th class="px-6 py-4 text-right">Total</th>
+                                <th class="px-6 py-4 text-center">Metode</th>
+                                <th class="px-6 py-4 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            @foreach($riwayatTransaksi as $trx)
+                            <tr class="hover:bg-gray-50/50 transition-colors">
+                                <td class="px-6 py-4">
+                                    <span class="font-bold text-indigo-600">#{{ $trx->id_ref }}</span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm font-bold text-gray-800">{{ $trx->tanggal->format('d M Y') }}</div>
+                                    <div class="text-[10px] text-gray-400 font-bold uppercase">{{ $trx->tanggal->format('H:i') }} WIB</div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    @php
+                                        $style = 'bg-gray-100 text-gray-600';
+                                        if(str_contains($trx->jenis_transaksi, 'Penjualan')) $style = 'bg-green-100 text-green-700';
+                                        elseif(str_contains($trx->jenis_transaksi, 'Piutang')) $style = 'bg-amber-100 text-amber-700';
+                                        elseif(str_contains($trx->jenis_transaksi, 'Keluar')) $style = 'bg-red-100 text-red-700';
+                                    @endphp
+                                    <span class="{{ $style }} text-[10px] font-black px-3 py-1 rounded-full uppercase">
+                                        {{ $trx->jenis_transaksi }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-500 truncate max-w-[200px]">
+                                    {{ $trx->deskripsi }}
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <span class="font-black {{ $trx->total >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                                        {{ $trx->total >= 0 ? '+' : '-' }} Rp {{ number_format(abs($trx->total),0,',','.') }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-center uppercase text-[10px] font-bold text-gray-400">
+                                    {{ $trx->metode_pembayaran ?? 'Cash' }}
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    <button data-bs-toggle="modal" data-bs-target="#struk{{ $trx->id_ref }}"
+                                            class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all">
+                                        <i class="fas fa-eye text-xs"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
             </div>
-        </div>
 
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-light text-primary small fw-bold text-uppercase">
-                        <tr>
-                            <th class="ps-4 py-3 border-0">ID Ref</th>
-                            <th class="border-0">Waktu</th>
-                            <th class="border-0 text-center">Jenis</th>
-                            <th class="border-0">Deskripsi</th>
-                            <th class="border-0 text-end">Total</th>
-                            <th class="border-0 text-center">Metode</th>
-                            <th class="border-0 text-center pe-4">Aksi</th>
-                        </tr>
-                    </thead>
-
-                    <tbody class="border-top-0">
-                        @forelse($riwayatTransaksi as $trx)
-                        <tr>
-                            <td class="ps-4">
-                                <span class="badge bg-primary-subtle text-primary fw-medium px-2 py-1">
-                                    #{{ $trx->id_ref }}
-                                </span>
-                            </td>
-
-                            <td>
-                                <div class="fw-bold text-dark mb-0">{{ $trx->tanggal->format('d M Y') }}</div>
-                                <div class="small text-muted">{{ $trx->tanggal->format('H:i') }} WIB</div>
-                            </td>
-
-                            <td class="text-center">
-                                @php
-                                    $jt = $trx->jenis_transaksi;
-                                    $style = 'bg-secondary-subtle text-secondary';
-                                    if(str_contains($jt, 'Penjualan')) $style = 'bg-success-subtle text-success';
-                                    elseif(str_contains($jt, 'Piutang')) $style = 'bg-warning-subtle text-warning-emphasis';
-                                    elseif(str_contains($jt, 'Keluar')) $style = 'bg-danger-subtle text-danger';
-                                @endphp
-                                <span class="badge {{ $style }} border-0 px-3 py-2 rounded-pill shadow-none" style="min-width: 90px;">
-                                    {{ $jt }}
-                                </span>
-                            </td>
-
-                            <td class="small text-muted">
-                                {{ Str::limit($trx->deskripsi, 40) }}
-                            </td>
-
-                            <td class="text-end fw-bold">
-                                <span class="{{ $trx->total >= 0 ? 'text-success' : 'text-danger' }}">
-                                    {{ $trx->total >= 0 ? '+' : '-' }} Rp {{ number_format(abs($trx->total),0,',','.') }}
-                                </span>
-                            </td>
-
-                            <td class="text-center">
-                                <span class="small text-dark fw-medium bg-light px-2 py-1 rounded border">
-                                    {{ strtoupper($trx->metode_pembayaran ?? 'N/A') }}
-                                </span>
-                            </td>
-
-                            <td class="text-center pe-4">
-                                <button class="btn btn-sm btn-outline-primary rounded-circle"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#struk{{ $trx->id_ref }}"
-                                        style="width: 32px; height: 32px; padding: 0;">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="7" class="text-center py-5">
-                                <p class="text-muted">Data transaksi tidak ditemukan.</p>
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+            {{-- Footer Pagination --}}
+            <div class="p-4 md:p-6 bg-gray-50/50 border-t border-gray-100">
+                {{ $riwayatTransaksi->links() }}
             </div>
-        </div>
-
-        <div class="card-footer bg-white border-0 py-3 rounded-bottom-4">
-            {{ $riwayatTransaksi->links() }}
         </div>
     </div>
 </div>
 
-{{-- MODAL STRUK: Desain Bersih ala Apple/Modern UI --}}
+{{-- MODAL STRUK (Disesuaikan agar pas di layar HP) --}}
 @foreach($riwayatTransaksi as $trx)
 <div class="modal fade" id="struk{{ $trx->id_ref }}" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-        <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-body p-4">
-                <div class="text-center mb-4">
-                    <div class="bg-primary-subtle text-primary d-inline-block rounded-circle p-3 mb-2">
-                        <i class="fas fa-store fa-lg"></i>
+    <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
+        <div class="modal-content border-0 shadow-2xl rounded-3xl md:rounded-[2rem] overflow-hidden">
+            <div class="modal-body p-6 md:p-8">
+                <div class="flex flex-col items-center mb-8">
+                    <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mb-4">
+                        <i class="fas fa-store text-2xl"></i>
                     </div>
-                    <h6 class="fw-bold text-dark mb-0">WARUNG DIGITAL</h6>
-                    <small class="text-muted">Nota Transaksi Digital</small>
+                    <h5 class="text-xl font-black text-gray-900 tracking-tight">STRUK DIGITAL</h5>
+                    <p class="text-gray-400 text-xs font-bold uppercase tracking-widest">Warung Digital Indonesia</p>
                 </div>
 
-                <div class="d-flex justify-content-between small text-muted mb-1">
-                    <span>ID Ref</span>
-                    <span class="text-dark fw-medium">#{{ $trx->id_ref }}</span>
-                </div>
-                <div class="d-flex justify-content-between small text-muted mb-3">
-                    <span>Waktu</span>
-                    <span class="text-dark fw-medium">{{ $trx->tanggal->format('d/m/Y H:i') }}</span>
-                </div>
-
-                <div style="border-top: 1px dashed #dee2e6;" class="my-3"></div>
-
-                @foreach($trx->items ?? [] as $item)
-                <div class="mb-2">
-                    <div class="d-flex justify-content-between small fw-bold text-dark">
-                        <span>{{ $item->nama_barang }}</span>
-                        <span>{{ number_format($item->subtotal,0,',','.') }}</span>
+                <div class="space-y-3 bg-gray-50 rounded-2xl p-4 border border-gray-100 mb-6">
+                    <div class="flex justify-between text-xs">
+                        <span class="text-gray-400 font-bold uppercase tracking-tighter">ID Referensi</span>
+                        <span class="text-gray-900 font-black">#{{ $trx->id_ref }}</span>
                     </div>
-                    <div class="small text-muted">{{ $item->jumlah }} x {{ number_format($item->harga,0,',','.') }}</div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-gray-400 font-bold uppercase tracking-tighter">Waktu</span>
+                        <span class="text-gray-900 font-black">{{ $trx->tanggal->format('d/m/Y H:i') }}</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-gray-400 font-bold uppercase tracking-tighter">Metode</span>
+                        <span class="text-gray-900 font-black uppercase">{{ $trx->metode_pembayaran ?? 'Cash' }}</span>
+                    </div>
                 </div>
-                @endforeach
 
-                <div style="border-top: 1px dashed #dee2e6;" class="my-3"></div>
+                <div class="border-t-2 border-dashed border-gray-100 my-6"></div>
 
-                <div class="d-flex justify-content-between fw-bold text-primary mb-1">
-                    <span>TOTAL</span>
-                    <span>Rp {{ number_format($trx->total,0,',','.') }}</span>
+                <div class="space-y-4 mb-6">
+                    @foreach($trx->items ?? [] as $item)
+                    <div class="flex justify-between">
+                        <div>
+                            <p class="text-sm font-bold text-gray-800">{{ $item->nama_barang }}</p>
+                            <p class="text-[10px] text-gray-400 font-bold uppercase">{{ $item->jumlah }} x Rp {{ number_format($item->harga,0,',','.') }}</p>
+                        </div>
+                        <p class="text-sm font-black text-gray-900">Rp {{ number_format($item->subtotal,0,',','.') }}</p>
+                    </div>
+                    @endforeach
                 </div>
 
-                <div class="text-center mt-4">
-                    <button class="btn btn-primary w-100 rounded-pill mb-2" onclick="window.print()">
-                        <i class="fas fa-print me-2"></i>Cetak Struk
+                <div class="bg-indigo-600 rounded-2xl p-5 shadow-lg shadow-indigo-100">
+                    <div class="flex justify-between items-center text-white">
+                        <span class="text-xs font-bold uppercase tracking-widest opacity-80">Total Akhir</span>
+                        <span class="text-xl font-black italic">Rp {{ number_format($trx->total,0,',','.') }}</span>
+                    </div>
+                </div>
+
+                <div class="mt-8 flex flex-col gap-2">
+                    <button class="w-full bg-gray-900 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-black transition shadow-xl" onclick="window.print()">
+                        <i class="fas fa-print"></i> Cetak Struk
                     </button>
-                    <button class="btn btn-link btn-sm text-decoration-none text-muted" data-bs-dismiss="modal">Tutup</button>
+                    <button class="w-full py-4 text-gray-400 font-bold text-sm hover:text-gray-600 transition" data-bs-dismiss="modal">Tutup Nota</button>
                 </div>
             </div>
         </div>
@@ -191,19 +224,9 @@
 @endforeach
 
 <style>
-    /* Menghilangkan garis hitam tabel */
-    .table > :not(caption) > * > * {
-        border-bottom-width: 1px;
-        border-bottom-color: #f0f2f5;
-        box-shadow: none;
-    }
-    .bg-success-subtle { background-color: #e8fadf !important; color: #28a745 !important; }
-    .bg-primary-subtle { background-color: #eef2ff !important; color: #4e73df !important; }
-    .bg-danger-subtle { background-color: #ffeef0 !important; color: #dc3545 !important; }
-    .bg-warning-subtle { background-color: #fff8ec !important; color: #b07d05 !important; }
-
-    .pagination { justify-content: flex-end; margin-bottom: 0; }
-    .page-link { border: none; color: #4e73df; border-radius: 8px; margin: 0 2px; }
-    .page-item.active .page-link { background-color: #4e73df; border-radius: 8px; }
+    /* Styling khusus pagination agar tidak berantakan di HP */
+    .pagination { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+    .page-item .page-link { border: none; background: #f1f5f9; border-radius: 12px; font-weight: 800; color: #475569; padding: 10px 16px; }
+    .page-item.active .page-link { background: #4f46e5; color: white; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
 </style>
 @endsection

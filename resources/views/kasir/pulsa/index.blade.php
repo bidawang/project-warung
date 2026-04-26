@@ -3,87 +3,85 @@
 @section('title', 'Manajemen Pulsa Warung')
 
 @section('content')
-<div class="container-fluid py-4" style="background-color: #f4f7f6; min-height: 100vh;">
+<div class="container-fluid py-3 py-md-4" style="background-color: #f4f7f6; min-height: 100vh;">
 
+    {{-- ALERT SUCCESS --}}
     @if (session('success'))
-        <div class="alert alert-success border-0 shadow-sm alert-dismissible fade show mb-4" role="alert">
-            <div class="d-flex align-items-center">
-                <i class="bi bi-check-circle-fill fs-4 me-2"></i>
+        <div class="alert alert-success border-0 shadow-sm alert-dismissible fade show mb-3 mx-2" role="alert">
+            <div class="d-flex align-items-center small">
+                <i class="bi bi-check-circle-fill me-2"></i>
                 <div>{{ session('success') }}</div>
             </div>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
 
-    <div class="row g-4">
-        {{-- KOLOM KIRI: DAFTAR HARGA JUAL PULSA --}}
-        <div class="col-lg-7 col-xl-8">
-            <div class="card border-0 shadow-sm" style="border-radius: 15px; overflow: hidden;">
-                <div class="card-header bg-white py-3 border-0">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0 fw-bold text-dark">
-                            <i class="fas fa-list-ul me-2 text-primary"></i>Daftar Harga Jual
-                        </h5>
-                        <span class="badge bg-soft-primary text-primary rounded-pill">{{ count($harga_pulsas) }} Produk</span>
-                    </div>
+    <div class="row g-3">
+        {{-- KOLOM KANAN (PINDAH KE ATAS DI HP): SALDO & AKSI --}}
+        <div class="col-lg-5 col-xl-4 order-1 order-lg-2">
+            
+            {{-- TOMBOL JUAL (UTAMA DI HP) --}}
+            <div class="px-2 mb-3 d-md-none">
+                <a href="{{ route('kasir.pulsa.jual.create') }}"
+                   class="btn btn-primary w-100 py-3 rounded-4 fw-bold shadow-sm animate__animated animate__pulse animate__infinite">
+                    <i class="fas fa-mobile-screen me-2"></i>JUAL PULSA SEKARANG
+                </a>
+            </div>
+
+            {{-- CARD SALDO PULSA (Horizontal Scroll di HP) --}}
+            <div class="mb-3">
+                <div class="px-2 d-flex justify-content-between align-items-end mb-2">
+                    <h6 class="fw-bold mb-0 text-dark small"><i class="fas fa-wallet me-2 text-success"></i>Saldo Pulsa</h6>
+                    <small class="text-muted" style="font-size: 10px;">{{ count($saldoPulsas) }} Kategori</small>
                 </div>
-
-                <div class="card-body p-0">
-                    {{-- Search Bar Modern --}}
-                    <div class="px-4 py-3 bg-light border-bottom border-top">
-                        <div class="input-group input-group-merge shadow-sm rounded-pill overflow-hidden bg-white border">
-                            <span class="input-group-text bg-white border-0">
-                                <i class="fas fa-search text-muted"></i>
-                            </span>
-                            <input type="text" id="searchInputHarga" class="form-control border-0 ps-0 form-control-lg fs-6"
-                                placeholder="Cari nominal atau operator (contoh: 10000 Telkomsel)">
+                <div class="d-flex flex-nowrap overflow-auto px-2 pb-2 g-2 flex-lg-column" style="-webkit-overflow-scrolling: touch;">
+                    @forelse ($saldoPulsas as $pulsa)
+                        <div class="card border-0 shadow-sm rounded-4 me-2 mb-lg-2 flex-shrink-0 flex-lg-shrink-1" 
+                             style="min-width: 160px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                            <div class="card-body p-3 text-white">
+                                <small class="text-white-50 d-block fw-bold uppercase" style="font-size: 9px;">{{ $pulsa->jenisPulsa->nama_jenis }}</small>
+                                <div class="fw-bold fs-6">Rp {{ number_format($pulsa->saldo, 0, ',', '.') }}</div>
+                            </div>
                         </div>
-                    </div>
+                    @empty
+                        <div class="card border-0 shadow-sm rounded-4 w-100 bg-white">
+                            <div class="card-body p-3 text-center small text-muted">Saldo kosong</div>
+                        </div>
+                    @endforelse
+                </div>
+            </div>
 
-                    {{-- Tabel Daftar Harga --}}
-                    <div class="table-responsive">
-                        <table class="table align-middle mb-0 table-hover" id="hargaTable">
-                            <thead class="bg-white">
-                                <tr>
-                                    <th class="ps-4 text-uppercase fs-7 text-muted">Nominal Produk</th>
-                                    <th class="text-uppercase fs-7 text-muted">Harga Jual</th>
-                                    <th class="text-uppercase fs-7 text-muted text-center">Operator</th>
-                                    <th class="text-uppercase fs-7 text-muted text-center pe-4">Kategori</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse ($harga_pulsas as $harga)
-                                    <tr class="harga-item" data-nominal="{{ $harga->jumlah_pulsa }}"
-                                        data-operator="{{ strtolower($harga->operator ?? '-') }}">
-                                        <td class="ps-4">
-                                            <div class="d-flex align-items-center">
-                                                <div class="avatar-sm me-3 bg-soft-success text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px; background-color: #e7f7ed;">
-                                                    <i class="fas fa-phone"></i>
-                                                </div>
-                                                <span class="fw-bold text-dark">Pulsa {{ number_format($harga->jumlah_pulsa, 0, ',', '.') }}</span>
-                                            </div>
+            {{-- TOMBOL AKSI DESKTOP --}}
+            <div class="card border-0 shadow-sm mb-3 d-none d-lg-block" style="border-radius: 15px;">
+                <div class="card-body p-3">
+                    <a href="{{ route('kasir.pulsa.jual.create') }}"
+                       class="btn btn-primary w-100 py-3 rounded-pill fw-bold shadow-sm">
+                        <i class="fas fa-mobile-screen me-2"></i>JUAL PULSA SEKARANG
+                    </a>
+                </div>
+            </div>
+
+            {{-- RIWAYAT TRANSAKSI (Sembunyikan di HP jika terlalu panjang, atau gunakan ringkasan) --}}
+            <div class="card border-0 shadow-sm d-none d-lg-block" style="border-radius: 15px; overflow: hidden;">
+                <div class="card-header bg-white py-3 border-0 border-bottom">
+                    <h6 class="mb-0 fw-bold text-dark small"><i class="fas fa-history me-2 text-muted"></i>Riwayat Terakhir</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 300px;">
+                        <table class="table align-middle mb-0 table-sm">
+                            <tbody class="small">
+                                @forelse ($transaksi_pulsa as $pulsa)
+                                    <tr class="border-bottom">
+                                        <td class="ps-3 py-2">
+                                            <div class="fw-bold text-dark">Pulsa {{ number_format($pulsa->jumlah, 0, ',', '.') }}</div>
+                                            <div class="text-muted" style="font-size: 10px;">{{ $pulsa->created_at->diffForHumans() }}</div>
                                         </td>
-                                        <td>
-                                            <span class="fw-bold fs-6 text-primary">Rp {{ number_format($harga->harga, 0, ',', '.') }}</span>
-                                        </td>
-                                        <td class="text-center">
-                                            <span class="badge rounded-pill border fw-bold px-3 py-2 text-dark" style="background-color: #f8f9fa;">
-                                                {{ strtoupper($harga->operator ?? 'UMUM') }}
-                                            </span>
-                                        </td>
-                                        <td class="text-center pe-4">
-                                            <span class="badge bg-soft-info text-info rounded-pill px-3 py-2" style="background-color: #e0f7fa;">
-                                                {{ ucfirst(str_replace('_', ' ', $harga->nama_jenis)) }}
-                                            </span>
+                                        <td class="text-end pe-3">
+                                            <span class="fw-bold text-danger">Rp {{ number_format($pulsa->total, 0, ',', '.') }}</span>
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr>
-                                        <td colspan="4" class="text-center py-5">
-                                            <img src="https://illustrations.popsy.co/gray/data-report.svg" style="width: 150px;" class="mb-3 opacity-50">
-                                            <p class="text-muted fw-bold">Belum ada daftar harga pulsa.</p>
-                                        </td>
-                                    </tr>
+                                    <tr><td colspan="2" class="text-center py-4 text-muted small">Kosong</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -92,78 +90,76 @@
             </div>
         </div>
 
-        {{-- KOLOM KANAN: SALDO & AKSI --}}
-        <div class="col-lg-5 col-xl-4">
-
-            {{-- CARD SALDO PULSA --}}
-            <div class="card border-0 shadow-sm mb-4" style="border-radius: 15px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
-                <div class="card-body p-4 text-white">
-                    <div class="d-flex align-items-center mb-3">
-                        <i class="fas fa-wallet fs-4 me-2"></i>
-                        <h6 class="mb-0 fw-bold">Saldo Pulsa Tersedia</h6>
+        {{-- KOLOM KIRI: DAFTAR HARGA JUAL PULSA --}}
+        <div class="col-lg-7 col-xl-8 order-2 order-lg-1">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5 mb-lg-0">
+                <div class="card-header bg-white py-3 border-0 sticky-top shadow-sm-mobile">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0 fw-bold text-dark">
+                            <i class="fas fa-tags me-2 text-primary"></i>Cek Harga Jual
+                        </h6>
+                        <span class="badge bg-soft-primary text-primary rounded-pill" style="font-size: 10px;">{{ count($harga_pulsas) }} Produk</span>
                     </div>
-
-                    @forelse ($saldoPulsas as $pulsa)
-                        <div class="bg-white bg-opacity-25 rounded-3 p-3 mb-2 d-flex justify-content-between align-items-center border border-white border-opacity-25">
-                            <div>
-                                <small class="text-uppercase fw-bold d-block text-white-50" style="letter-spacing: 1px; font-size: 10px;">{{ $pulsa->jenisPulsa->nama_jenis }}</small>
-                                <span class="fw-bold fs-5">Rp {{ number_format($pulsa->saldo, 0, ',', '.') }}</span>
-                            </div>
-                            <div class="rounded-circle bg-white text-success d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">
-                                <i class="fas fa-check small"></i>
-                            </div>
-                        </div>
-                    @empty
-                        <p class="text-white-50 small mb-0">Belum ada saldo yang tercatat.</p>
-                    @endforelse
+                    {{-- Search Bar Sticky --}}
+                    <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden bg-light border-0 px-2 py-1">
+                        <span class="input-group-text bg-transparent border-0 pe-1">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        <input type="text" id="searchInputHarga" class="form-control border-0 bg-transparent py-2 shadow-none"
+                               placeholder="Cari: 10000 telkomsel...">
+                    </div>
                 </div>
-            </div>
 
-            {{-- TOMBOL AKSI --}}
-            <div class="card border-0 shadow-sm mb-4" style="border-radius: 15px;">
-                <div class="card-body p-3">
-                    <a href="{{ route('kasir.pulsa.jual.create') }}"
-                       class="btn btn-primary w-100 py-3 rounded-pill fw-bold shadow-sm mb-0">
-                        <i class="fas fa-mobile-screen me-2"></i>JUAL PULSA SEKARANG
-                    </a>
-                </div>
-            </div>
-
-            {{-- RIWAYAT TRANSAKSI TERAKHIR --}}
-            <div class="card border-0 shadow-sm" style="border-radius: 15px; overflow: hidden;">
-                <div class="card-header bg-white py-3 border-0 border-bottom">
-                    <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-history me-2 text-muted"></i>Riwayat Terakhir</h6>
-                </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive" style="max-height: 400px;">
-                        <table class="table align-middle mb-0 table-sm">
-                            <tbody class="small">
-                                @forelse ($transaksi_pulsa as $pulsa)
-                                    <tr class="border-bottom">
-                                        <td class="ps-3 py-3">
-                                            <div class="fw-bold text-dark">Pulsa {{ number_format($pulsa->jumlah, 0, ',', '.') }}</div>
-                                            <div class="text-muted" style="font-size: 11px;">{{ $pulsa->created_at->diffForHumans() }}</div>
-                                        </td>
-                                        <td class="text-center">
-                                            <span class="badge bg-soft-danger text-danger rounded-pill" style="font-size: 10px; background-color: #fce8e8;">
-                                                {{ strtoupper($pulsa->tipe) }}
-                                            </span>
-                                        </td>
-                                        <td class="text-end pe-3">
-                                            <span class="fw-bold text-danger">Rp {{ number_format($pulsa->total, 0, ',', '.') }}</span>
-                                        </td>
+                    {{-- DESKTOP TABLE --}}
+                    <div class="table-responsive d-none d-md-block">
+                        <table class="table align-middle mb-0 table-hover" id="hargaTable">
+                            <thead class="bg-light">
+                                <tr class="fs-7 text-muted uppercase">
+                                    <th class="ps-4">Produk</th>
+                                    <th>Harga Jual</th>
+                                    <th class="text-center">Operator</th>
+                                    <th class="text-center pe-4">Kategori</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($harga_pulsas as $harga)
+                                    <tr class="harga-item" data-nominal="{{ $harga->jumlah_pulsa }}" data-operator="{{ strtolower($harga->operator ?? '-') }}">
+                                        <td class="ps-4 fw-bold text-dark">Pulsa {{ number_format($harga->jumlah_pulsa, 0, ',', '.') }}</td>
+                                        <td class="fw-bold text-primary">Rp {{ number_format($harga->harga, 0, ',', '.') }}</td>
+                                        <td class="text-center"><span class="badge bg-light text-dark border">{{ strtoupper($harga->operator ?? 'UMUM') }}</span></td>
+                                        <td class="text-center pe-4"><span class="badge bg-soft-info text-info rounded-pill">{{ ucfirst($harga->nama_jenis) }}</span></td>
                                     </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="3" class="text-center py-4 text-muted small">Belum ada transaksi.</td>
-                                    </tr>
-                                @endforelse
+                                @endforeach
                             </tbody>
                         </table>
                     </div>
-                </div>
-                <div class="card-footer bg-light border-0 py-2 text-center">
-                    <a href="#" class="text-decoration-none small fw-bold">Lihat Semua Riwayat</a>
+
+                    {{-- MOBILE LIST VIEW --}}
+                    <div class="d-md-none" id="mobileHargaList">
+                        @forelse ($harga_pulsas as $harga)
+                            <div class="harga-item p-3 border-bottom d-flex justify-content-between align-items-center" 
+                                 data-nominal="{{ $harga->jumlah_pulsa }}" 
+                                 data-operator="{{ strtolower($harga->operator ?? '-') }}">
+                                <div>
+                                    <div class="d-flex align-items-center mb-1">
+                                        <span class="fw-bold text-dark me-2">Pulsa {{ number_format($harga->jumlah_pulsa, 0, ',', '.') }}</span>
+                                        <span class="badge bg-light text-dark border" style="font-size: 9px;">{{ strtoupper($harga->operator ?? 'UMUM') }}</span>
+                                    </div>
+                                    <small class="text-muted">{{ ucfirst($harga->nama_jenis) }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <div class="fw-bold text-primary fs-5">Rp {{ number_format($harga->harga, 0, ',', '.') }}</div>
+                                    <small class="text-success fw-bold" style="font-size: 9px;">Aktif <i class="fas fa-check-circle"></i></small>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-center py-5">
+                                <img src="https://illustrations.popsy.co/gray/data-report.svg" style="width: 100px;" class="mb-3 opacity-50">
+                                <p class="text-muted small">Daftar harga belum ada.</p>
+                            </div>
+                        @endforelse
+                    </div>
                 </div>
             </div>
         </div>
@@ -171,26 +167,42 @@
 </div>
 
 <style>
-    .fs-7 { font-size: 0.7rem; letter-spacing: 0.05em; font-weight: 800; }
+    .fs-7 { font-size: 0.65rem; letter-spacing: 0.05em; }
     .bg-soft-primary { background-color: #e7f1ff; }
     .bg-soft-info { background-color: #e0f7fa; }
-    .bg-soft-success { background-color: #e7f7ed; }
-    .bg-soft-danger { background-color: #fce8e8; }
-    .table thead th { border-top: none; }
-    .harga-item { transition: all 0.2s; }
-    .harga-item:hover { background-color: #f8f9fa; }
+    .uppercase { text-transform: uppercase; letter-spacing: 1px; }
+    
+    /* Mobile Optimization */
+    @media (max-width: 991px) {
+        .shadow-sm-mobile { box-shadow: 0 .125rem .25rem rgba(0,0,0,.075)!important; }
+        .rounded-4 { border-radius: 1.2rem !important; }
+        .sticky-top { top: 0; z-index: 1020; }
+    }
+
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    .overflow-auto::-webkit-scrollbar { display: none; }
+    .overflow-auto { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    .harga-item:active { background-color: #f0f0f0; }
 </style>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('searchInputHarga');
-        const rows = document.querySelectorAll('.harga-item');
+        const items = document.querySelectorAll('.harga-item');
 
         searchInput.addEventListener('input', function() {
             const term = this.value.toLowerCase().trim();
-            rows.forEach(row => {
-                const text = (row.dataset.nominal + ' ' + row.dataset.operator).toLowerCase();
-                row.style.display = text.includes(term) ? '' : 'none';
+            items.forEach(item => {
+                const text = (item.dataset.nominal + ' ' + item.dataset.operator).toLowerCase();
+                if(text.includes(term)) {
+                    item.classList.remove('d-none');
+                    // Handle table row vs div display
+                    if(item.tagName === 'TR') item.style.display = '';
+                } else {
+                    item.classList.add('d-none');
+                    if(item.tagName === 'TR') item.style.display = 'none';
+                }
             });
         });
     });
