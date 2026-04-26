@@ -124,8 +124,53 @@
 
 <body>
 
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel">
+        <div class="offcanvas-header bg-primary text-white">
+            <h5 class="offcanvas-title" id="sidebarMenuLabel">Menu Utama</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body p-0">
+            <div class="list-group list-group-flush">
+                <div class="list-group-item bg-light small fw-bold text-muted">OPERASIONAL</div>
+                <a href="{{ url('kasir/pulsa') }}" class="list-group-item list-group-item-action border-0 py-3">
+                    <i class="fas fa-signal me-3 text-primary"></i> Pulsa & PPOB
+                </a>
+                <a href="{{ url('/kasir/member') }}" class="list-group-item list-group-item-action border-0 py-3">
+                    <i class="fas fa-address-card me-3 text-primary"></i> Manajemen Member
+                </a>
+
+                <div class="list-group-item bg-light small fw-bold text-muted">LOGISTIK & STOK</div>
+                <a href="{{ url('/kasir/stok-barang/barang-masuk') }}"
+                    class="list-group-item list-group-item-action border-0 py-3">
+                    <i class="fas fa-file-import me-3 text-success"></i> Input Barang Masuk
+                </a>
+                <a href="{{ url('/kasir/hutangBarangamMasuk') }}"
+                    class="list-group-item list-group-item-action border-0 py-3">
+                    <i class="fas fa-file-invoice me-3 text-success"></i> Hutang ke Supplier
+                </a>
+                <a href="{{ route('kasir.mutasibarang.index') }}"
+                    class="list-group-item list-group-item-action border-0 py-3">
+                    <i class="fas fa-right-left me-3 text-success"></i> Mutasi Barang
+                </a>
+
+                <div class="list-group-item bg-light small fw-bold text-muted">LAPORAN</div>
+                <a href="{{ url('/kasir/riwayat-transaksi') }}"
+                    class="list-group-item list-group-item-action border-0 py-3">
+                    <i class="fas fa-clock-rotate-left me-3 text-warning"></i> Riwayat Transaksi
+                </a>
+                <a href="{{ route('kasir.laporan-kas.index') }}"
+                    class="list-group-item list-group-item-action border-0 py-3">
+                    <i class="fas fa-file-invoice-dollar me-3 text-warning"></i> Laporan & Arus Kas
+                </a>
+            </div>
+        </div>
+    </div>
+
     <nav class="navbar navbar-expand navbar-light bg-light fixed-top headbar">
         <div class="container-fluid">
+            <button class="btn border-0 me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu">
+                <i class="fas fa-bars fs-4 text-primary"></i>
+            </button>
             <a class="navbar-brand d-flex align-items-center" href="{{ url('/dashboard') }}">
                 <i class="fas fa-store me-2 text-primary"></i>
                 @php
@@ -180,142 +225,51 @@
         @yield('content')
     </div>
 
-    <nav class="navbar fixed-bottom bottom-sidebar" x-data="{
-        canScrollLeft: false,
-        canScrollRight: true,
-        updateArrows() {
-            const el = this.$refs.container;
-            this.canScrollLeft = el.scrollLeft > 10;
-            this.canScrollRight = el.scrollLeft < (el.scrollWidth - el.clientWidth - 10);
-        },
-        scroll(direction) {
-            const amount = 250;
-            this.$refs.container.scrollBy({ left: direction === 'next' ? amount : -amount, behavior: 'smooth' });
-        }
-    }" x-init="setTimeout(() => updateArrows(), 500)"
-        @resize.window="updateArrows()">
+    <nav class="navbar fixed-bottom bottom-sidebar" x-data="{ 
+    /* Logic scroll dihapus karena 4 menu pasti muat di layar */ 
+}">
+    <div class="container-fluid p-0 h-100">
+        <ul class="list-unstyled mb-0 d-flex w-100 h-100 align-items-center justify-content-around">
 
-        <div class="container-fluid p-0 h-100 position-relative">
+            {{-- 1. KASIR --}}
+            <li class="nav-item flex-fill">
+                <a href="{{ url('kasir') }}" class="nav-link @if (Request::is('kasir')) active @endif">
+                    <i class="fas fa-calculator"></i>
+                    <span>Kasir</span>
+                </a>
+            </li>
 
-            <button x-show="canScrollLeft" x-transition @click="scroll('prev')" class="scroll-btn start-0 border-end">
-                <i class="fas fa-chevron-left text-primary"></i>
-            </button>
+            {{-- 2. STOK --}}
+            <li class="nav-item flex-fill">
+                <a href="{{ url('/kasir/stok-barang') }}" class="nav-link @if (Request::is('kasir/stok-barang*')) active @endif">
+                    <i class="fas fa-cubes"></i>
+                    <span>Stok</span>
+                </a>
+            </li>
 
-            <ul class="nav-scroll-container w-100 list-unstyled mb-0" x-ref="container"
-                @scroll.debounce.50ms="updateArrows()">
+            {{-- 3. HUTANG --}}
+            <li class="nav-item flex-fill">
+                <a href="{{ url('/kasir/hutang') }}" class="nav-link @if (Request::is('kasir/hutang*')) active @endif">
+                    <i class="fas fa-hand-holding-dollar"></i>
+                    <span>Hutang</span>
+                </a>
+            </li>
 
-                <li class="nav-item">
-                    <a href="{{ url('kasir') }}" class="nav-link @if (Request::is('kasir')) active @endif">
-                        <i class="fas fa-calculator"></i>
-                        <span>Kasir</span>
-                    </a>
-                </li>
+            {{-- 4. LAPORAN --}}
+            <li class="nav-item flex-fill">
+                <a href="{{ route('kasir.laporan-kas.index') }}" class="nav-link @if (Request::is('kasir/laporan-kas*') || Request::is('kasir/kas*')) active @endif">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    <span>Laporan</span>
+                </a>
+            </li>
 
-                <li class="nav-item">
-                    <a href="{{ url('/kasir/member') }}"
-                        class="nav-link @if (Request::is('kasir/member*')) active @endif">
-                        <i class="fas fa-address-card"></i>
-                        <span>Member</span>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a href="{{ url('/kasir/stok-barang') }}"
-                        class="nav-link @if (Request::is('kasir/stok-barang')) active @endif">
-                        <i class="fas fa-cubes"></i>
-                        <span>Stok Barang</span>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a href="{{ url('/kasir/stok-barang/barang-masuk') }}"
-                        class="nav-link @if (Request::is('kasir/stok-barang/barang-masuk')) active @endif">
-                        <i class="fas fa-file-import"></i>
-                        <span>Barang Masuk</span>
-                    </a>
-                </li>
-
-                {{-- <li class="nav-item">
-                    <a href="{{ route('kasir.rencanabelanja.index') }}"
-                        class="nav-link @if (Request::is('*rencana-belanja*')) active @endif">
-                        <i class="fas fa-clipboard-list"></i>
-                        <span>Rencana Belanja</span>
-                    </a>
-                </li> --}}
-
-                <li class="nav-item">
-                    <a href="{{ url('kasir/pulsa') }}"
-                        class="nav-link @if (Request::is('kasir/pulsa*')) active @endif">
-                        <i class="fas fa-signal"></i>
-                        <span>Pulsa</span>
-                    </a>
-                </li>
-
-                @auth
-                    <li class="nav-item">
-                        <a href="{{ url('/kasir/kas') }}" class="nav-link @if (Request::is('kasir/kas*')) active @endif">
-                            <i class="fas fa-vault"></i>
-                            <span>Kas Warung</span>
-                        </a>
-                    </li>
-                @endauth
-
-                <li class="nav-item">
-                    <a href="{{ url('/kasir/hutang') }}"
-                        class="nav-link @if (Request::is('kasir/hutang')) active @endif">
-                        <i class="fas fa-hand-holding-dollar"></i>
-                        <span>Hutang Pelanggan</span>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a href="{{ url('/kasir/hutangBarangamMasuk') }}"
-                        class="nav-link @if (Request::is('kasir/hutangBarangamMasuk*')) active @endif">
-                        <i class="fas fa-file-invoice"></i>
-                        <span>Hutang Barang Masuk</span>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a href="{{ url('/kasir/riwayat-transaksi') }}"
-                        class="nav-link @if (Request::is('kasir/riwayat-transaksi*')) active @endif">
-                        <i class="fas fa-clock-rotate-left"></i>
-                        <span>Riwayat Transaksi</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ url('/kasir/riwayat-barang-masuk') }}"
-                        class="nav-link @if (Request::is('kasir/riwayat-barang-masuk*')) active @endif">
-                        <i class="fas fa-clock-rotate-left"></i>
-                        <span>Riwayat Transaksi Barang Masuk</span>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a href="{{ route('kasir.laporan-kas.index') }}"
-                        class="nav-link @if (Request::is('kasir/laporan-kas*')) active @endif">
-                        <i class="fas fa-file-invoice-dollar"></i>
-                        <span>Laporan Kas</span>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a href="{{ route('kasir.mutasibarang.index') }}"
-                        class="nav-link @if (Request::is('kasir/mutasibarang*')) active @endif">
-                        <i class="fas fa-right-left"></i>
-                        <span>Mutasi Barang</span>
-                    </a>
-                </li>
-            </ul>
-
-            <button x-show="canScrollRight" x-transition @click="scroll('next')"
-                class="scroll-btn end-0 border-start">
-                <i class="fas fa-chevron-right text-primary"></i>
-            </button>
-        </div>
-    </nav>
+        </ul>
+    </div>
+</nav>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
+
 
 </html>
