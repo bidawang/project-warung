@@ -64,7 +64,7 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <span class="fw-bold fs-6 text-primary">Rp {{ number_format($harga->harga, 0, ',', '.') }}</span>
+                                            <span class="fw-bold fs-6 text-primary">Rp {{ number_format($harga->harga_jual, 0, ',', '.') }}</span>
                                         </td>
                                         <td class="text-center">
                                             <span class="badge rounded-pill border fw-bold px-3 py-2 text-dark" style="background-color: #f8f9fa;">

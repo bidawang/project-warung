@@ -89,13 +89,23 @@
                         {{-- Ganti bagian Input Harga Jual dan tambahkan Harga Hutang --}}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
                             <div>
-                                <label for="harga" class="block text-sm font-medium text-gray-700 mb-2">Harga Jual
-                                    Tunai</label>
-                                <input type="number" name="harga" id="harga"
-                                    value="{{ old('harga', $hargaPulsa->harga) }}"
+                                <label for="harga_alomogada" class="block text-sm font-medium text-gray-700 mb-2">Harga Alomogada</label>
+                                <input type="number" name="harga_alomogada" id="harga_alomogada"
+                                    value="{{ old('harga_alomogada', $hargaPulsa->harga_alomogada) }}"
                                     class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:ring-2 focus:ring-blue-500 @error('harga') border-red-500 @enderror"
                                     required>
-                                @error('harga')
+                                @error('harga_alomogada')
+                                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label for="harga_jual" class="block text-sm font-medium text-gray-700 mb-2">Harga Jual
+                                    Tunai</label>
+                                <input type="number" name="harga_jual" id="harga_jual"
+                                    value="{{ old('harga_jual', $hargaPulsa->harga_jual) }}"
+                                    class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:ring-2 focus:ring-blue-500 @error('harga_jual') border-red-500 @enderror"
+                                    required>
+                                @error('harga_jual')
                                     <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>

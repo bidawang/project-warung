@@ -104,30 +104,44 @@
 
                         {{-- Input Jumlah Pulsa --}}
                         <div class="mb-5">
-                            <label for="jumlah_pulsa" class="block text-sm font-medium text-gray-700 mb-2">Jumlah Pulsa
-                                (contoh: 10000)</label>
+                            <label for="jumlah_pulsa" class="block text-sm font-medium text-gray-700 mb-2">Jumlah
+                                Pulsa</label>
                             <input type="number" name="jumlah_pulsa" id="jumlah_pulsa" value="{{ old('jumlah_pulsa') }}"
-                                class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 @error('jumlah_pulsa') border-red-500 @enderror"
-                                placeholder="Masukkan nominal pulsa (tanpa titik atau koma)" required min="1">
+                                class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:ring-2 focus:ring-blue-500 @error('jumlah_pulsa') border-red-500 @enderror"
+                                placeholder="Contoh: 10000" required min="1">
                             @error('jumlah_pulsa')
                                 <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
 
-                        {{-- Input Harga Jual --}}
-                        {{-- Ganti bagian Input Harga Jual dan tambahkan Harga Hutang --}}
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                        {{-- Baris Harga (3 Kolom) --}}
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+                            {{-- Harga Alomogada --}}
                             <div>
-                                <label for="harga" class="block text-sm font-medium text-gray-700 mb-2">Harga Jual
-                                    Tunai</label>
-                                <input type="number" name="harga" id="harga" value="{{ old('harga') }}"
-                                    class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:ring-2 focus:ring-blue-500 @error('harga') border-red-500 @enderror"
-                                    placeholder="Contoh: 12000" required>
-                                @error('harga')
+                                <label for="harga_alomogada" class="block text-sm font-medium text-gray-700 mb-2">Harga
+                                    Alomogada</label>
+                                <input type="number" name="harga_alomogada" id="harga_alomogada"
+                                    value="{{ old('harga_alomogada') }}"
+                                    class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:ring-2 focus:ring-blue-500 @error('harga_alomogada') border-red-500 @enderror"
+                                    placeholder="Harga Modal" required>
+                                @error('harga_alomogada')
                                     <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
 
+                            {{-- Harga Jual Tunai --}}
+                            <div>
+                                <label for="harga_jual" class="block text-sm font-medium text-gray-700 mb-2">Harga Jual
+                                    Tunai</label>
+                                <input type="number" name="harga_jual" id="harga_jual" value="{{ old('harga_jual') }}"
+                                    class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:ring-2 focus:ring-blue-500 @error('harga_jual') border-red-500 @enderror"
+                                    placeholder="Contoh: 12000" required>
+                                @error('harga_jual')
+                                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            {{-- Harga Hutang --}}
                             <div>
                                 <label for="harga_hutang" class="block text-sm font-medium text-gray-700 mb-2">Harga Jual
                                     Hutang</label>

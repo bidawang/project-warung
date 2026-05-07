@@ -201,7 +201,7 @@ class PulsaControllerKasir extends Controller
 
         // 1. Validasi Input
         $rules = [
-            'nomor_hp' => 'required|string|min:10|max:15',
+            'nomor_hp' => 'required|string|max:15',
             'harga_pulsa_id' => 'required|exists:harga_pulsa,id',
             'jenis_pembayaran' => 'required|in:penjualan pulsa,hutang pulsa',
             'bayar' => 'required_if:jenis_pembayaran,penjualan pulsa|numeric|min:0',
@@ -215,7 +215,7 @@ class PulsaControllerKasir extends Controller
 
         // 2. Ambil harga pulsa & jenis pulsa
         $hargaPulsa     = HargaPulsa::findOrFail($request->harga_pulsa_id);
-        $hargaJual      = $hargaPulsa->harga;
+        $hargaJual      = $hargaPulsa->harga_jual;
         $nominalPulsa   = $hargaPulsa->jumlah_pulsa;
         $jenisPulsaId   = $hargaPulsa->jenis_pulsa_id;
         $jenisPembayaran = $request->jenis_pembayaran;
@@ -247,7 +247,7 @@ class PulsaControllerKasir extends Controller
             $kasWarung = KasWarung::where('id_warung', $idWarung)
                 ->where('jenis_kas', 'cash')
                 ->firstOrFail();
-
+dd($request->all(), $hargaPulsa->toArray(), $pulsaWarung->toArray(), $kasWarung->toArray());
             // 6. Catat hutang jika jenis pembayaran hutang pulsa
             $hutang = null;
             if ($jenisPembayaran === 'hutang pulsa') {
@@ -262,7 +262,7 @@ class PulsaControllerKasir extends Controller
                         . ' ke ' . $request->nomor_hp,
                 ]);
             }
-
+dd($request->all(), $hargaPulsa->toArray(), $pulsaWarung->toArray(), $kasWarung->toArray());
             // 7. Catat transaksi kas
             $transaksiKas = TransaksiKas::create([
                 'id_kas_warung'     => $kasWarung->id,
@@ -283,7 +283,7 @@ class PulsaControllerKasir extends Controller
             $kembalian  = $jenisPembayaran === 'penjualan pulsa'
                 ? ($uangBayar - $hargaJual)
                 : 0;
-
+dd($profit, $uangBayar, $kembalian);
             // 10. Simpan ke tabel transaksi_pulsa
             $tipeTransaksiPulsa = $jenisPembayaran === 'hutang pulsa'
                 ? 'hutang_pulsa'
@@ -300,7 +300,7 @@ class PulsaControllerKasir extends Controller
                 'tipe'               => $tipeTransaksiPulsa,
                 'id_hutang'          => $hutang ? $hutang->id : null,
             ]);
-
+dd($request->all(), $hargaPulsa->toArray(), $pulsaWarung->toArray(), $kasWarung->toArray());
             // 11. Tambah saldo kas hanya jika tunai
             if ($jenisPembayaran === 'penjualan pulsa') {
                 $kasWarung->increment('saldo', $hargaJual);

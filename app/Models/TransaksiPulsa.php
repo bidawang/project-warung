@@ -9,7 +9,7 @@ class TransaksiPulsa extends Model
 {
     use HasFactory;
     protected $table = 'transaksi_pulsa';
-    protected $fillable = ['id_pulsa', 'id_kas_warung', 'jumlah', 'jenis_pembayran', 'total', 'jenis', 'tipe'];
+    protected $fillable = ['id_pulsa', 'id_kas_warung', 'jumlah', 'jenis_pembayran', 'total', 'jenis', 'tipe', 'laba_pulsa', 'laba_owner','laba_warung'];
 
 
     public function hutang()

@@ -75,7 +75,8 @@
                                     Rp{{ number_format($hargaPulsa->jumlah_pulsa, 0, ',', '.') }}
                                 </td>
                                 <td class="px-5 py-4">
-                                    <small>Harga Tunai:</small> Rp{{ number_format($hargaPulsa->harga, 0, ',', '.') }}<br>
+                                    <small>Harga di Alomogada:</small> Rp{{ number_format($hargaPulsa->harga_alomogada, 0, ',', '.') }}<br>
+                                    <small>Harga Tunai:</small> Rp{{ number_format($hargaPulsa->harga_jual, 0, ',', '.') }}<br>
                                     <small>Harga Hutang:</small> Rp{{ number_format($hargaPulsa->harga_hutang, 0, ',', '.') }}
                                 </td>
                                 <td class="px-5 py-4">
