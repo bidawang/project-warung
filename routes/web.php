@@ -57,7 +57,8 @@ use App\Http\Controllers\Admin\{
     OperasionalControllerAdmin,
     WarungControllerAdmin,
     PengeluaranPokokWarungControllerAdmin,
-    AssetControllerAdmin
+    AssetControllerAdmin,
+    TransaksiKasControllerAdmin,
 };
 
 use App\Http\Controllers\Kasir\{
@@ -202,6 +203,8 @@ Route::prefix('/admin')->name('admin.')->group(function () {
     //Satuan
     Route::resource('satuan-barang', SatuanBarangControllerAdmin::class)->except(['create', 'edit', 'update']);
     Route::resource('satuan', SatuanControllerAdmin::class)->except(['create', 'edit', 'show']);
+
+    Route::resource('transaksikas', TransaksiKasControllerAdmin::class)->only(['store']);
 });
 // Route::resource('transaksibarang', TransaksiBarangController::class);
 

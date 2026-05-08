@@ -15,6 +15,11 @@ use Carbon\Carbon;
 use App\Models\PengeluaranPokokWarung;
 use App\Models\TransaksiKas;
 use App\Models\HutangWarung;
+use App\Models\BarangKeluar;
+use App\Models\Asset;
+use App\Models\Hutang;
+use App\Models\DetailKasWarung;
+
 
 class WarungControllerAdmin extends Controller
 {
@@ -106,273 +111,413 @@ class WarungControllerAdmin extends Controller
 
     public function show(Request $request, $id)
     {
-        // 1. Ambil Data Warung
-        if (Auth::user()->role === 'admin') {
-            $warung = Warung::with(['user', 'area'])->findOrFail($id);
-        } else {
-            $warung = Warung::with(['user', 'area'])
-                ->where('id_user', Auth::id())
-                ->findOrFail($id);
+        // ==================================================
+        // FILTER PERIODE
+        // ==================================================
+        $periode = $request->periode
+            ? Carbon::parse($request->periode)
+            : now();
+
+        $bulan = $periode->month;
+        $tahun = $periode->year;
+
+        // ==================================================
+        // 1. AMBIL WARUNG
+        // ==================================================
+        $warungQuery = Warung::with(['user', 'area', 'kasWarung']);
+
+        if (Auth::user()->role !== 'admin') {
+            $warungQuery->where('id_user', Auth::id());
         }
 
-        // 2. Ambil Semua Barang + relasi
-        $allBarang = Barang::with(['transaksiBarang' => function ($q) {
-            $q->latest()->with('areaPembelian');
-        }])->get();
+        $warung = $warungQuery->findOrFail($id);
 
-        $stokWarung = $warung->stokWarung()->with(['barang', 'kuantitas'])->get();
+        // ==================================================
+        // 2. AMBIL DATA DASAR
+        // ==================================================
+        $allBarang = Barang::with([
+            'transaksiBarang' => function ($q) {
+                $q->latest()->with('areaPembelian');
+            }
+        ])->get();
+
+        $stokWarung = $warung->stokWarung()
+            ->with(['barang', 'kuantitas'])
+            ->get();
+
         $stokByBarangId = $stokWarung->keyBy('id_barang');
 
-        // 3. Mapping Barang + Stok + Harga + Inflasi
-        $barangWithStok = $allBarang->map(function ($barang) use ($stokByBarangId, $warung) {
+        // ==================================================
+        // 3. PRELOAD SEMUA HARGA JUAL
+        // ==================================================
+        $allHargaJual = HargaJual::where('id_warung', $warung->id)
+            ->where(
+                fn($q) =>
+                $q->whereNull('periode_awal')
+                    ->orWhere('periode_awal', '<=', now())
+            )
+            ->where(
+                fn($q) =>
+                $q->whereNull('periode_akhir')
+                    ->orWhere('periode_akhir', '>=', now())
+            )
+            ->latest('id')
+            ->get()
+            ->groupBy('id_barang');
+
+        // ==================================================
+        // 4. MAPPING BARANG
+        // ==================================================
+        $barangWithStok = $allBarang->map(function ($barang) use (
+            $stokByBarangId,
+            $allHargaJual
+        ) {
 
             $stok = $stokByBarangId->get($barang->id);
 
-            $hargaJual = HargaJual::where('id_warung', $warung->id)
-                ->where('id_barang', $barang->id)
-                ->where(fn($q) => $q->whereNull('periode_awal')->orWhere('periode_awal', '<=', now()))
-                ->where(fn($q) => $q->whereNull('periode_akhir')->orWhere('periode_akhir', '>=', now()))
-                ->latest('id')
-                ->first();
+            // ==============================================
+            // HARGA
+            // ==============================================
+            $hargaList = $allHargaJual->get($barang->id, collect());
 
-            $barang->persentase_laba = $hargaJual ? $hargaJual->persentase_laba : 'N/A';
+            $hargaJual = $hargaList->first();
 
-            // =========================
-            // HITUNG INFLASI LABA
-            // =========================
+            $hargaSebelumnya = $hargaList->skip(1)->first();
+
+            $riwayatHarga = $hargaList
+                ->take(3)
+                ->reverse()
+                ->values();
+
+            // ==============================================
+            // INFLASI LABA
+            // ==============================================
             $inflasiLaba = 0;
 
-            if ($hargaJual) {
-                $hargaSebelumnya = HargaJual::where('id_warung', $warung->id)
-                    ->where('id_barang', $barang->id)
-                    ->where('id', '<', $hargaJual->id)
-                    ->latest('id')
-                    ->first();
+            if ($hargaJual && $hargaSebelumnya) {
 
-                if ($hargaSebelumnya) {
-                    $marginNow = $hargaJual->harga_modal > 0
-                        ? (($hargaJual->harga_jual_range_akhir - $hargaJual->harga_modal) / $hargaJual->harga_modal) * 100
-                        : 0;
+                $marginNow = $hargaJual->harga_modal > 0
+                    ? (
+                        ($hargaJual->harga_jual_range_akhir - $hargaJual->harga_modal)
+                        / $hargaJual->harga_modal
+                    ) * 100
+                    : 0;
 
-                    $marginOld = $hargaSebelumnya->harga_modal > 0
-                        ? (($hargaSebelumnya->harga_jual_range_akhir - $hargaSebelumnya->harga_modal) / $hargaSebelumnya->harga_modal) * 100
-                        : 0;
+                $marginOld = $hargaSebelumnya->harga_modal > 0
+                    ? (
+                        ($hargaSebelumnya->harga_jual_range_akhir - $hargaSebelumnya->harga_modal)
+                        / $hargaSebelumnya->harga_modal
+                    ) * 100
+                    : 0;
 
-                    $inflasiLaba = $marginNow - $marginOld;
-                }
+                $inflasiLaba = $marginNow - $marginOld;
             }
+
+            // ==============================================
+            // SORT KEY
+            // ==============================================
+            $persentaseLabaSortKey = ($hargaJual && $hargaJual->harga_modal > 0)
+                ? (
+                    ($hargaJual->harga_jual_range_awal - $hargaJual->harga_modal)
+                    / $hargaJual->harga_modal
+                ) * 100
+                : 999999;
+
+            // ==============================================
+            // STOK
+            // ==============================================
+            $stokSaatIni = $stok->jumlah ?? 0;
+
+            $tanggalKadaluarsa =
+                $stok->tanggal_kadaluarsa
+                ?? optional($barang->transaksiBarang->first())->tanggal_kadaluarsa;
+
+            // ==============================================
+            // ASSIGN
+            // ==============================================
+            $barang->stok_saat_ini = $stokSaatIni;
+
+            $barang->kuantitas = $stok->kuantitas ?? collect();
+
+            $barang->keterangan = $stok->keterangan ?? '-';
+
+            $barang->tanggal_kadaluarsa = $tanggalKadaluarsa;
+
+            $barang->id_stok_warung = $stok->id ?? null;
+
+            $barang->harga_satuan = $hargaJual->harga_modal ?? 0;
+
+            $barang->harga_jual = $hargaJual->harga_jual_range_akhir ?? 0;
+
+            $barang->harga_jual_range_awal =
+                $hargaJual->harga_jual_range_awal ?? 0;
+
+            $barang->harga_jual_range_akhir =
+                $hargaJual->harga_jual_range_akhir ?? 0;
+
+            $barang->persentase_laba = (float) (
+                $hargaJual->persentase_laba ?? 0
+            );
 
             $barang->inflasi_laba = $inflasiLaba;
 
-            // Sorting
-            $barang->persentase_laba_sort_key = ($hargaJual && $hargaJual->harga_modal > 0)
-                ? (($hargaJual->harga_jual_range_awal - $hargaJual->harga_modal) / $hargaJual->harga_modal) * 100
-                : 999999;
-
-            // =========================
-            // AMBIL RIWAYAT HARGA (MAX 3)
-            // =========================
-            $riwayatHarga = HargaJual::where('id_warung', $warung->id)
-                ->where('id_barang', $barang->id)
-                ->latest('id')
-                ->take(3)
-                ->get()
-                ->reverse(); // biar urut lama → baru
+            $barang->persentase_laba_sort_key =
+                $persentaseLabaSortKey;
 
             $barang->riwayat_harga = $riwayatHarga;
 
-            // =========================
-            // DATA STOK
-            // =========================
-            if ($stok) {
-                $barang->stok_saat_ini = $stok->jumlah ?? 0;
-                $barang->kuantitas = $stok->kuantitas ?? collect();
-                $barang->keterangan = $stok->keterangan ?? '-';
-                $barang->tanggal_kadaluarsa =
-                    $stok->tanggal_kadaluarsa ??
-                    optional($barang->transaksiBarang->first())->tanggal_kadaluarsa;
-                $barang->id_stok_warung = $stok->id;
-            } else {
-                $barang->stok_saat_ini = 0;
-                $barang->kuantitas = collect();
-                $barang->keterangan = '-';
-                $barang->tanggal_kadaluarsa = optional($barang->transaksiBarang->first())->tanggal_kadaluarsa;
-                $barang->id_stok_warung = null;
-            }
-
-            // =========================
-            // DATA HARGA
-            // =========================
-            $barang->harga_satuan = $hargaJual->harga_modal ?? 0;
-            $barang->harga_jual = $hargaJual->harga_jual_range_akhir ?? 0;
-
-            // TAMBAHKAN INI
-            $barang->harga_jual_range_awal = $hargaJual->harga_jual_range_awal ?? 0;
-            $barang->harga_jual_range_akhir = $hargaJual->harga_jual_range_akhir ?? 0;
-
             return $barang;
-        })->sortBy('persentase_laba_sort_key')->values();
+        })
+            ->sortBy('persentase_laba_sort_key')
+            ->values();
 
-        // =========================
-        // 4. HITUNG LABA (OPTIMIZED)
-        // =========================
-        $queryLaba = \App\Models\BarangKeluar::whereHas('stokWarung', function ($q) use ($warung) {
+        // ==================================================
+        // 5. QUERY LABA (FILTER PERIODE)
+        // ==================================================
+        $queryLaba = BarangKeluar::whereHas('stokWarung', function ($q) use ($warung) {
             $q->where('id_warung', $warung->id);
         })
-            ->where('jenis', 'penjualan barang')
-            ->with(['stokWarung.barang', 'stokWarung.hargaJual']);
+            ->whereIn('jenis', [
+                'penjualan barang',
+                'hutang barang'
+            ])
+            ->whereMonth('created_at', $bulan)
+            ->whereYear('created_at', $tahun)
+            ->with([
+                'stokWarung.barang',
+                'stokWarung.hargaJual'
+            ]);
 
-        // 👉 ambil semua untuk summary (bukan paginate!)
         $allLaba = (clone $queryLaba)->get();
-        // dd($allLaba);
-        $labaKotor = $allLaba->sum(
-            fn($item) =>
-            $item->harga_jual
-        );
-        // dd($labaKotor);
-        $labaBersih = $allLaba->sum(
-            fn($item) =>
-            $item->laba_bersih
-        );
-        // dd($labaBersih);
+
+        // ==================================================
+        // 6. CASH
+        // ==================================================
+        $labaCash = $allLaba->where('jenis', 'penjualan barang');
+
+        $totalPenjualanCash = $labaCash->sum('harga_jual');
+
+        $totalLabaCash = $labaCash->sum('laba_bersih');
+
+        $totalModalCash = $totalPenjualanCash - $totalLabaCash;
+
+        // ==================================================
+        // 7. HUTANG
+        // ==================================================
+        $labaHutang = $allLaba->where('jenis', 'hutang barang');
+
+        $totalPenjualanHutang = $labaHutang->sum('harga_jual');
+
+        $totalLabaHutang = $labaHutang->sum('laba_bersih');
+
+        $totalModalHutang = $totalPenjualanHutang - $totalLabaHutang;
+
+        // ==================================================
+        // 8. TOTAL
+        // ==================================================
+        $labaKotor = $totalPenjualanCash + $totalPenjualanHutang;
+
+        $labaBersih = $totalLabaCash + $totalLabaHutang;
+
         $totalModal = $labaKotor - $labaBersih;
 
-        // 👉 history (paginate untuk infinite scroll)
-        $historyLaba = (clone $queryLaba)
-            ->latest()
-            ->paginate(10);
+        $margin = $totalPenjualanCash > 0
+            ? ($totalLabaCash / $totalPenjualanCash) * 100
+            : 0;
 
-        if ($request->ajax()) {
-            return view('admin.laporanlaba._item_history', compact('historyLaba'))->render();
-        }
-
-
-        $totalModal = $labaKotor - $labaBersih;
-
-        // =========================
-        // 5. ASSET
-        // =========================
-        $assets = \App\Models\Asset::with('pelunasan')
+        // ==================================================
+        // 9. ASSET
+        // ==================================================
+        $assets = Asset::with('pelunasan')
             ->where('id_warung', $warung->id)
             ->latest()
             ->get()
             ->map(function ($asset) {
-                $asset->volume_pelunasan = $asset->pelunasan->count();
+
+                $asset->volume_pelunasan =
+                    $asset->pelunasan->count();
+
                 return $asset;
             });
 
-        // =========================
-        // 6. PENGELUARAN BULAN INI
-        // =========================
-        $now = now();
-
-        $pengeluaranPokokBulanIni = \App\Models\PengeluaranPokokWarung::where('id_warung', $warung->id)
-            ->whereMonth('date', $now->month)
-            ->whereYear('date', $now->year)
+        // ==================================================
+        // 10. PENGELUARAN BULAN INI
+        // ==================================================
+        $pengeluaranPokokBulanIni =
+            PengeluaranPokokWarung::where('id_warung', $warung->id)
+            ->whereMonth('date', $bulan)
+            ->whereYear('date', $tahun)
             ->latest()
             ->get();
 
-        $totalPengeluaranPokok = $pengeluaranPokokBulanIni->sum('jumlah');
-        // dd($labaBersih, $labaKotor, $totalModal);
+        $totalPengeluaranPokok =
+            $pengeluaranPokokBulanIni->sum('jumlah');
 
-        // =========================
-        // 7. HUTANG PELANGGAN (30 USER TERAKHIR - PER WARUNG)
-        // =========================
-        $queryHutang = \App\Models\Hutang::with(['user'])
+        // ==================================================
+        // 11. HUTANG PELANGGAN
+        // ==================================================
+        $hutangList = Hutang::with(['user'])
             ->where('id_warung', $warung->id)
-
+            ->whereMonth('created_at', $bulan)
+            ->whereYear('created_at', $tahun)
             ->select('id_user')
             ->selectRaw('SUM(jumlah_hutang_awal) as total_awal')
             ->selectRaw('SUM(jumlah_sisa_hutang) as total_sisa')
             ->selectRaw('COUNT(*) as total_nota')
-
-            // 🔥 penting: ambil aktivitas terakhir
             ->selectRaw('MAX(created_at) as last_trx')
-
             ->groupBy('id_user')
-
-            // 🔥 urut berdasarkan transaksi terakhir
             ->orderByDesc('last_trx')
+            ->limit(30)
+            ->get();
 
-            ->limit(30); // 🔥 ambil 30 user saja
-
-
-        $hutangList = $queryHutang->get();
-
-
-        // =========================
-        // STATISTIK
-        // =========================
         $totalHutang = $hutangList->sum('total_awal');
-        $totalSisa   = $hutangList->sum('total_sisa');
-        $totalLunas  = $totalHutang - $totalSisa;
-        // =========================
-        // 8. RIWAYAT TRANSAKSI (50 TERAKHIR)
-        // =========================
+
+        $totalSisa = $hutangList->sum('total_sisa');
+
+        $totalLunas = $totalHutang - $totalSisa;
+
+        // ==================================================
+        // 12. RIWAYAT TRANSAKSI
+        // ==================================================
         $kasWarung = $warung->kasWarung()->first();
 
         $riwayatTransaksi = collect();
 
         if ($kasWarung) {
-            $riwayatTransaksi = \App\Models\TransaksiKas::with([
+
+            $riwayatTransaksi = TransaksiKas::with([
                 'transaksiBarangKeluar.barangKeluar.stokWarung.barang',
                 'hutang',
                 'uangPelanggan',
                 'barangKeluar'
             ])
                 ->where('id_kas_warung', $kasWarung->id)
+                ->whereMonth('created_at', $bulan)
+                ->whereYear('created_at', $tahun)
                 ->latest()
-                ->limit(50) // 🔥 ini kuncinya
+                ->limit(50)
                 ->get()
                 ->map(function ($trx) use ($warung) {
+
                     $data = $this->transformTransaksi($trx);
-                    $data->id_warung   = $warung->id;
+
+                    $data->id_warung = $warung->id;
+
                     $data->nama_warung = $warung->nama_warung;
+
                     return $data;
                 });
         }
 
-        // =========================
-        // 9. HUTANG BARANG MASUK (DASHBOARD)
-        // =========================
+        // ==================================================
+        // 13. HUTANG BARANG MASUK
+        // ==================================================
         $hutangBarangMasuk = HutangWarung::with([
             'hutangBarangMasuk.barangMasuk.transaksiBarang.barang'
         ])
             ->where('jenis', 'barang masuk')
             ->where('id_warung', $warung->id)
+            ->whereMonth('created_at', $bulan)
+            ->whereYear('created_at', $tahun)
             ->latest()
             ->limit(10)
             ->get();
-            
+
         $totalHutangBarangMasuk = HutangWarung::where('jenis', 'barang masuk')
             ->where('id_warung', $warung->id)
+            ->whereMonth('created_at', $bulan)
+            ->whereYear('created_at', $tahun)
             ->sum('total');
 
-        // dd($hutangBarangMasuk);
-        // =========================
+        // ==================================================
+        // 14. STATISTIK KAS (CASH & BANK) - BERDASARKAN PERIODE
+        // ==================================================
+        $kasCash = $warung->kasWarung->where('jenis_kas', 'cash')->first();
+        $kasBank = $warung->kasWarung->where('jenis_kas', 'bank')->first();
+
+        // -- STATISTIK CASH --
+        $pendapatanCashPeriode = 0;
+        $pengeluaranCashPeriode = 0;
+        $totalUangFisik = 0;
+        $pecahanKas = collect();
+
+        if ($kasCash) {
+            // Pendapatan Cash di periode ini
+            $pendapatanCashPeriode = TransaksiKas::where('id_kas_warung', $kasCash->id)
+                ->whereIn('jenis', ['penjualan barang', 'penjualan pulsa', 'masuk', 'inject'])
+                ->whereMonth('created_at', $bulan)
+                ->whereYear('created_at', $tahun)
+                ->sum('total');
+
+            // Pengeluaran Cash di periode ini (Termasuk pengeluaran pokok)
+            $pengeluaranCashPeriode = TransaksiKas::where('id_kas_warung', $kasCash->id)
+                ->whereIn('jenis', ['expayet', 'hilang', 'keluar', 'hutang barang', 'hutang pulsa'])
+                ->whereMonth('created_at', $bulan)
+                ->whereYear('created_at', $tahun)
+                ->sum('total');
+
+            // Uang Fisik (Hanya relevan jika periodenya adalah 'Sekarang')
+            $pecahanKas = DetailKasWarung::where('id_kas_warung', $kasCash->id)
+                ->orderBy('pecahan', 'desc')->get();
+            $totalUangFisik = $pecahanKas->sum(fn($item) => $item->pecahan * $item->jumlah);
+        }
+
+        // -- STATISTIK BANK --
+        $pendapatanBankPeriode = 0;
+        $pengeluaranBankPeriode = 0;
+
+        // ==================================================
         // RETURN
-        // =========================
+        // ==================================================
+        // dd($warung->kasWarung->where('id_warung', $warung->id)->where('jenis_kas', 'cash')->first());
         return view('admin.warung.show', compact(
             'warung',
             'barangWithStok',
             'stokWarung',
+
+            'periode',
+
             'labaKotor',
             'labaBersih',
             'totalModal',
-            'historyLaba',
+
+            'totalPenjualanCash',
+            'totalLabaCash',
+            'totalModalCash',
+
+            'totalPenjualanHutang',
+            'totalLabaHutang',
+            'totalModalHutang',
+
+            'margin',
+
             'assets',
+
             'pengeluaranPokokBulanIni',
             'totalPengeluaranPokok',
+
             'hutangList',
             'totalHutang',
             'totalSisa',
             'totalLunas',
+
             'riwayatTransaksi',
+
             'hutangBarangMasuk',
-            'totalHutangBarangMasuk'
+            'totalHutangBarangMasuk',
+
+            'kasCash',
+            'kasBank',
+            'pendapatanCashPeriode',
+            'pengeluaranCashPeriode',
+            'pendapatanBankPeriode',
+            'pengeluaranBankPeriode',
+            'pecahanKas',
+            'totalUangFisik'
         ));
     }
 
+    //Kemungkinan kda tepakai
     public function setting($id)
     {
         $warung = Warung::findOrFail($id);

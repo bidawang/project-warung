@@ -15,7 +15,7 @@ class SaldoPulsaControllerAdmin extends Controller
 {
     public function index()
     {
-        $pulsas = Pulsa::with('warung')->paginate(10);
+        $pulsas = Pulsa::with('warung', 'jenisPulsa')->paginate(10);
 
         return view('admin.saldo_pulsa.index', compact('pulsas'));
     }

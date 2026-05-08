@@ -126,7 +126,7 @@ class TransaksiKasController extends Controller
                 $data['id_transaksi'] = $transaksi->id;
                 DetailTransaksi::create($data);
             }
-
+dd($detailTransaksiData);
             // Commit transaksi jika semua berhasil
             DB::commit();
 
