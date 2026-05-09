@@ -18,6 +18,7 @@ use App\Models\HutangWarung;
 use App\Models\BarangKeluar;
 use App\Models\Asset;
 use App\Models\Hutang;
+use App\Models\TransaksiPulsa;
 use App\Models\DetailKasWarung;
 
 
@@ -291,26 +292,105 @@ class WarungControllerAdmin extends Controller
         $allLaba = (clone $queryLaba)->get();
 
         // ==================================================
+        // LABA PULSA
+        // ==================================================
+        $allLabaPulsa = TransaksiPulsa::whereHas('kasWarung', function ($q) use ($warung) {
+            $q->where('id_warung', $warung->id);
+        })
+            ->whereIn('tipe', [
+                'penjualan_pulsa',
+                'hutang_pulsa'
+            ])
+            ->whereMonth('created_at', $bulan)
+            ->whereYear('created_at', $tahun)
+            ->get();
+
+
+        // ==================================================
         // 6. CASH
         // ==================================================
         $labaCash = $allLaba->where('jenis', 'penjualan barang');
 
-        $totalPenjualanCash = $labaCash->sum('harga_jual');
+        $totalPenjualanCashBarang = $labaCash->sum('harga_jual');
 
-        $totalLabaCash = $labaCash->sum('laba_bersih');
+        $totalLabaCashBarang = $labaCash->sum('laba_bersih');
 
-        $totalModalCash = $totalPenjualanCash - $totalLabaCash;
+        $totalModalCashBarang =
+            $totalPenjualanCashBarang - $totalLabaCashBarang;
+
+        // ==================================================
+        // CASH PULSA
+        // ==================================================
+        $labaCashPulsa = $allLabaPulsa->where('tipe', 'penjualan_pulsa');
+
+        $totalPenjualanCashPulsa = $labaCashPulsa->sum('total');
+
+        $totalLabaCashPulsa = $labaCashPulsa->sum('laba_pulsa');
+
+        $totalModalCashPulsa =
+            $totalPenjualanCashPulsa - $totalLabaCashPulsa;
+
+        // ==================================================
+        // TOTAL CASH
+        // ==================================================
+        $totalPenjualanCash =
+            $totalPenjualanCashBarang + $totalPenjualanCashPulsa;
+
+        $totalLabaCash =
+            $totalLabaCashBarang + $totalLabaCashPulsa;
+
+        $totalModalCash =
+            $totalModalCashBarang + $totalModalCashPulsa;
+
 
         // ==================================================
         // 7. HUTANG
         // ==================================================
         $labaHutang = $allLaba->where('jenis', 'hutang barang');
 
-        $totalPenjualanHutang = $labaHutang->sum('harga_jual');
+        $totalPenjualanHutangBarang = $labaHutang->sum('harga_jual');
 
-        $totalLabaHutang = $labaHutang->sum('laba_bersih');
+        $totalLabaHutangBarang = $labaHutang->sum('laba_bersih');
 
-        $totalModalHutang = $totalPenjualanHutang - $totalLabaHutang;
+        $totalModalHutangBarang =
+            $totalPenjualanHutangBarang - $totalLabaHutangBarang;
+
+        // ==================================================
+        // HUTANG PULSA
+        // ==================================================
+        $labaHutangPulsa = $allLabaPulsa->where('tipe', 'hutang_pulsa');
+
+        $totalPenjualanHutangPulsa = $labaHutangPulsa->sum('total');
+
+        $totalLabaHutangPulsa = $labaHutangPulsa->sum('laba_pulsa');
+
+        $totalModalHutangPulsa =
+            $totalPenjualanHutangPulsa - $totalLabaHutangPulsa;
+
+        // ==================================================
+        // TOTAL HUTANG
+        // ==================================================
+        $totalPenjualanHutang =
+            $totalPenjualanHutangBarang + $totalPenjualanHutangPulsa;
+
+        $totalLabaHutang =
+            $totalLabaHutangBarang + $totalLabaHutangPulsa;
+
+        $totalModalHutang =
+            $totalModalHutangBarang + $totalModalHutangPulsa;
+
+        // ==================================================
+        // RINGKASAN LABA PULSA
+        // ==================================================
+        $totalLabaPulsa =
+            $totalLabaCashPulsa + $totalLabaHutangPulsa;
+
+        $totalPenjualanPulsa =
+            $totalPenjualanCashPulsa + $totalPenjualanHutangPulsa;
+
+        $totalModalPulsa =
+            $totalPenjualanPulsa - $totalLabaPulsa;
+
 
         // ==================================================
         // 8. TOTAL
@@ -513,7 +593,19 @@ class WarungControllerAdmin extends Controller
             'pendapatanBankPeriode',
             'pengeluaranBankPeriode',
             'pecahanKas',
-            'totalUangFisik'
+            'totalUangFisik',
+
+            'totalLabaPulsa',
+            'totalPenjualanPulsa',
+            'totalModalPulsa',
+
+            'totalLabaCashPulsa',
+            'totalPenjualanCashPulsa',
+            'totalModalCashPulsa',
+
+            'totalLabaHutangPulsa',
+            'totalPenjualanHutangPulsa',
+            'totalModalHutangPulsa',
         ));
     }
 

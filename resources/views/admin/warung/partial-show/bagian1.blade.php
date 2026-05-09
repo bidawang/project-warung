@@ -11,7 +11,8 @@
             {{-- HEADER --}}
             <div class="flex items-start justify-between">
                 <div>
-                    <div class="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide">
+                    <div
+                        class="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide">
                         Informasi Warung
                     </div>
                     <h2 class="text-xl font-black text-gray-900 mt-2 leading-tight">
@@ -22,7 +23,8 @@
                     </p>
                 </div>
                 {{-- Icon lebih kecil (w-12 h-12) --}}
-                <div class="h-11 w-11 flex-shrink-0 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-lg font-black shadow-md">
+                <div
+                    class="h-11 w-11 flex-shrink-0 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-lg font-black shadow-md">
                     {{ substr($warung->nama_warung, 0, 1) }}
                 </div>
             </div>
@@ -72,9 +74,10 @@
     {{-- RINGKASAN LABA --}}
     {{-- ===================================================== --}}
     <div class="xl:col-span-5">
-        <div class="bg-gradient-to-br from-indigo-700 via-blue-700 to-blue-900 rounded-2xl shadow-lg p-5 text-white h-full relative overflow-hidden">
+        <div
+            class="bg-gradient-to-br from-indigo-700 via-blue-700 to-blue-900 rounded-2xl shadow-lg p-5 text-white h-full relative overflow-hidden">
             <div class="absolute -top-20 -right-20 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
-            
+
             <div class="relative z-10 flex items-center justify-between">
                 <div>
                     <p class="text-[10px] uppercase tracking-[0.2em] text-blue-200">Ringkasan Keuangan</p>
@@ -88,19 +91,62 @@
 
             {{-- LABA BESAR --}}
             <div class="mt-4 bg-white/10 border border-white/10 rounded-2xl p-4 backdrop-blur relative z-10">
-                <p class="text-[10px] uppercase tracking-widest text-blue-100">Laba Bersih Real</p>
+
+                <p class="text-[10px] uppercase tracking-widest text-blue-100">
+                    Laba Bersih Real
+                </p>
+
                 <h2 class="text-3xl font-black text-green-300 mt-1">
                     Rp {{ number_format($totalLabaCash, 0, ',', '.') }}
                 </h2>
+
+                {{-- GRID --}}
                 <div class="grid grid-cols-2 gap-3 mt-4">
+
+                    {{-- OMSET --}}
                     <div class="bg-white/5 rounded-xl p-3 border border-white/5">
-                        <p class="text-[9px] uppercase text-blue-100">Omset Cash</p>
-                        <h4 class="text-lg font-black mt-0.5">Rp {{ number_format($totalPenjualanCash, 0, ',', '.') }}</h4>
+                        <p class="text-[9px] uppercase text-blue-100">
+                            Omset Cash
+                        </p>
+
+                        <h4 class="text-lg font-black mt-0.5">
+                            Rp {{ number_format($totalPenjualanCash, 0, ',', '.') }}
+                        </h4>
                     </div>
+
+                    {{-- MODAL --}}
                     <div class="bg-white/5 rounded-xl p-3 border border-white/5">
-                        <p class="text-[9px] uppercase text-blue-100">Modal Cash</p>
-                        <h4 class="text-lg font-black mt-0.5">Rp {{ number_format($totalModalCash, 0, ',', '.') }}</h4>
+                        <p class="text-[9px] uppercase text-blue-100">
+                            Modal Cash
+                        </p>
+
+                        <h4 class="text-lg font-black mt-0.5">
+                            Rp {{ number_format($totalModalCash, 0, ',', '.') }}
+                        </h4>
                     </div>
+
+                    {{-- LABA PULSA --}}
+                    <div class="bg-cyan-500/10 rounded-xl p-3 border border-cyan-400/10">
+                        <p class="text-[9px] uppercase text-cyan-100">
+                            Laba Pulsa
+                        </p>
+
+                        <h4 class="text-lg font-black mt-0.5 text-cyan-300">
+                            Rp {{ number_format($totalLabaPulsa, 0, ',', '.') }}
+                        </h4>
+                    </div>
+
+                    {{-- OMSET PULSA --}}
+                    <div class="bg-sky-500/10 rounded-xl p-3 border border-sky-400/10">
+                        <p class="text-[9px] uppercase text-sky-100">
+                            Omset Pulsa
+                        </p>
+
+                        <h4 class="text-lg font-black mt-0.5 text-sky-300">
+                            Rp {{ number_format($totalPenjualanPulsa, 0, ',', '.') }}
+                        </h4>
+                    </div>
+
                 </div>
             </div>
 
@@ -116,7 +162,8 @@
                     </div>
                     <div class="mt-3">
                         <p class="text-[9px] uppercase text-yellow-100">Total Penjualan</p>
-                        <h3 class="text-lg font-black text-yellow-300">Rp {{ number_format($totalPenjualanHutang, 0, ',', '.') }}</h3>
+                        <h3 class="text-lg font-black text-yellow-300">Rp
+                            {{ number_format($totalPenjualanHutang, 0, ',', '.') }}</h3>
                     </div>
                 </div>
 
@@ -130,7 +177,8 @@
                     </div>
                     <div class="mt-3">
                         <p class="text-[9px] uppercase text-orange-100">Potensi Laba</p>
-                        <h3 class="text-lg font-black text-orange-300">Rp {{ number_format($totalLabaHutang, 0, ',', '.') }}</h3>
+                        <h3 class="text-lg font-black text-orange-300">Rp
+                            {{ number_format($totalLabaHutang, 0, ',', '.') }}</h3>
                     </div>
                 </div>
             </div>
@@ -166,16 +214,20 @@
                     <tbody class="divide-y divide-gray-50">
                         @forelse ($assets as $asset)
                             @php
-                                $persen = $asset->harga_asset > 0 ? ($asset->total_dibayar / $asset->harga_asset) * 100 : 0;
+                                $persen =
+                                    $asset->harga_asset > 0 ? ($asset->total_dibayar / $asset->harga_asset) * 100 : 0;
                             @endphp
                             <tr class="hover:bg-blue-50/40 transition">
                                 <td class="px-3 py-3">
                                     <p class="font-bold text-gray-800 leading-none text-xs">{{ $asset->nama }}</p>
-                                    <p class="text-[9px] text-gray-400 mt-1">{{ \Carbon\Carbon::parse($asset->tanggal_pembelian)->format('d M y') }}</p>
+                                    <p class="text-[9px] text-gray-400 mt-1">
+                                        {{ \Carbon\Carbon::parse($asset->tanggal_pembelian)->format('d M y') }}</p>
                                 </td>
                                 <td class="px-3 py-3">
-                                    <p class="font-bold text-gray-800 text-xs">Rp {{ number_format($asset->harga_asset, 0, ',', '.') }}</p>
-                                    <p class="text-[9px] text-green-600">B: Rp {{ number_format($asset->total_dibayar, 0, ',', '.') }}</p>
+                                    <p class="font-bold text-gray-800 text-xs">Rp
+                                        {{ number_format($asset->harga_asset, 0, ',', '.') }}</p>
+                                    <p class="text-[9px] text-green-600">B: Rp
+                                        {{ number_format($asset->total_dibayar, 0, ',', '.') }}</p>
                                 </td>
                                 <td class="px-3 py-3 w-[140px]">
                                     <div class="flex justify-between text-[9px] text-gray-500 mb-0.5">
@@ -183,14 +235,17 @@
                                         <span>{{ number_format($persen, 0) }}%</span>
                                     </div>
                                     <div class="w-full bg-gray-100 rounded-full h-1.5">
-                                        <div class="bg-blue-600 h-1.5 rounded-full" style="width: {{ $persen }}%"></div>
+                                        <div class="bg-blue-600 h-1.5 rounded-full"
+                                            style="width: {{ $persen }}%"></div>
                                     </div>
-                                    <p class="text-[9px] text-red-500 mt-1">S: Rp {{ number_format($asset->sisa_pembayaran, 0, ',', '.') }}</p>
+                                    <p class="text-[9px] text-red-500 mt-1">S: Rp
+                                        {{ number_format($asset->sisa_pembayaran, 0, ',', '.') }}</p>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="3" class="text-center py-10 text-gray-400 italic text-xs">Belum ada data asset</td>
+                                <td colspan="3" class="text-center py-10 text-gray-400 italic text-xs">Belum ada data
+                                    asset</td>
                             </tr>
                         @endforelse
                     </tbody>
