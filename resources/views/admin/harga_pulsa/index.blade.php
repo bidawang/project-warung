@@ -80,7 +80,7 @@
                                     <small>Harga Hutang:</small> Rp{{ number_format($hargaPulsa->harga_hutang, 0, ',', '.') }}
                                 </td>
                                 <td class="px-5 py-4">
-                                    {{ $hargaPulsa->nama_jenis }}
+                                    {{ $hargaPulsa->jenisPulsa->nama_jenis }}
                                 </td>
                                 <td class="px-5 py-4 text-right space-x-2">
                                     <a href="{{ route('admin.harga-pulsa.edit', $hargaPulsa->id) }}"

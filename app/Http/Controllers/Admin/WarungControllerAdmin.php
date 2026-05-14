@@ -18,7 +18,7 @@ use App\Models\HutangWarung;
 use App\Models\BarangKeluar;
 use App\Models\Asset;
 use App\Models\Hutang;
-use App\Models\TransaksiPulsa;
+use App\Models\TransaksiPulsaKeluar;
 use App\Models\DetailKasWarung;
 
 
@@ -294,18 +294,14 @@ class WarungControllerAdmin extends Controller
         // ==================================================
         // LABA PULSA
         // ==================================================
-        $allLabaPulsa = TransaksiPulsa::whereHas('kasWarung', function ($q) use ($warung) {
+        $allLabaPulsa = TransaksiPulsaKeluar::whereHas('transaksiKasWarung', function ($q) use ($warung) {
             $q->where('id_warung', $warung->id);
         })
-            ->whereIn('tipe', [
-                'penjualan_pulsa',
-                'hutang_pulsa'
-            ])
             ->whereMonth('created_at', $bulan)
             ->whereYear('created_at', $tahun)
             ->get();
 
-
+// dd($allLabaPulsa);
         // ==================================================
         // 6. CASH
         // ==================================================
@@ -321,12 +317,12 @@ class WarungControllerAdmin extends Controller
         // ==================================================
         // CASH PULSA
         // ==================================================
-        $labaCashPulsa = $allLabaPulsa->where('tipe', 'penjualan_pulsa');
+        $labaCashPulsa = $allLabaPulsa;
 
         $totalPenjualanCashPulsa = $labaCashPulsa->sum('total');
 
         $totalLabaCashPulsa = $labaCashPulsa->sum('laba_pulsa');
-
+// dd($totalLabaCashPulsa);
         $totalModalCashPulsa =
             $totalPenjualanCashPulsa - $totalLabaCashPulsa;
 

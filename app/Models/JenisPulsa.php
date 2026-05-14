@@ -13,19 +13,11 @@ class JenisPulsa extends Model
 
     protected $fillable = [
         'nama_jenis',
+        'id_pulsa'
     ];
-
-    /**
-     * Relasi ke harga pulsa
-     * 1 jenis pulsa punya banyak harga pulsa
-     */
-    public function hargaPulsa()
-    {
-        return $this->hasMany(HargaPulsa::class, 'jenis_pulsa_id');
-    }
 
     public function pulsa()
     {
-        return $this->hasMany(Pulsa::class, 'jenis_pulsa_id');
+        return $this->belongsTo(Pulsa::class, 'id_pulsa');
     }
 }

@@ -8,18 +8,8 @@ class Pulsa extends Model
 {
     use HasFactory;
     protected $table = 'pulsa';
-    protected $fillable = ['id_warung', 'id_harga_pulsa', 'saldo', 'jenis_pulsa_id'];
+    protected $fillable = ['id_warung', 'id_jenis'];
 
-    public function jenisPulsa()
-    {
-        return $this->belongsTo(JenisPulsa::class, 'jenis_pulsa_id');
-    }
-
-    // Relasi: Satu Pulsa dimiliki oleh satu HargaPulsa
-    public function hargaPulsa()
-    {
-        return $this->belongsTo(HargaPulsa::class, 'id_harga_pulsa');
-    }
 
     // Relasi: Satu Pulsa dimiliki oleh satu Warung
     public function warung()
@@ -27,9 +17,9 @@ class Pulsa extends Model
         return $this->belongsTo(Warung::class, 'id_warung');
     }
 
-    // Relasi: Satu Pulsa bisa memiliki banyak TransaksiPulsa
-    public function transaksiPulsa()
+    public function jenisPulsa()
     {
-        return $this->hasMany(TransaksiPulsa::class, 'id_pulsa');
+        return $this->belongsTo(JenisPulsa::class, 'id_jenis');
     }
+
 }

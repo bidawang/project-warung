@@ -25,23 +25,60 @@
 
                 {{-- Card Form --}}
                 <div class="bg-white shadow-xl rounded-lg p-6 md:p-8">
-                    @if ($errors->any())
-    <div class="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
-        <strong class="font-bold">Terjadi kesalahan!</strong>
-        <ul class="mt-2 list-disc list-inside text-sm">
-            @foreach ($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
-@endif
 
-{{-- Notifikasi Sukses --}}
-@if (session('success'))
-    <div class="mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg">
-        {{ session('success') }}
-    </div>
-@endif
+                    {{-- ERROR VALIDASI --}}
+                    @if ($errors->any())
+                        <div class="mb-6 rounded-lg border border-red-300 bg-red-50 p-4">
+                            <div class="flex items-center mb-2">
+                                <svg class="w-5 h-5 text-red-600 mr-2" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z">
+                                    </path>
+                                </svg>
+
+                                <h3 class="font-semibold text-red-700">
+                                    Terjadi Kesalahan
+                                </h3>
+                            </div>
+
+                            <ul class="list-disc list-inside text-sm text-red-700 space-y-1">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    {{-- ERROR SESSION --}}
+                    @if (session('error'))
+                        <div class="mb-6 rounded-lg border border-red-300 bg-red-50 p-4 text-red-700">
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z">
+                                    </path>
+                                </svg>
+
+                                <span>{{ session('error') }}</span>
+                            </div>
+                        </div>
+                    @endif
+
+                    {{-- SUCCESS --}}
+                    @if (session('success'))
+                        <div class="mb-6 rounded-lg border border-green-300 bg-green-50 p-4 text-green-700">
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 13l4 4L19 7">
+                                    </path>
+                                </svg>
+
+                                <span>{{ session('success') }}</span>
+                            </div>
+                        </div>
+                    @endif
                     {{-- Form Top-Up Saldo --}}
                     <form action="{{ route('admin.saldo-pulsa.store') }}" method="POST">
                         @csrf
@@ -106,7 +143,7 @@
 
                         {{-- Input Harga Beli (MODAL) --}}
                         <div class="mb-5">
-                            <label for="harga_beli" class="block text-sm font-medium text-gray-700 mb-2">Harga Beli / Modal
+                            <label for="harga_beli" class="block text-sm font-medium text-gray-700 mb-2">Harga Alomogada
                                 (Rp)</label>
                             <input type="number" name="harga_beli" id="harga_beli" value="{{ old('harga_beli') }}"
                                 class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-green-500 @error('harga_beli') border-red-500 @enderror"
@@ -115,6 +152,23 @@
                                 <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                             <p class="mt-1 text-xs text-gray-500">Biaya riil yang dibayarkan untuk mendapatkan saldo ini.
+                            </p>
+                        </div>
+
+
+                        {{-- Input Harga Jual --}}
+
+                        <div class="mb-5">
+                            <label for="harga_jual" class="block text-sm font-medium text-gray-700 mb-2">Harga Jual
+                                (Rp)</label>
+                            <input type="number" name="harga_jual" id="harga_jual" value="{{ old('harga_jual') }}"
+                                class="w-full border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-green-500 @error('harga_jual') border-red-500 @enderror"
+                                placeholder="Masukkan harga jual (misal: 100000)" required min="1">
+                            @error('harga_jual')
+                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                            <p class="mt-1 text-xs text-gray-500">Harga jual yang akan digunakan saat menjual pulsa ke
+                                warung.
                             </p>
                         </div>
 

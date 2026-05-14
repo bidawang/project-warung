@@ -261,7 +261,7 @@ class TransaksiBarangController extends Controller
             'lain_harga.*' => 'nullable|numeric|min:0',
         ]);
         $grandTotal = 0;
-        // dd($request->all());
+        dd($request->all());
         DB::beginTransaction();
         try {
             // 2. Simpan transaksi awal

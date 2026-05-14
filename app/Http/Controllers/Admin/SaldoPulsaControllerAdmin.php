@@ -1,112 +1,273 @@
 <?php
 
-namespace App\Http\Controllers\admin;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Pulsa;
+
+use App\Models\SaldoPulsa;
 use App\Models\Warung;
-use App\Models\TransaksiPulsa;
-use App\Models\HutangBarangMasuk;
-use Illuminate\Support\Facades\DB;
 use App\Models\JenisPulsa;
+use App\Models\HargaPulsa;
+use App\Models\Pulsa;
+use App\Models\HutangWarung;
+use App\Models\TransaksiPulsaMasuk;
+use App\Models\TransaksiPulsaKeluar;
+
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class SaldoPulsaControllerAdmin extends Controller
 {
-    public function index()
+    /**
+     * =========================================================================
+     * LIST SALDO PULSA WARUNG
+     * =========================================================================
+     */
+    public function index(Request $request)
     {
-        $pulsas = Pulsa::with('warung', 'jenisPulsa')->paginate(10);
+        $search = $request->search;
 
-        return view('admin.saldo_pulsa.index', compact('pulsas'));
+        $pulsas = SaldoPulsa::with([
+            'warung',
+            'jenisPulsa'
+        ])
+            ->when($search, function ($query) use ($search) {
+
+                $query->whereHas('warung', function ($q) use ($search) {
+                    $q->where('nama_warung', 'like', "%{$search}%");
+                })
+
+                    ->orWhereHas('jenisPulsa', function ($q) use ($search) {
+                        $q->where('nama_jenis', 'like', "%{$search}%");
+                    });
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        return view(
+            'admin.saldo_pulsa.index',
+            compact('pulsas')
+        );
     }
 
+    /**
+     * =========================================================================
+     * FORM TAMBAH SALDO
+     * =========================================================================
+     */
     public function create()
     {
-        $jenisPulsa = JenisPulsa::orderBy('nama_jenis')->get();
-        // Mengambil semua data warung untuk ditampilkan di dropdown.
-        $warungs = Warung::orderBy('nama_warung')->get();
-        return view('admin.saldo_pulsa.create', compact('warungs', 'jenisPulsa'));
+        $jenisPulsa = JenisPulsa::orderBy('nama_jenis')
+            ->get();
+
+        $warungs = Warung::orderBy('nama_warung')
+            ->get();
+
+        return view(
+            'admin.saldo_pulsa.create',
+            compact('warungs', 'jenisPulsa')
+        );
     }
 
+    /**
+     * =========================================================================
+     * STORE
+     * =========================================================================
+     * SUDAH DIPERBAIKI USER
+     */
     public function store(Request $request)
     {
-        // 1. Validasi
+        // Bersihkan format angka
+        $nominal = (int) str_replace(['.', ','], '', $request->nominal);
+        $hargaBeli = (int) str_replace(['.', ','], '', $request->harga_beli);
+        $hargaJual = (int) str_replace(['.', ','], '', $request->harga_jual);
+
+        // Validasi
         $request->validate([
-            'id_warung'        => 'required|exists:warung,id',
-            'jenis_pulsa_id'   => 'required|exists:jenis_pulsa,id',
-            'nominal'          => 'required|integer|min:1',
-            'harga_beli'       => 'required|numeric|min:1',
+            'id_warung'       => 'required|exists:warung,id',
+            'jenis_pulsa_id' => 'required|exists:jenis_pulsa,id',
+            'nominal'         => 'required|numeric|min:1000',
+            'harga_beli'      => 'required|numeric|min:1000',
+            'harga_jual'      => 'required|numeric|min:1000',
         ]);
 
         try {
+
             DB::beginTransaction();
 
-            // 2. Cari atau buat saldo pulsa per WARUNG + JENIS PULSA
-            $pulsa = Pulsa::firstOrNew([
-                'id_warung'       => $request->id_warung,
-                'jenis_pulsa_id'  => $request->jenis_pulsa_id,
+            /*
+        |--------------------------------------------------------------------------
+        | 1. CARI / BUAT DATA PULSA
+        |--------------------------------------------------------------------------
+        | tabel: pulsa
+        */
+
+            $pulsa = Pulsa::firstOrCreate([
+                'id_warung' => $request->id_warung,
+                'id_jenis'  => $request->jenis_pulsa_id,
             ]);
 
-            // default saldo kalau record baru
-            if (! $pulsa->exists) {
-                $pulsa->saldo = 0;
-                $pulsa->harga_pulsa = 0;
+            /*
+        |--------------------------------------------------------------------------
+        | 2. UPDATE / CREATE SALDO PULSA
+        |--------------------------------------------------------------------------
+        | tabel: saldo_pulsa
+        */
+
+            $saldoPulsa = SaldoPulsa::where('id_warung', $request->id_warung)
+                ->where('id_jenis', $request->jenis_pulsa_id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($saldoPulsa) {
+
+                $saldoPulsa->increment('jumlah', $nominal);
+            } else {
+
+                $saldoPulsa = SaldoPulsa::create([
+                    'id_warung' => $request->id_warung,
+                    'id_jenis'  => $request->jenis_pulsa_id,
+                    'jumlah'    => $nominal,
+                ]);
             }
 
-            $pulsa->saldo += $request->nominal;
-            $pulsa->harga_pulsa = $request->harga_beli;
-            $pulsa->save();
+            /*
+        |--------------------------------------------------------------------------
+        | 3. UPDATE / CREATE HARGA PULSA
+        |--------------------------------------------------------------------------
+        | tabel: harga_pulsa
+        */
 
-            // 3. Simpan transaksi pulsa
-            TransaksiPulsa::create([
-                'id_pulsa'        => $pulsa->id,
-                'id_kas_warung'   => null,
-                'jumlah'          => $request->nominal,
-                'total'           => $request->harga_beli,
-                'jenis'           => 'masuk',
-                'tipe'            => 'Top Up Pulsa',
+            // HargaPulsa::updateOrCreate(
+            //     [
+            //         'id_jenis' => $request->jenis_pulsa_id,
+            //         'jumlah_pulsa'   => $nominal,
+            //     ],
+            //     [
+            //         'harga_alomogada' => $hargaBeli,
+            //         'harga_jual'      => $hargaJual,
+            //         'harga_hutang'    => $hargaJual,
+            //     ]
+            // );
+
+            /*
+        |--------------------------------------------------------------------------
+        | 4. BUAT HUTANG WARUNG
+        |--------------------------------------------------------------------------
+        */
+
+            $hutangWarung = HutangWarung::create([
+                'id_warung' => $request->id_warung,
+                'total'     => $hargaBeli,
+                'jenis'     => 'pulsa',
             ]);
 
-            // 4. Catat hutang warung ke pusat
-            HutangBarangMasuk::create([
-                'id_warung'         => $request->id_warung,
-                'id_barang_masuk'   => null,
-                'total'             => $request->harga_beli,
-                'status'            => 'belum lunas',
+            /*
+        |--------------------------------------------------------------------------
+        | 5. TRANSAKSI PULSA MASUK
+        |--------------------------------------------------------------------------
+        */
+
+            TransaksiPulsaMasuk::create([
+                'id_pulsa'          => $pulsa->id,
+                'id_hutang_warung' => $hutangWarung->id,
+                'jumlah'            => $nominal,
+                'harga_alomogada'  => $hargaBeli,
+                'total'             => $hargaJual,
             ]);
 
             DB::commit();
 
-            // ambil nama jenis pulsa (buat notifikasi)
-            $jenisPulsa = JenisPulsa::find($request->jenis_pulsa_id);
+            $jenis = JenisPulsa::find($request->jenis_pulsa_id);
 
             return redirect()
                 ->route('admin.saldo-pulsa.index')
                 ->with(
                     'success',
-                    "Saldo pulsa **{$jenisPulsa->nama_jenis}** sebesar Rp" .
-                        number_format($request->nominal, 0, ',', '.') .
-                        " berhasil ditambahkan."
+                    'Saldo ' . $jenis->nama_jenis .
+                        ' berhasil ditambahkan sebesar Rp ' .
+                        number_format($nominal, 0, ',', '.')
                 );
         } catch (\Throwable $e) {
+
             DB::rollBack();
-            dd($e);
-            return back()->with('error', 'Gagal memproses top-up: ' . $e->getMessage());
+
+            Log::error('Topup Pulsa Error: ' . $e->getMessage());
+
+            return back()
+                ->withInput()
+                ->with('error', $e->getMessage());
         }
     }
 
-
+    /**
+     * =========================================================================
+     * DETAIL SALDO PULSA
+     * =========================================================================
+     */
     public function show($id)
     {
-        // Ambil data pulsa beserta info warungnya
-        $pulsa = Pulsa::with('warung')->findOrFail($id);
+        /*
+    |--------------------------------------------------------------------------
+    | AMBIL DATA SALDO PULSA
+    |--------------------------------------------------------------------------
+    */
 
-        // Ambil riwayat transaksi khusus tipe 'Top Up Pulsa' untuk id_pulsa ini
-        $riwayatTopUp = TransaksiPulsa::where('id_pulsa', $id)
-            ->where('tipe', 'Top Up Pulsa')
-            ->orderBy('created_at', 'desc')
+        $saldoPulsa = SaldoPulsa::with([
+            'warung',
+            'jenisPulsa'
+        ])
+            ->findOrFail($id);
+
+        /*
+    |--------------------------------------------------------------------------
+    | CARI DATA PULSA
+    |--------------------------------------------------------------------------
+    */
+
+        $pulsa = Pulsa::where('id_warung', $saldoPulsa->id_warung)
+            ->where('id_jenis', $saldoPulsa->id_jenis)
+            ->first();
+
+        /*
+    |--------------------------------------------------------------------------
+    | DEFAULT PAGINATION KOSONG
+    |--------------------------------------------------------------------------
+    */
+
+        $riwayatTransaksi = TransaksiPulsaMasuk::whereRaw('1 = 0')
             ->paginate(10);
 
-        return view('admin.saldo_pulsa.show', compact('pulsa', 'riwayatTopUp'));
+        /*
+    |--------------------------------------------------------------------------
+    | AMBIL RIWAYAT TRANSAKSI PULSA MASUK
+    |--------------------------------------------------------------------------
+    */
+
+        if ($pulsa) {
+
+            $riwayatTransaksi = TransaksiPulsaMasuk::with([
+                'hutangWarung'
+            ])
+                ->where('id_pulsa', $pulsa->id)
+                ->latest()
+                ->paginate(10);
+        }
+
+        /*
+    |--------------------------------------------------------------------------
+    | RETURN VIEW
+    |--------------------------------------------------------------------------
+    */
+
+        return view(
+            'admin.saldo_pulsa.show',
+            [
+                'pulsa' => $saldoPulsa,
+                'riwayatTransaksi' => $riwayatTransaksi
+            ]
+        );
     }
 }

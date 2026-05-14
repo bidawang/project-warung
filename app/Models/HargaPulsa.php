@@ -28,7 +28,7 @@ class HargaPulsa extends Model
         'harga_alomogada',
         'harga_jual',
         'harga_hutang',
-        'jenis_pulsa_id',
+        'id_jenis',
     ];
 
     /**
@@ -51,6 +51,7 @@ class HargaPulsa extends Model
 
     public function jenisPulsa()
     {
-        return $this->belongsTo(JenisPulsa::class, 'jenis_pulsa_id');
+        return $this->belongsTo(JenisPulsa::class, 'id_jenis');
     }
+    
 }
