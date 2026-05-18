@@ -49,6 +49,7 @@ class HargaPulsaControllerAdmin extends Controller
             ->paginate(15)
             ->withQueryString();
 // dd($hargaPulsas);
+// dd($hargaPulsas);
         return view(
             'admin.harga_pulsa.index',
             compact('hargaPulsas', 'jenisPulsa')
@@ -85,9 +86,10 @@ class HargaPulsaControllerAdmin extends Controller
         */
 
         $hargaAlomogada = (int) str_replace(['.', ','], '', $request->harga_alomogada);
+        $hargaModal = (int) str_replace(['.', ','], '', $request->harga_modal);
         $hargaJual = (int) str_replace(['.', ','], '', $request->harga_jual);
         $hargaHutang = (int) str_replace(['.', ','], '', $request->harga_hutang);
-
+// dd($request->all());
         /*
         |--------------------------------------------------------------------------
         | VALIDASI
@@ -97,6 +99,7 @@ class HargaPulsaControllerAdmin extends Controller
         $request->validate([
             'jumlah_pulsa'    => 'required|integer|min:1',
             'harga_alomogada' => 'required',
+            'harga_modal'     => 'required',
             'harga_jual'      => 'required',
             'harga_hutang'    => 'required',
             'jenis_pulsa_id'  => 'required|exists:jenis_pulsa,id',
@@ -111,11 +114,11 @@ class HargaPulsaControllerAdmin extends Controller
             | CEK DUPLIKAT
             |--------------------------------------------------------------------------
             */
-
-            $exists = HargaPulsa::where('jenis_pulsa_id', $request->jenis_pulsa_id)
+// dd($request->all);
+            $exists = HargaPulsa::where('id_jenis', $request->jenis_pulsa_id)
                 ->where('jumlah_pulsa', $request->jumlah_pulsa)
                 ->exists();
-
+// dd($exists);
             if ($exists) {
 
                 return back()
@@ -132,9 +135,10 @@ class HargaPulsaControllerAdmin extends Controller
             HargaPulsa::create([
                 'jumlah_pulsa'    => $request->jumlah_pulsa,
                 'harga_alomogada' => $hargaAlomogada,
+                'harga_modal'     => $hargaModal,
                 'harga_jual'      => $hargaJual,
                 'harga_hutang'    => $hargaHutang,
-                'jenis_pulsa_id'  => $request->jenis_pulsa_id
+                'id_jenis'  => $request->jenis_pulsa_id
             ]);
 
             DB::commit();

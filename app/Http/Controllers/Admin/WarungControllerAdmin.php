@@ -20,6 +20,7 @@ use App\Models\Asset;
 use App\Models\Hutang;
 use App\Models\TransaksiPulsaKeluar;
 use App\Models\DetailKasWarung;
+use App\Models\TransaksiPulsaMasuk;
 
 
 class WarungControllerAdmin extends Controller
@@ -506,6 +507,25 @@ class WarungControllerAdmin extends Controller
             ->sum('total');
 
         // ==================================================
+        // 13B. HUTANG PULSA MASUK
+        // ==================================================
+        $hutangPulsaMasuk = TransaksiPulsaMasuk::with([
+            'pulsa.jenisPulsa',
+            'hutangWarung'
+        ])
+            ->whereHas('pulsa', function ($q) use ($warung) {
+                $q->where('id_warung', $warung->id);
+            })
+            ->whereNotNull('id_hutang_warung')
+            ->whereMonth('created_at', $bulan)
+            ->whereYear('created_at', $tahun)
+            ->latest()
+            ->limit(10)
+            ->get();
+
+        $totalHutangPulsaMasuk = $hutangPulsaMasuk->sum('total');
+
+        // ==================================================
         // 14. STATISTIK KAS (CASH & BANK) - BERDASARKAN PERIODE
         // ==================================================
         $kasCash = $warung->kasWarung->where('jenis_kas', 'cash')->first();
@@ -602,6 +622,9 @@ class WarungControllerAdmin extends Controller
             'totalLabaHutangPulsa',
             'totalPenjualanHutangPulsa',
             'totalModalHutangPulsa',
+
+            'hutangPulsaMasuk',
+            'totalHutangPulsaMasuk',
         ));
     }
 

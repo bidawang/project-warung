@@ -31,8 +31,9 @@ class PulsaControllerKasir extends Controller
         // Ambil saldo pulsa per provider berdasarkan gambar ERD (id_jenis & jumlah)
         $saldoPulsas = SaldoPulsa::with('jenisPulsa')
             ->where('id_warung', $idWarung)
+            // ->where('id_jenis',)
             ->get();
-
+// dd($saldoPulsas);
         $harga_pulsas = HargaPulsa::with('jenisPulsa')
             ->orderBy('jumlah_pulsa', 'asc')
             ->get();
@@ -171,19 +172,26 @@ class PulsaControllerKasir extends Controller
 
     public function createJualPulsa()
     {
+        // 1. Ambil id_warung dari session yang aktif
         $idWarung = session('id_warung');
 
-        // Ambil daftar harga pulsa beserta jenisnya (provider)
+        // 2. Ambil daftar harga pulsa beserta jenisnya (id_jenis)
         $harga_pulsas = HargaPulsa::with('jenisPulsa')
-            ->orderBy('jumlah_pulsa', 'asc') // Sesuai kolom 'jumlah' di ERD
+            ->orderBy('jumlah_pulsa', 'asc')
             ->get();
 
-        // Ambil daftar pelanggan untuk opsi hutang
+        // 3. Ambil daftar pelanggan untuk opsi hutang
         $pelanggans = User::where('role', 'member')->get();
 
-        $jenisPulsa = JenisPulsa::all();
+        /**
+         * 4. AMBIL DARI MODEL SALDO PULSA
+         * Memfilter saldo berdasarkan id_warung saat ini dan memuat data jenis pulsanya
+         */
+        $saldoPulsas = SaldoPulsa::with('jenisPulsa')
+            ->where('id_warung', $idWarung)
+            ->get();
 
-        return view('kasir.pulsa.jual_pulsa', compact('harga_pulsas', 'pelanggans', 'jenisPulsa'));
+        return view('kasir.pulsa.jual_pulsa', compact('harga_pulsas', 'pelanggans', 'saldoPulsas'));
     }
 
     public function storeJualPulsa(Request $request)

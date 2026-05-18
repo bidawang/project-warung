@@ -51,11 +51,23 @@
                                     Layanan</label>
                                 <select name="jenis_pulsa_id" id="jenis_pulsa" class="form-select select2" required>
                                     <option value="">-- Pilih Jenis Pulsa/Token --</option>
-                                    @foreach ($jenisPulsa as $jp)
-                                        <option value="{{ $jp->id }}"
-                                            data-tipe="{{ Str::contains(strtolower($jp->nama_jenis), 'listrik') ? 'listrik' : 'hp' }}">
-                                            {{ $jp->nama_jenis }}
-                                        </option>
+                                    @foreach ($saldoPulsas as $sp)
+                                        {{-- Pengaman jika data relasi jenisPulsa di database ternyata kosong --}}
+                                        @if ($sp->jenisPulsa)
+                                            @php
+                                                $isListrik = Str::contains(
+                                                    strtolower($sp->jenisPulsa->nama_jenis),
+                                                    'listrik',
+                                                );
+                                            @endphp
+                                            {{-- value diisi ID Jenis Pulsa untuk dicocokkan dengan data-jenis di dropdown nominal --}}
+                                            <option value="{{ $sp->id_jenis }}"
+                                                data-tipe="{{ $isListrik ? 'listrik' : 'hp' }}"
+                                                data-saldo="{{ $sp->jumlah }}">
+                                                {{ $sp->jenisPulsa->nama_jenis }} (Saldo: Rp
+                                                {{ number_format($sp->jumlah, 0, ',', '.') }})
+                                            </option>
+                                        @endif
                                     @endforeach
                                 </select>
                             </div>
@@ -79,8 +91,9 @@
                                     <option value="">-- Pilih Nominal --</option>
                                     @foreach ($harga_pulsas as $p)
                                         <option value="{{ $p->id }}" data-jual="{{ $p->harga_jual }}"
-                                            data-hutang="{{ $p->harga_hutang }}" data-jenis="{{ $p->jenis_pulsa_id }}">
-                                            {{ number_format($p->jumlah_pulsa) }}
+                                            data-hutang="{{ $p->harga_hutang }}" data-jenis="{{ $p->id_jenis }}">
+                                            {{ $p->jenisPulsa->nama_jenis }} -
+                                            {{ number_format($p->jumlah_pulsa, 0, ',', '.') }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -158,7 +171,7 @@
 
     <script>
         $(document).ready(function() {
-            // Inisialisasi Select2 dengan tema Bootstrap 5
+            // Inisialisasi awal Select2 dengan tema Bootstrap 5
             $('.select2').select2({
                 theme: 'bootstrap-5',
                 width: '100%'
@@ -174,61 +187,82 @@
             const $hargaDisplay = $('#harga_jual_display');
             const $kembalianDisplay = $('#kembalian_display');
 
+            // KUNCI UTAMA: Ambil dan simpan master data nominal asli dari Blade saat halaman pertama dimuat
+            const masterNominal = [];
+            $nominal.find('option').each(function() {
+                if ($(this).val()) {
+                    masterNominal.push({
+                        id: $(this).val(),
+                        text: $(this).text().trim(),
+                        jual: $(this).data('jual'),
+                        hutang: $(this).data('hutang'),
+                        jenis: $(this).data('jenis')
+                    });
+                }
+            });
+
             function formatRupiah(x) {
                 return 'Rp ' + x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
             }
 
-            // 1. Logika Filter Jenis Pulsa
+            // 1. Logika Filter Jenis Pulsa (TERBARU & REKONSILIASI SELECT2)
             $jenisPulsa.on('change', function() {
                 const selected = $(this).find(':selected');
                 const tipe = selected.data('tipe') || 'hp';
-                const val = $(this).val();
+                const val = $(this).val(); // Ini adalah ID Jenis Pulsa yang dipilih
 
-                // Ubah Label
-                $labelNomor.text(tipe === 'listrik' ? 'Nomor Meter / ID PLN' : 'Nomor HP Pelanggan');
-                $nomorHP.attr('placeholder', tipe === 'listrik' ? 'Contoh: 12345678901' :
-                    'Contoh: 081234567890');
+                // Ubah Label Input Nomor Tujuan
+                if ($labelNomor.length && $nomorHP.length) {
+                    $labelNomor.text(tipe === 'listrik' ? 'Nomor Meter / ID PLN' : 'Nomor HP Pelanggan');
+                    $nomorHP.attr('placeholder', tipe === 'listrik' ? 'Contoh: 12345678901' :
+                        'Contoh: 081234567890');
+                }
 
                 if (val) {
                     $nominalWrapper.slideDown();
                     $nominal.prop('disabled', false);
 
-                    // Filter Nominal yang sesuai jenisnya saja
-                    $nominal.find('option').each(function() {
-                        const optJenis = $(this).data('jenis');
-                        if (!$(this).val()) return; // Skip placeholder
+                    // Kosongkan opsi pilihan nominal saat ini
+                    $nominal.empty().append('<option value="">-- Pilih Nominal --</option>');
 
-                        if (optJenis == val) {
-                            $(this).show();
-                        } else {
-                            $(this).hide();
+                    // Saring data dari array masterNominal yang memiliki id jenis pulsa yang cocok
+                    masterNominal.forEach(function(item) {
+                        if (item.jenis == val) {
+                            const option = new Option(item.text, item.id, false, false);
+                            $(option).attr('data-jual', item.jual);
+                            $(option).attr('data-hutang', item.hutang);
+                            $(option).attr('data-jenis', item.jenis);
+                            $nominal.append(option);
                         }
                     });
 
-                    // Reset nominal select
-                    $nominal.val('').trigger('change');
+                    // Refresh komponen Select2 agar mendeteksi struktur option baru
+                    $nominal.val('').trigger('change.select2');
                 } else {
                     $nominalWrapper.slideUp();
-                    $nominal.prop('disabled', true);
+                    $nominal.prop('disabled', true).val('').trigger('change.select2');
                 }
+
+                hit();
             });
 
-            // 2. Logika Hitung Total & Harga
-            function hitung() {
+            // 2. Logika Hitung Total & Harga Jual/Hutang
+            function hit() {
                 const selectedNominal = $nominal.find(':selected');
                 const metode = $jenisBayar.val();
-
                 let harga = 0;
 
                 if (selectedNominal.val()) {
                     harga = (metode === 'hutang') ?
-                        selectedNominal.data('hutang') :
-                        selectedNominal.data('jual');
+                        parseFloat(selectedNominal.attr('data-hutang')) :
+                        parseFloat(selectedNominal.attr('data-jual'));
                 }
 
-                $hargaDisplay.text(formatRupiah(harga));
+                if ($hargaDisplay.length) {
+                    $hargaDisplay.text(formatRupiah(harga));
+                }
 
-                if (metode === 'cash') {
+                if (metode === 'cash' && $kembalianDisplay.length) {
                     const totalBayar = parseFloat($bayar.val()) || 0;
                     const kembali = totalBayar - harga;
 
@@ -242,10 +276,10 @@
                 }
             }
 
-            $nominal.on('change', hitung);
-            $bayar.on('input', hitung);
+            // Jalankan kalkulator real-time saat terjadi perubahan nominal, jumlah bayar, atau jenis bayar
+            $nominal.on('change', hit);
+            $bayar.on('input', hit);
 
-            // 3. Logika Ganti Metode Pembayaran
             $jenisBayar.on('change', function() {
                 if ($(this).val() === 'hutang') {
                     $('#pelanggan_field').slideDown();
@@ -255,8 +289,7 @@
                     $('#pelanggan_field').slideUp();
                     $('#tunai_area').slideDown();
                 }
-
-                hitung();
+                hit();
             });
         });
     </script>

@@ -20,4 +20,10 @@ class JenisPulsa extends Model
     {
         return $this->belongsTo(Pulsa::class, 'id_pulsa');
     }
+
+    // Di dalam file App\Models\JenisPulsa.php
+    public function saldoPulsa()
+    {
+        return $this->hasOne(SaldoPulsa::class, 'id_jenis');
+    }
 }
