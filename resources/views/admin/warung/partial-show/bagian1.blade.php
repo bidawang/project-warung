@@ -89,98 +89,173 @@
                 </div>
             </div>
 
-            {{-- LABA BESAR --}}
-            <div class="mt-4 bg-white/10 border border-white/10 rounded-2xl p-4 backdrop-blur relative z-10">
+            {{-- RINGKASAN BARANG & PULSA --}}
+            <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4 relative z-10">
 
-                <p class="text-[10px] uppercase tracking-widest text-blue-100">
-                    Laba Bersih Real
-                </p>
+                {{-- ====================================================== --}}
+                {{-- BARANG --}}
+                {{-- ====================================================== --}}
+                <div class="bg-white/10 border border-white/10 rounded-2xl p-4 backdrop-blur">
 
-                <h2 class="text-3xl font-black text-green-300 mt-1">
-                    Rp {{ number_format($totalLabaCash, 0, ',', '.') }}
-                </h2>
-
-                {{-- GRID --}}
-                <div class="grid grid-cols-2 gap-3 mt-4">
-
-                    {{-- OMSET --}}
-                    <div class="bg-white/5 rounded-xl p-3 border border-white/5">
-                        <p class="text-[9px] uppercase text-blue-100">
-                            Omset Cash
-                        </p>
-
-                        <h4 class="text-lg font-black mt-0.5">
-                            Rp {{ number_format($totalPenjualanCash, 0, ',', '.') }}
-                        </h4>
-                    </div>
-
-                    {{-- MODAL --}}
-                    <div class="bg-white/5 rounded-xl p-3 border border-white/5">
-                        <p class="text-[9px] uppercase text-blue-100">
-                            Modal Cash
-                        </p>
-
-                        <h4 class="text-lg font-black mt-0.5">
-                            Rp {{ number_format($totalModalCash, 0, ',', '.') }}
-                        </h4>
-                    </div>
-
-                    {{-- LABA PULSA --}}
-                    <div class="bg-cyan-500/10 rounded-xl p-3 border border-cyan-400/10">
-                        <p class="text-[9px] uppercase text-cyan-100">
-                            Laba Pulsa
-                        </p>
-
-                        <h4 class="text-lg font-black mt-0.5 text-cyan-300">
-                            Rp {{ number_format($totalLabaPulsa, 0, ',', '.') }}
-                        </h4>
-                    </div>
-
-                    {{-- OMSET PULSA --}}
-                    <div class="bg-sky-500/10 rounded-xl p-3 border border-sky-400/10">
-                        <p class="text-[9px] uppercase text-sky-100">
-                            Omset Pulsa
-                        </p>
-
-                        <h4 class="text-lg font-black mt-0.5 text-sky-300">
-                            Rp {{ number_format($totalPenjualanPulsa, 0, ',', '.') }}
-                        </h4>
-                    </div>
-
-                </div>
-            </div>
-
-            {{-- HUTANG --}}
-            <div class="mt-4 grid grid-cols-2 gap-3 relative z-10">
-                <div class="bg-yellow-500/10 border border-yellow-400/10 rounded-xl p-4">
-                    <div class="flex items-center justify-between gap-1">
+                    <div class="flex items-center justify-between mb-4">
                         <div>
-                            <p class="text-xs font-bold uppercase">Hutang</p>
-                            <p class="text-[9px] text-yellow-100">Belum bayar</p>
+                            <p class="text-[10px] uppercase tracking-widest text-blue-100">
+                                Statistik Barang
+                            </p>
+
+                            <h3 class="text-xl font-black text-white mt-1">
+                                Penjualan Barang
+                            </h3>
                         </div>
-                        <span class="text-base">📒</span>
+
+                        <div class="w-12 h-12 rounded-2xl bg-orange-400/20 flex items-center justify-center">
+                            <i class="fas fa-box text-orange-300 text-lg"></i>
+                        </div>
                     </div>
-                    <div class="mt-3">
-                        <p class="text-[9px] uppercase text-yellow-100">Total Penjualan</p>
-                        <h3 class="text-lg font-black text-yellow-300">Rp
-                            {{ number_format($totalPenjualanHutang, 0, ',', '.') }}</h3>
+
+                    <div class="grid grid-cols-2 gap-3">
+
+                        {{-- LABA --}}
+                        <div class="bg-green-500/10 rounded-xl p-3 border border-green-400/10">
+                            <p class="text-[9px] uppercase text-green-100">
+                                Omset Cash
+                            </p>
+
+                            <h4 class="text-lg font-black mt-1 text-green-300">
+                                Rp {{ number_format($totalPenjualanCashBarang, 0, ',', '.') }}
+
+                            </h4>
+                        </div>
+
+                        {{-- OMSET --}}
+                        <div class="bg-blue-500/10 rounded-xl p-3 border border-blue-400/10">
+                            <p class="text-[9px] uppercase text-blue-100">
+                                Laba Cash
+                            </p>
+
+                            <h4 class="text-lg font-black mt-1 text-blue-300">
+                                Rp {{ number_format($totalLabaCashBarang, 0, ',', '.') }}
+                            </h4>
+                        </div>
+
+                        {{-- HUTANG --}}
+                        <div class="bg-yellow-500/10 rounded-xl p-3 border border-yellow-400/10">
+                            <p class="text-[9px] uppercase text-yellow-100">
+                                Hutang Barang
+                            </p>
+
+                            <h4 class="text-lg font-black mt-1 text-yellow-300">
+                                Rp {{ number_format($totalPenjualanHutangBarang, 0, ',', '.') }}
+                            </h4>
+                        </div>
+
+                        {{-- LABA HUTANG --}}
+                        <div class="bg-pink-500/10 rounded-xl p-3 border border-pink-400/10">
+                            <p class="text-[9px] uppercase text-pink-100">
+                                Laba Hutang
+                            </p>
+
+                            <h4 class="text-lg font-black mt-1 text-pink-300">
+                                Rp {{ number_format($totalLabaHutangBarang, 0, ',', '.') }}
+                            </h4>
+                        </div>
+
                     </div>
                 </div>
 
-                <div class="bg-orange-500/10 border border-orange-400/10 rounded-xl p-4">
-                    <div class="flex items-center justify-between gap-1">
+                {{-- ====================================================== --}}
+                {{-- PULSA --}}
+                {{-- ====================================================== --}}
+                <div class="bg-white/10 border border-white/10 rounded-2xl p-4 backdrop-blur">
+
+                    <div class="flex items-center justify-between mb-4">
                         <div>
-                            <p class="text-xs font-bold uppercase">Laba Hutang</p>
-                            <p class="text-[9px] text-orange-100">Belum realisasi</p>
+                            <p class="text-[10px] uppercase tracking-widest text-cyan-100">
+                                Statistik Pulsa
+                            </p>
+
+                            <h3 class="text-xl font-black text-white mt-1">
+                                Penjualan Pulsa
+                            </h3>
                         </div>
-                        <span class="text-base">💰</span>
+
+                        <div class="w-12 h-12 rounded-2xl bg-cyan-400/20 flex items-center justify-center">
+                            <i class="fas fa-mobile-screen text-cyan-300 text-lg"></i>
+                        </div>
                     </div>
-                    <div class="mt-3">
-                        <p class="text-[9px] uppercase text-orange-100">Potensi Laba</p>
-                        <h3 class="text-lg font-black text-orange-300">Rp
-                            {{ number_format($totalLabaHutang, 0, ',', '.') }}</h3>
+
+                    <div class="grid grid-cols-2 gap-3">
+
+                        {{-- OMSET CASH --}}
+                        <div class="bg-cyan-500/10 rounded-xl p-3 border border-cyan-400/10">
+                            <p class="text-[9px] uppercase text-sky-100">
+                                Omset Cash
+                            </p>
+
+                            <h4 class="text-lg font-black mt-1 text-sky-300">
+                                Rp {{ number_format($totalPenjualanCashPulsa, 0, ',', '.') }}
+                            </h4>
+                        </div>
+
+                        {{-- LABA CASH --}}
+                        <div class="bg-sky-500/10 rounded-xl p-3 border border-sky-400/10">
+
+                            <p class="text-[9px] uppercase text-cyan-100">
+                                Laba Cash
+                            </p>
+
+                            <h4 class="text-lg font-black mt-1 text-cyan-300">
+                                Rp {{ number_format($totalLabaCashPulsa, 0, ',', '.') }}
+                            </h4>
+                        </div>
+
+                        {{-- HUTANG PULSA --}}
+                        <div class="bg-indigo-500/10 rounded-xl p-3 border border-indigo-400/10">
+                            <p class="text-[9px] uppercase text-indigo-100">
+                                Omset Hutang
+                            </p>
+
+                            <h4 class="text-lg font-black mt-1 text-indigo-300">
+                                Rp {{ number_format($totalPenjualanHutangPulsa, 0, ',', '.') }}
+                            </h4>
+                        </div>
+
+                        {{-- LABA HUTANG --}}
+                        <div class="bg-purple-500/10 rounded-xl p-3 border border-purple-400/10">
+                            <p class="text-[9px] uppercase text-purple-100">
+                                Laba Hutang
+                            </p>
+
+                            <h4 class="text-lg font-black mt-1 text-purple-300">
+                                Rp {{ number_format($totalLabaHutangPulsa, 0, ',', '.') }}
+                            </h4>
+                        </div>
+
+                        {{-- ADJUSTMENT CASH --}}
+                        <div class="bg-amber-500/10 rounded-xl p-3 border border-amber-400/10">
+                            <p class="text-[9px] uppercase text-amber-100">
+                               Laba Adjustment Cash
+                            </p>
+
+                            <h4 class="text-lg font-black mt-1 text-amber-300">
+                                Rp {{ number_format($totalAdjustmentCashPulsa, 0, ',', '.') }}
+                            </h4>
+                        </div>
+
+                        {{-- ADJUSTMENT HUTANG --}}
+                        <div class="bg-orange-500/10 rounded-xl p-3 border border-orange-400/10">
+                            <p class="text-[9px] uppercase text-orange-100">
+                                Laba Adjustment Hutang
+                            </p>
+
+                            <h4 class="text-lg font-black mt-1 text-orange-300">
+                                Rp {{ number_format($totalAdjustmentHutangPulsa, 0, ',', '.') }}
+                            </h4>
+                        </div>
+
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
@@ -244,7 +319,8 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="3" class="text-center py-10 text-gray-400 italic text-xs">Belum ada data
+                                <td colspan="3" class="text-center py-10 text-gray-400 italic text-xs">Belum ada
+                                    data
                                     asset</td>
                             </tr>
                         @endforelse

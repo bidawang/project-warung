@@ -295,38 +295,50 @@ class WarungControllerAdmin extends Controller
         // ==================================================
         // LABA PULSA
         // ==================================================
-        $allLabaPulsa = TransaksiPulsaKeluar::whereHas('transaksiKasWarung', function ($q) use ($warung) {
-            $q->where('id_warung', $warung->id);
-        })
+        $allLabaPulsa = TransaksiPulsaKeluar::whereHas(
+            'transaksiKas.kasWarung',
+            function ($q) use ($warung) {
+                $q->where('id_warung', $warung->id);
+            }
+        )
             ->whereMonth('created_at', $bulan)
             ->whereYear('created_at', $tahun)
             ->get();
-
-// dd($allLabaPulsa);
+        // dd($allLabaPulsa, $warung->id);
         // ==================================================
-        // 6. CASH
+        // CASH BARANG
         // ==================================================
-        $labaCash = $allLaba->where('jenis', 'penjualan barang');
+        $labaCashBarang = $allLaba
+            ->where('jenis', 'penjualan barang');
 
-        $totalPenjualanCashBarang = $labaCash->sum('harga_jual');
+        $totalPenjualanCashBarang =
+            $labaCashBarang->sum('harga_jual');
 
-        $totalLabaCashBarang = $labaCash->sum('laba_bersih');
+        $totalLabaCashBarang =
+            $labaCashBarang->sum('laba_bersih');
 
         $totalModalCashBarang =
-            $totalPenjualanCashBarang - $totalLabaCashBarang;
-
+            $totalPenjualanCashBarang
+            - $totalLabaCashBarang;
         // ==================================================
         // CASH PULSA
         // ==================================================
-        $labaCashPulsa = $allLabaPulsa;
+        $labaCashPulsa = $allLabaPulsa
+            ->where('jenis_pembayaran', 'cash');
 
-        $totalPenjualanCashPulsa = $labaCashPulsa->sum('total');
+        $totalPenjualanCashPulsa =
+            $labaCashPulsa->sum('total');
 
-        $totalLabaCashPulsa = $labaCashPulsa->sum('laba_pulsa');
-// dd($totalLabaCashPulsa);
+        $totalLabaCashPulsa =
+            $labaCashPulsa->sum('laba_pulsa');
+
+        $totalAdjustmentCashPulsa =
+            $labaCashPulsa->sum('laba_adjustment');
+
         $totalModalCashPulsa =
-            $totalPenjualanCashPulsa - $totalLabaCashPulsa;
-
+            $totalPenjualanCashPulsa
+            - $totalLabaCashPulsa;
+        // dd($totalPenjualanCashPulsa, $totalLabaCashPulsa, $totalModalCashPulsa);
         // ==================================================
         // TOTAL CASH
         // ==================================================
@@ -355,15 +367,21 @@ class WarungControllerAdmin extends Controller
         // ==================================================
         // HUTANG PULSA
         // ==================================================
-        $labaHutangPulsa = $allLabaPulsa->where('tipe', 'hutang_pulsa');
+        $labaHutangPulsa = $allLabaPulsa
+            ->where('jenis_pembayaran', 'hutang');
 
-        $totalPenjualanHutangPulsa = $labaHutangPulsa->sum('total');
+        $totalPenjualanHutangPulsa =
+            $labaHutangPulsa->sum('total');
 
-        $totalLabaHutangPulsa = $labaHutangPulsa->sum('laba_pulsa');
+        $totalLabaHutangPulsa =
+            $labaHutangPulsa->sum('laba_pulsa');
+
+        $totalAdjustmentHutangPulsa =
+            $labaHutangPulsa->sum('laba_adjustment');
 
         $totalModalHutangPulsa =
-            $totalPenjualanHutangPulsa - $totalLabaHutangPulsa;
-
+            $totalPenjualanHutangPulsa
+            - $totalLabaHutangPulsa;
         // ==================================================
         // TOTAL HUTANG
         // ==================================================
@@ -581,9 +599,17 @@ class WarungControllerAdmin extends Controller
             'totalLabaCash',
             'totalModalCash',
 
+            'totalPenjualanCashBarang',
+            'totalLabaCashBarang',
+            'totalModalCashBarang',
+
             'totalPenjualanHutang',
             'totalLabaHutang',
             'totalModalHutang',
+
+            'totalPenjualanHutangBarang',
+            'totalLabaHutangBarang',
+            'totalModalHutangBarang',
 
             'margin',
 
@@ -625,6 +651,9 @@ class WarungControllerAdmin extends Controller
 
             'hutangPulsaMasuk',
             'totalHutangPulsaMasuk',
+
+            'totalAdjustmentCashPulsa',
+            'totalAdjustmentHutangPulsa',
         ));
     }
 

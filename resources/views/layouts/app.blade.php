@@ -7,7 +7,7 @@
     <title>@yield('title', 'Dashboard') - Pengelolaan Data</title>
     <link rel="icon" type="image/png" href="/image/icon.png">
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -146,6 +146,13 @@
                     class="list-group-item list-group-item-action border-0 py-3">
                     <i class="fas fa-file-import me-3 text-success"></i> Input Barang Masuk
                 </a>
+                <a href="{{ url('/kasir/stok-barang') }}" class="list-group-item list-group-item-action border-0 py-3">
+                    <i class="fas fa-cubes me-3 text-success"></i> Stok Barang
+                </a>
+
+                <a href="{{ url('/kasir/hutang') }}" class="list-group-item list-group-item-action border-0 py-3">
+                    <i class="fas fa-hand-holding-dollar me-3 text-success"></i> Hutang
+                </a>
                 <a href="{{ url('/kasir/hutangBarangamMasuk') }}"
                     class="list-group-item list-group-item-action border-0 py-3">
                     <i class="fas fa-file-invoice me-3 text-success"></i> Hutang ke Supplier
@@ -227,47 +234,48 @@
         @yield('content')
     </div>
 
-    <nav class="navbar fixed-bottom bottom-sidebar" x-data="{ 
-    /* Logic scroll dihapus karena 4 menu pasti muat di layar */ 
-}">
-    <div class="container-fluid p-0 h-100">
-        <ul class="list-unstyled mb-0 d-flex w-100 h-100 align-items-center justify-content-around">
+    <nav class="navbar fixed-bottom bottom-sidebar">
+        <div class="container-fluid p-0 h-100">
+            <ul class="list-unstyled mb-0 d-flex w-100 h-100 align-items-center justify-content-around">
 
-            {{-- 1. KASIR --}}
-            <li class="nav-item flex-fill">
-                <a href="{{ url('kasir') }}" class="nav-link @if (Request::is('kasir')) active @endif">
-                    <i class="fas fa-calculator"></i>
-                    <span>Kasir</span>
-                </a>
-            </li>
+                {{-- 1. KASIR --}}
+                <li class="nav-item flex-fill">
+                    <a href="{{ url('kasir') }}" class="nav-link @if (Request::is('kasir')) active @endif">
+                        <i class="fas fa-calculator"></i>
+                        <span>Kasir</span>
+                    </a>
+                </li>
 
-            {{-- 2. STOK --}}
-            <li class="nav-item flex-fill">
-                <a href="{{ url('/kasir/stok-barang') }}" class="nav-link @if (Request::is('kasir/stok-barang*')) active @endif">
-                    <i class="fas fa-cubes"></i>
-                    <span>Stok</span>
-                </a>
-            </li>
+                {{-- 2. PULSA --}}
+                <li class="nav-item flex-fill">
+                    <a href="{{ url('kasir/pulsa') }}"
+                        class="nav-link @if (Request::is('kasir/pulsa*')) active @endif">
+                        <i class="fas fa-signal"></i>
+                        <span>Pulsa</span>
+                    </a>
+                </li>
 
-            {{-- 3. HUTANG --}}
-            <li class="nav-item flex-fill">
-                <a href="{{ url('/kasir/hutang') }}" class="nav-link @if (Request::is('kasir/hutang*')) active @endif">
-                    <i class="fas fa-hand-holding-dollar"></i>
-                    <span>Hutang</span>
-                </a>
-            </li>
+                {{-- 3. RIWAYAT --}}
+                <li class="nav-item flex-fill">
+                    <a href="{{ url('/kasir/riwayat-transaksi') }}"
+                        class="nav-link @if (Request::is('kasir/riwayat-transaksi*')) active @endif">
+                        <i class="fas fa-clock-rotate-left"></i>
+                        <span>Riwayat</span>
+                    </a>
+                </li>
 
-            {{-- 4. LAPORAN --}}
-            <li class="nav-item flex-fill">
-                <a href="{{ route('kasir.laporan-kas.index') }}" class="nav-link @if (Request::is('kasir/laporan-kas*') || Request::is('kasir/kas*')) active @endif">
-                    <i class="fas fa-file-invoice-dollar"></i>
-                    <span>Laporan</span>
-                </a>
-            </li>
+                {{-- 4. LAPORAN --}}
+                <li class="nav-item flex-fill">
+                    <a href="{{ route('kasir.kas.index') }}"
+                        class="nav-link @if (Request::is('kasir/laporan-kas*') || Request::is('kasir/kas*')) active @endif">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span>Kas</span>
+                    </a>
+                </li>
 
-        </ul>
-    </div>
-</nav>
+            </ul>
+        </div>
+    </nav>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

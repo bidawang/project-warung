@@ -9,16 +9,18 @@ class TransaksiPulsaKeluar extends Model
 {
     use HasFactory;
     protected $table = 'transaksi_pulsa_keluar';
-    protected $fillable = 
+    protected $fillable =
     [
-        'id_pulsa', 
-        'id_transaksi_kas', 
-        'id_harga_pulsa', 
+        'id_pulsa',
+        'id_transaksi_kas',
         'jenis_pembayaran',
-        'total', 
-        'laba_pulsa', 
-        'laba_owner', 
-        'laba_warung'];
+        'jumlah_pulsa',
+        'total',
+        'laba_pulsa',
+        'laba_owner',
+        'laba_adjustment',
+        'laba_warung'
+    ];
 
     public function saldoPulsa()
     {
@@ -36,6 +38,11 @@ class TransaksiPulsaKeluar extends Model
     {
         // Asumsi: TransaksiPulsa memiliki foreign key 'id_pulsa'
         return $this->belongsTo(Pulsa::class, 'id_pulsa');
+    }
+
+    public function transaksiKas()
+    {
+        return $this->belongsTo(TransaksiKas::class, 'id_transaksi_kas');
     }
 
     // Relasi: Satu TransaksiPulsa dimiliki oleh satu KasWarung

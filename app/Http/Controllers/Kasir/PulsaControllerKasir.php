@@ -33,27 +33,43 @@ class PulsaControllerKasir extends Controller
             ->where('id_warung', $idWarung)
             // ->where('id_jenis',)
             ->get();
-// dd($saldoPulsas);
+        // dd($saldoPulsas);
         $harga_pulsas = HargaPulsa::with('jenisPulsa')
             ->orderBy('jumlah_pulsa', 'asc')
-            ->get();
+            ->get()
+            ->map(function ($item) use ($saldoPulsas) {
+
+                // cari saldo provider yang sama
+                $saldoProvider = $saldoPulsas
+                    ->where('id_jenis', $item->id_jenis)
+                    ->first();
+
+                $saldoTersedia = $saldoProvider?->jumlah ?? 0;
+
+                // cek apakah saldo cukup
+                $item->tersedia = $saldoTersedia >= $item->jumlah_pulsa;
+
+                $item->saldo_provider = $saldoTersedia;
+
+                return $item;
+            });
 
         // Riwayat transaksi pulsa keluar
-        $transaksi_pulsa = TransaksiPulsaKeluar::with(['saldoPulsa.jenisPulsa', 'transaksiKas'])
+        $transaksi_pulsa = TransaksiPulsaKeluar::with(['saldoPulsa.jenisPulsa', 'transaksiKasWarung'])
             ->whereHas('saldoPulsa', function ($query) use ($idWarung) {
                 $query->where('id_warung', $idWarung);
             })
             ->latest()
             ->get();
-
+// dd($transaksi_pulsa->toArray());
         // Contoh saldo kas (sebaiknya ambil dari database KasWarung)
-        $kas = KasWarung::where('id_warung', $idWarung)->where('jenis_kas', 'cash')->first();
-        $saldo_kas = $kas ? $kas->saldo : 0;
+        // $kas = KasWarung::where('id_warung', $idWarung)->where('jenis_kas', 'cash')->first();
+        // $saldo_kas = $kas ? $kas->saldo : 0;
 
         return view('kasir.pulsa.index', compact(
             'saldoPulsas',
             'harga_pulsas',
-            'saldo_kas',
+            // 'saldo_kas',
             'transaksi_pulsa'
         ));
     }
@@ -210,12 +226,12 @@ class PulsaControllerKasir extends Controller
             'bayar'            => 'required_if:jenis_pembayaran,cash|nullable|numeric|min:0',
             'pelanggan_id'     => 'required_if:jenis_pembayaran,hutang|nullable|exists:users,id',
         ]);
-
+// dd($request->all());
         // 2. Ambil Data Harga & Provider
         $hargaData = HargaPulsa::findOrFail($request->harga_pulsa_id);
         $nominalPulsa = $hargaData->jumlah_pulsa;
         $idJenis = $hargaData->id_jenis;
-
+// dd($hargaData->toArray());
         // Tentukan harga jual (Cash pakai harga_jual, Hutang pakai harga_hutang)
         $totalHargaJual = ($request->jenis_pembayaran === 'cash')
             ? $hargaData->harga_jual
@@ -266,26 +282,37 @@ class PulsaControllerKasir extends Controller
                 'keterangan'        => "Jual pulsa {$nominalPulsa} ke {$request->nomor_hp} ({$request->jenis_pembayaran})",
             ]);
 
-            // 7. Kalkulasi Laba (Harga Jual - Modal Alomogada)
-            $profitTotal = $totalHargaJual - $hargaData->harga_alomogada;
+            // 7. Kalkulasi Laba Baru
+
+            // Selisih adjustment
+            $labaAdjustment = $hargaData->harga_modal - $hargaData->harga_alomogada;
+
+            // Profit asli dari penjualan
+            $profitTotal = $totalHargaJual - $hargaData->harga_modal;
+
+            // Pembagian laba
             $warung = Warung::findOrFail($idWarung);
             $pembagian = explode('|', $warung->pembagian_laba);
 
-            $labaOwner = ceil($profitTotal * (($pembagian[0] ?? 50) / 100));
-            $labaWarung = ceil($profitTotal * (($pembagian[1] ?? 50) / 100));
+            $labaOwner = ceil(
+                $profitTotal * (($pembagian[0] ?? 50) / 100)
+            );
 
+            $labaWarung = ceil(
+                $profitTotal * (($pembagian[1] ?? 50) / 100)
+            );
+// dd($nominalPulsa);
             // 8. Simpan ke TransaksiPulsaKeluar (Sesuai Model & ERD terbaru)
             TransaksiPulsaKeluar::create([
                 'id_pulsa'         => $saldo->id, // Mengarah ke ID di tabel saldo_pulsa
                 'id_transaksi_kas' => $transaksiKas->id,
-                'id_harga_pulsa'   => $hargaData->id,
+                'jumlah_pulsa'     => $nominalPulsa,
                 'jenis_pembayaran' => $request->jenis_pembayaran, // cash / hutang
                 'total'            => $totalHargaJual,
                 'laba_pulsa'       => $profitTotal,
                 'laba_owner'       => $labaOwner,
+                'laba_adjustment' => $labaAdjustment,
                 'laba_warung'      => $labaWarung,
-                // Jika Anda menambahkan kolom id_hutang di migrasi TransaksiPulsaKeluar:
-                // 'id_hutang'     => $idHutang, 
             ]);
 
             // 9. Potong Saldo di tabel saldo_pulsa
@@ -302,7 +329,7 @@ class PulsaControllerKasir extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error("Gagal Jual Pulsa: " . $e->getMessage());
-            return back()->withInput()->with('error', 'Terjadi kesalahan sistem.');
+            return back()->withInput()->with('error', $e->getMessage());
         }
     }
 }
