@@ -114,26 +114,23 @@ class WarungControllerAdmin extends Controller
     public function show(Request $request, $id)
     {
         // ==================================================
-        // FILTER PERIODE
+        // FILTER PERIODE (SIKLUS 7 s/d 6)
         // ==================================================
-        $periode = $request->periode
-            ? Carbon::parse($request->periode)
-            : now();
+        // Kita ambil referensi bulan/tahun dari request atau saat ini
+        $refDate = $request->periode ? Carbon::parse($request->periode) : now();
 
-        $bulan = $periode->month;
-        $tahun = $periode->year;
+        // Logika: Jika user pilih "Mei 2024", maka periode adalah 7 Mei 2024 s/d 6 Juni 2024
+        $startDate = Carbon::createFromDate($refDate->year, $refDate->month, 7)->startOfDay();
+        $endDate = $startDate->copy()->addMonth()->subDay()->endOfDay();
 
         // ==================================================
         // 1. AMBIL WARUNG
         // ==================================================
         $warungQuery = Warung::with(['user', 'area', 'kasWarung']);
-
         if (Auth::user()->role !== 'admin') {
             $warungQuery->where('id_user', Auth::id());
         }
-
         $warung = $warungQuery->findOrFail($id);
-
         // ==================================================
         // 2. AMBIL DATA DASAR
         // ==================================================
@@ -274,35 +271,24 @@ class WarungControllerAdmin extends Controller
             ->values();
 
         // ==================================================
-        // 5. QUERY LABA (FILTER PERIODE)
+        // 5. QUERY LABA (GANTI whereMonth JADI whereBetween)
         // ==================================================
         $queryLaba = BarangKeluar::whereHas('stokWarung', function ($q) use ($warung) {
             $q->where('id_warung', $warung->id);
         })
-            ->whereIn('jenis', [
-                'penjualan barang',
-                'hutang barang'
-            ])
-            ->whereMonth('created_at', $bulan)
-            ->whereYear('created_at', $tahun)
-            ->with([
-                'stokWarung.barang',
-                'stokWarung.hargaJual'
-            ]);
+            ->whereIn('jenis', ['penjualan barang', 'hutang barang'])
+            ->whereBetween('created_at', [$startDate, $endDate]) // Diubah
+            ->with(['stokWarung.barang', 'stokWarung.hargaJual']);
 
         $allLaba = (clone $queryLaba)->get();
 
         // ==================================================
         // LABA PULSA
         // ==================================================
-        $allLabaPulsa = TransaksiPulsaKeluar::whereHas(
-            'transaksiKas.kasWarung',
-            function ($q) use ($warung) {
-                $q->where('id_warung', $warung->id);
-            }
-        )
-            ->whereMonth('created_at', $bulan)
-            ->whereYear('created_at', $tahun)
+        $allLabaPulsa = TransaksiPulsaKeluar::whereHas('transaksiKas.kasWarung', function ($q) use ($warung) {
+            $q->where('id_warung', $warung->id);
+        })
+            ->whereBetween('created_at', [$startDate, $endDate]) // Diubah
             ->get();
         // dd($allLabaPulsa, $warung->id);
         // ==================================================
@@ -369,7 +355,7 @@ class WarungControllerAdmin extends Controller
         // ==================================================
         $labaHutangPulsa = $allLabaPulsa
             ->where('jenis_pembayaran', 'hutang');
-
+        // dd($labaHutangPulsa);
         $totalPenjualanHutangPulsa =
             $labaHutangPulsa->sum('total');
 
@@ -438,23 +424,19 @@ class WarungControllerAdmin extends Controller
         // ==================================================
         // 10. PENGELUARAN BULAN INI
         // ==================================================
-        $pengeluaranPokokBulanIni =
-            PengeluaranPokokWarung::where('id_warung', $warung->id)
-            ->whereMonth('date', $bulan)
-            ->whereYear('date', $tahun)
+        $pengeluaranPokokBulanIni = PengeluaranPokokWarung::where('id_warung', $warung->id)
+            ->whereBetween('date', [$startDate, $endDate]) // Diubah (pastikan kolom 'date' sesuai)
             ->latest()
             ->get();
 
-        $totalPengeluaranPokok =
-            $pengeluaranPokokBulanIni->sum('jumlah');
+        $totalPengeluaranPokok = $pengeluaranPokokBulanIni->sum('jumlah');
 
         // ==================================================
         // 11. HUTANG PELANGGAN
         // ==================================================
         $hutangList = Hutang::with(['user'])
             ->where('id_warung', $warung->id)
-            ->whereMonth('created_at', $bulan)
-            ->whereYear('created_at', $tahun)
+            ->whereBetween('created_at', [$startDate, $endDate]) // Diubah
             ->select('id_user')
             ->selectRaw('SUM(jumlah_hutang_awal) as total_awal')
             ->selectRaw('SUM(jumlah_sisa_hutang) as total_sisa')
@@ -475,11 +457,9 @@ class WarungControllerAdmin extends Controller
         // 12. RIWAYAT TRANSAKSI
         // ==================================================
         $kasWarung = $warung->kasWarung()->first();
-
         $riwayatTransaksi = collect();
 
         if ($kasWarung) {
-
             $riwayatTransaksi = TransaksiKas::with([
                 'transaksiBarangKeluar.barangKeluar.stokWarung.barang',
                 'hutang',
@@ -487,56 +467,40 @@ class WarungControllerAdmin extends Controller
                 'barangKeluar'
             ])
                 ->where('id_kas_warung', $kasWarung->id)
-                ->whereMonth('created_at', $bulan)
-                ->whereYear('created_at', $tahun)
+                ->whereBetween('created_at', [$startDate, $endDate]) // Diubah
                 ->latest()
                 ->limit(50)
                 ->get()
                 ->map(function ($trx) use ($warung) {
-
                     $data = $this->transformTransaksi($trx);
-
                     $data->id_warung = $warung->id;
-
                     $data->nama_warung = $warung->nama_warung;
-
                     return $data;
                 });
         }
 
         // ==================================================
-        // 13. HUTANG BARANG MASUK
+        // 13. HUTANG BARANG & PULSA MASUK
         // ==================================================
-        $hutangBarangMasuk = HutangWarung::with([
-            'hutangBarangMasuk.barangMasuk.transaksiBarang.barang'
-        ])
+        $hutangBarangMasuk = HutangWarung::with(['hutangBarangMasuk.barangMasuk.transaksiBarang.barang'])
             ->where('jenis', 'barang masuk')
             ->where('id_warung', $warung->id)
-            ->whereMonth('created_at', $bulan)
-            ->whereYear('created_at', $tahun)
+            ->whereBetween('created_at', [$startDate, $endDate]) // Diubah
             ->latest()
             ->limit(10)
             ->get();
 
         $totalHutangBarangMasuk = HutangWarung::where('jenis', 'barang masuk')
             ->where('id_warung', $warung->id)
-            ->whereMonth('created_at', $bulan)
-            ->whereYear('created_at', $tahun)
+            ->whereBetween('created_at', [$startDate, $endDate]) // Diubah
             ->sum('total');
 
-        // ==================================================
-        // 13B. HUTANG PULSA MASUK
-        // ==================================================
-        $hutangPulsaMasuk = TransaksiPulsaMasuk::with([
-            'pulsa.jenisPulsa',
-            'hutangWarung'
-        ])
+        $hutangPulsaMasuk = TransaksiPulsaMasuk::with(['pulsa.jenisPulsa', 'hutangWarung'])
             ->whereHas('pulsa', function ($q) use ($warung) {
                 $q->where('id_warung', $warung->id);
             })
             ->whereNotNull('id_hutang_warung')
-            ->whereMonth('created_at', $bulan)
-            ->whereYear('created_at', $tahun)
+            ->whereBetween('created_at', [$startDate, $endDate]) // Diubah
             ->latest()
             ->limit(10)
             ->get();
@@ -544,33 +508,27 @@ class WarungControllerAdmin extends Controller
         $totalHutangPulsaMasuk = $hutangPulsaMasuk->sum('total');
 
         // ==================================================
-        // 14. STATISTIK KAS (CASH & BANK) - BERDASARKAN PERIODE
+        // 14. STATISTIK KAS
         // ==================================================
         $kasCash = $warung->kasWarung->where('jenis_kas', 'cash')->first();
         $kasBank = $warung->kasWarung->where('jenis_kas', 'bank')->first();
 
-        // -- STATISTIK CASH --
         $pendapatanCashPeriode = 0;
         $pengeluaranCashPeriode = 0;
         $totalUangFisik = 0;
         $pecahanKas = collect();
 
         if ($kasCash) {
-            // Pendapatan Cash di periode ini
             $pendapatanCashPeriode = TransaksiKas::where('id_kas_warung', $kasCash->id)
                 ->whereIn('jenis', ['penjualan barang', 'penjualan pulsa', 'masuk', 'inject'])
-                ->whereMonth('created_at', $bulan)
-                ->whereYear('created_at', $tahun)
+                ->whereBetween('created_at', [$startDate, $endDate]) // Diubah
                 ->sum('total');
 
-            // Pengeluaran Cash di periode ini (Termasuk pengeluaran pokok)
             $pengeluaranCashPeriode = TransaksiKas::where('id_kas_warung', $kasCash->id)
                 ->whereIn('jenis', ['expayet', 'hilang', 'keluar', 'hutang barang', 'hutang pulsa'])
-                ->whereMonth('created_at', $bulan)
-                ->whereYear('created_at', $tahun)
+                ->whereBetween('created_at', [$startDate, $endDate]) // Diubah
                 ->sum('total');
 
-            // Uang Fisik (Hanya relevan jika periodenya adalah 'Sekarang')
             $pecahanKas = DetailKasWarung::where('id_kas_warung', $kasCash->id)
                 ->orderBy('pecahan', 'desc')->get();
             $totalUangFisik = $pecahanKas->sum(fn($item) => $item->pecahan * $item->jumlah);
@@ -583,77 +541,60 @@ class WarungControllerAdmin extends Controller
         // ==================================================
         // RETURN
         // ==================================================
-        // dd($warung->kasWarung->where('id_warung', $warung->id)->where('jenis_kas', 'cash')->first());
+        $periode = $startDate->format('d M') . ' - ' . $endDate->format('d M Y');
+
         return view('admin.warung.show', compact(
             'warung',
             'barangWithStok',
             'stokWarung',
-
             'periode',
-
+            'startDate',
+            'endDate',
             'labaKotor',
             'labaBersih',
             'totalModal',
-
             'totalPenjualanCash',
             'totalLabaCash',
             'totalModalCash',
-
             'totalPenjualanCashBarang',
             'totalLabaCashBarang',
             'totalModalCashBarang',
-
             'totalPenjualanHutang',
             'totalLabaHutang',
             'totalModalHutang',
-
             'totalPenjualanHutangBarang',
             'totalLabaHutangBarang',
             'totalModalHutangBarang',
-
             'margin',
-
             'assets',
-
             'pengeluaranPokokBulanIni',
             'totalPengeluaranPokok',
-
             'hutangList',
             'totalHutang',
             'totalSisa',
             'totalLunas',
-
             'riwayatTransaksi',
-
             'hutangBarangMasuk',
             'totalHutangBarangMasuk',
-
             'kasCash',
             'kasBank',
             'pendapatanCashPeriode',
             'pengeluaranCashPeriode',
-            'pendapatanBankPeriode',
-            'pengeluaranBankPeriode',
             'pecahanKas',
             'totalUangFisik',
-
             'totalLabaPulsa',
             'totalPenjualanPulsa',
             'totalModalPulsa',
-
             'totalLabaCashPulsa',
             'totalPenjualanCashPulsa',
             'totalModalCashPulsa',
-
             'totalLabaHutangPulsa',
             'totalPenjualanHutangPulsa',
             'totalModalHutangPulsa',
-
             'hutangPulsaMasuk',
             'totalHutangPulsaMasuk',
-
             'totalAdjustmentCashPulsa',
-            'totalAdjustmentHutangPulsa',
+            'totalAdjustmentHutangPulsa'
         ));
     }
 

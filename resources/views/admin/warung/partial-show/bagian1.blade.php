@@ -85,7 +85,7 @@
                 </div>
                 <div class="bg-white/10 border border-white/10 px-3 py-1.5 rounded-xl backdrop-blur">
                     <p class="text-[9px] uppercase text-blue-100">Periode</p>
-                    <p class="text-xs font-bold">{{ $periode->translatedFormat('F Y') }}</p>
+                    <p class="text-xs font-bold">{{ $periode }}</p>
                 </div>
             </div>
 

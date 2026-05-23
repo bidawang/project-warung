@@ -278,7 +278,7 @@ class PulsaControllerKasir extends Controller
                 'id_kas_warung'     => $kas->id,
                 'total'             => $totalHargaJual,
                 'metode_pembayaran' => ($request->jenis_pembayaran === 'cash') ? 'cash' : 'piutang',
-                'jenis'             => 'masuk',
+                'jenis'             => ($request->jenis_pembayaran === 'cash') ? 'penjualan pulsa' : 'hutang pulsa',
                 'keterangan'        => "Jual pulsa {$nominalPulsa} ke {$request->nomor_hp} ({$request->jenis_pembayaran})",
             ]);
 

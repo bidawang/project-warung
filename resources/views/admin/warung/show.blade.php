@@ -5,7 +5,7 @@
 @section('content')
     <div class="min-h-screen bg-gray-50 pb-12" x-data="{ activeTab: 'tersedia', searchQuery: '' }">
         <main class="p-4 md:p-8">
-            <div class="max-w-7xl mx-auto">
+            <div class="mx-auto">
 
                 {{-- Header & Action --}}
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -34,7 +34,7 @@
                                 class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-100 w-fit">
                                 <div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
                                 <span class="text-sm font-semibold text-blue-700">
-                                    {{ $periode->translatedFormat('F Y') }}
+                                    {{ $periode }}
                                 </span>
                             </div>
                         </div>
@@ -45,7 +45,7 @@
                         <div class="bg-white border border-gray-200 rounded-2xl shadow-sm px-4 py-2">
                             <form method="GET" class="flex items-center gap-3">
                                 <input type="month" name="periode"
-                                    value="{{ request('periode', $periode->format('Y-m')) }}"
+                                    value="{{ request('periode', $periode) }}"
                                     class="border-none focus:ring-0 text-sm font-bold text-gray-700 p-0">
                                 <button type="submit"
                                     class="text-blue-600 hover:text-blue-800 font-bold text-sm">Terapkan</button>
